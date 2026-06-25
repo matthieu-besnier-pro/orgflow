@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import OrgServiceView from '@/components/OrgServiceView';
+import OrgChartPrintView from '@/components/OrgChartPrintView';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
@@ -106,6 +107,8 @@ export default function OrgChart() {
   const [loading, setLoading] = useState(true);
   const [expandAll, setExpandAll] = useState(false);
   const [template, setTemplate] = useState('classique');
+  const [printMode, setPrintMode] = useState(false);
+  const [printFormat, setPrintFormat] = useState('A4');
 
   // Filters
   const [search, setSearch] = useState('');
@@ -469,61 +472,113 @@ export default function OrgChart() {
             <RotateCcw className="w-3 h-3" />
           </button>
         </div>
+
+        {/* Print button */}
+        <button
+          onClick={() => setPrintMode(!printMode)}
+          title={printMode ? "Quitter l'aperçu d'impression" : "Aperçu d'impression"}
+          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+            printMode ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Printer className="w-4 h-4" />
+        </button>
       </div>
 
       {/* ── Canvas ── */}
-      <div className="flex-1 overflow-auto p-8">
-        {template === 'services' ? (
-          <OrgServiceView
-            employees={filteredBase}
-            agencies={agencies}
-            onSelect={setSelectedEmployee}
-            searchTerm={searchTerm}
-          />
+      <div className={`flex-1 overflow-auto ${printMode ? 'p-0 bg-gray-100' : 'p-8'}`}>
+        {printMode && (
+          <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-border p-4 flex items-center gap-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-foreground">Format :</label>
+              <select
+                value={printFormat}
+                onChange={(e) => setPrintFormat(e.target.value)}
+                className="px-3 py-1 text-sm border border-border rounded-lg"
+              >
+                <option value="A4">A4 (210×297 mm)</option>
+                <option value="A3">A3 (297×420 mm)</option>
+              </select>
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="ml-auto px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90"
+            >
+              Imprimer
+            </button>
+            <button
+              onClick={() => setPrintMode(false)}
+              className="px-4 py-2 bg-secondary text-foreground rounded-lg text-sm font-medium"
+            >
+              Fermer
+            </button>
+          </div>
+        )}
+
+        {printMode ? (
+          <div style={{ paddingTop: printMode ? '70px' : '0' }}>
+            <OrgChartPrintView
+              employees={filteredBase}
+              roots={roots}
+              childrenMap={finalChildrenMap}
+              pageFormat={printFormat}
+            />
+          </div>
         ) : (
-          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
-            {roots.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-                <Search className="w-10 h-10 text-muted-foreground/40" />
-                <p className="text-muted-foreground font-medium">Aucun collaborateur trouvé</p>
-                {(activeFilters > 0 || search) && (
-                  <button onClick={resetFilters} className="text-sm text-primary hover:underline">Réinitialiser les filtres</button>
+          <>
+            {template === 'services' ? (
+              <OrgServiceView
+                employees={filteredBase}
+                agencies={agencies}
+                onSelect={setSelectedEmployee}
+                searchTerm={searchTerm}
+              />
+            ) : (
+              <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
+                {roots.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+                    <Search className="w-10 h-10 text-muted-foreground/40" />
+                    <p className="text-muted-foreground font-medium">Aucun collaborateur trouvé</p>
+                    {(activeFilters > 0 || search) && (
+                      <button onClick={resetFilters} className="text-sm text-primary hover:underline">Réinitialiser les filtres</button>
+                    )}
+                  </div>
+                ) : roots.length === 1 ? (
+                  <div className="flex justify-center">
+                    <OrgTreeNode
+                      key={`${roots[0].id}-${expandAll}`}
+                      employee={roots[0]}
+                      childrenMap={finalChildrenMap}
+                      onSelect={setSelectedEmployee}
+                      defaultExpanded={expandAll}
+                      depth={0}
+                      onDragStart={handleDragStart}
+                      onDrop={handleDrop}
+                      template={template}
+                      searchTerm={searchTerm}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex gap-12 items-start justify-center flex-wrap">
+                    {roots.map(root => (
+                      <OrgTreeNode
+                        key={`${root.id}-${expandAll}`}
+                        employee={root}
+                        childrenMap={finalChildrenMap}
+                        onSelect={setSelectedEmployee}
+                        defaultExpanded={expandAll}
+                        depth={0}
+                        onDragStart={handleDragStart}
+                        onDrop={handleDrop}
+                        template={template}
+                        searchTerm={searchTerm}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
-            ) : roots.length === 1 ? (
-              <div className="flex justify-center">
-                <OrgTreeNode
-                  key={`${roots[0].id}-${expandAll}`}
-                  employee={roots[0]}
-                  childrenMap={finalChildrenMap}
-                  onSelect={setSelectedEmployee}
-                  defaultExpanded={expandAll}
-                  depth={0}
-                  onDragStart={handleDragStart}
-                  onDrop={handleDrop}
-                  template={template}
-                  searchTerm={searchTerm}
-                />
-              </div>
-            ) : (
-              <div className="flex gap-12 items-start justify-center flex-wrap">
-                {roots.map(root => (
-                  <OrgTreeNode
-                    key={`${root.id}-${expandAll}`}
-                    employee={root}
-                    childrenMap={finalChildrenMap}
-                    onSelect={setSelectedEmployee}
-                    defaultExpanded={expandAll}
-                    depth={0}
-                    onDragStart={handleDragStart}
-                    onDrop={handleDrop}
-                    template={template}
-                    searchTerm={searchTerm}
-                  />
-                ))}
-              </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
