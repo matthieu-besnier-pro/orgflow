@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import OrgTreeNode from '@/components/OrgTreeNode';
+import OrgServiceView from '@/components/OrgServiceView';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
@@ -385,6 +386,7 @@ export default function OrgChart() {
             { key: 'classique', icon: <LayoutGrid className="w-3.5 h-3.5" />, label: 'Classique' },
             { key: 'moderne', icon: <Rows3 className="w-3.5 h-3.5" />, label: 'Moderne' },
             { key: 'compact', icon: <LayoutList className="w-3.5 h-3.5" />, label: 'Compact' },
+            { key: 'services', icon: <Columns className="w-3.5 h-3.5" />, label: 'Par services' },
           ].map(t => (
             <button key={t.key} onClick={() => setTemplate(t.key)} title={t.label}
               className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${template === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -419,36 +421,28 @@ export default function OrgChart() {
 
       {/* ── Canvas ── */}
       <div className="flex-1 overflow-auto p-8">
-        <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
-          {roots.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-              <Search className="w-10 h-10 text-muted-foreground/40" />
-              <p className="text-muted-foreground font-medium">Aucun collaborateur trouvé</p>
-              {(activeFilters > 0 || search) && (
-                <button onClick={resetFilters} className="text-sm text-primary hover:underline">Réinitialiser les filtres</button>
-              )}
-            </div>
-          ) : roots.length === 1 ? (
-            <div className="flex justify-center">
-              <OrgTreeNode
-                key={`${roots[0].id}-${expandAll}`}
-                employee={roots[0]}
-                childrenMap={finalChildrenMap}
-                onSelect={setSelectedEmployee}
-                defaultExpanded={expandAll}
-                depth={0}
-                onDragStart={handleDragStart}
-                onDrop={handleDrop}
-                template={template}
-                searchTerm={searchTerm}
-              />
-            </div>
-          ) : (
-            <div className="flex gap-12 items-start justify-center flex-wrap">
-              {roots.map(root => (
+        {template === 'services' ? (
+          <OrgServiceView
+            employees={filteredPool}
+            agencies={agencies}
+            onSelect={setSelectedEmployee}
+            searchTerm={searchTerm}
+          />
+        ) : (
+          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
+            {roots.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+                <Search className="w-10 h-10 text-muted-foreground/40" />
+                <p className="text-muted-foreground font-medium">Aucun collaborateur trouvé</p>
+                {(activeFilters > 0 || search) && (
+                  <button onClick={resetFilters} className="text-sm text-primary hover:underline">Réinitialiser les filtres</button>
+                )}
+              </div>
+            ) : roots.length === 1 ? (
+              <div className="flex justify-center">
                 <OrgTreeNode
-                  key={`${root.id}-${expandAll}`}
-                  employee={root}
+                  key={`${roots[0].id}-${expandAll}`}
+                  employee={roots[0]}
                   childrenMap={finalChildrenMap}
                   onSelect={setSelectedEmployee}
                   defaultExpanded={expandAll}
@@ -458,10 +452,27 @@ export default function OrgChart() {
                   template={template}
                   searchTerm={searchTerm}
                 />
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ) : (
+              <div className="flex gap-12 items-start justify-center flex-wrap">
+                {roots.map(root => (
+                  <OrgTreeNode
+                    key={`${root.id}-${expandAll}`}
+                    employee={root}
+                    childrenMap={finalChildrenMap}
+                    onSelect={setSelectedEmployee}
+                    defaultExpanded={expandAll}
+                    depth={0}
+                    onDragStart={handleDragStart}
+                    onDrop={handleDrop}
+                    template={template}
+                    searchTerm={searchTerm}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {selectedEmployee && (
