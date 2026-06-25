@@ -32,6 +32,14 @@ const ANCIENNE_ENTITE_MAP = {
 
 const ANCIENNES_ENTITES = ['GONNIN', 'QUITTE', 'DURIS', 'DBS'];
 
+// Mapping ancienne entité → zone géographique
+const ENTITE_TO_ZONE = {
+  'GONNIN': 'Zone Ouest',
+  'QUITTE': 'Zone Ouest',
+  'DURIS': 'Zone Centre',
+  'DBS': 'Zone Centre',
+};
+
 function getAncienneEntite(agency) {
   if (!agency) return null;
   const city = agency.city || '';
@@ -295,7 +303,7 @@ export default function OrgChart() {
 
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Ancienne entité</label>
-                <Select value={selectedAncienneEntite} onValueChange={v => { setSelectedAncienneEntite(v); setSelectedZone('all'); setSelectedAgency('all'); }}>
+                <Select value={selectedAncienneEntite} onValueChange={v => { setSelectedAncienneEntite(v); setSelectedZone(v !== 'all' ? ENTITE_TO_ZONE[v] : 'all'); setSelectedAgency('all'); }}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Toutes les entités</SelectItem>
@@ -325,7 +333,11 @@ export default function OrgChart() {
                     <SelectContent>
                       <SelectItem value="all">Toutes les agences</SelectItem>
                       {agencies
-                        .filter(a => selectedZone === 'all' || a.zone === selectedZone)
+                        .filter(a => {
+                          if (selectedZone !== 'all') return a.zone === selectedZone;
+                          if (selectedAncienneEntite !== 'all') return a.zone === ENTITE_TO_ZONE[selectedAncienneEntite];
+                          return true;
+                        })
                         .map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
