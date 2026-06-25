@@ -148,24 +148,26 @@ export default function OrgChart() {
   // Build pool from zone/agency/ancienne entité filters
   // baseFiltered = only the directly matching employees (for service view)
   // pool = baseFiltered + ancestors (for tree view, so hierarchy connects)
+  // Support Groupe employees are always included (transversal to all agencies),
+  // EXCEPT when the filter is explicitly set to "Support Groupe" only.
   const { baseFiltered, pool } = (() => {
     let base;
     if (selectedZone === 'Support Groupe') {
       base = employees.filter(e => e.is_group_support);
     } else if (selectedAgency !== 'all') {
-      base = employees.filter(e => e.agency_id === selectedAgency);
+      base = employees.filter(e => e.agency_id === selectedAgency || e.is_group_support);
     } else if (selectedAncienneEntite !== 'all') {
       const entiteAgencyIds = new Set(
         agencies.filter(a => getAncienneEntite(a) === selectedAncienneEntite).map(a => a.id)
       );
       if (selectedAncienneEntite === 'DURIS') {
-        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.service === 'PY Pneus');
+        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.service === 'PY Pneus' || e.is_group_support);
       } else {
-        base = employees.filter(e => entiteAgencyIds.has(e.agency_id));
+        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.is_group_support);
       }
     } else if (selectedZone !== 'all') {
       const ids = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
-      base = employees.filter(e => ids.has(e.agency_id));
+      base = employees.filter(e => ids.has(e.agency_id) || e.is_group_support);
     } else {
       return { baseFiltered: employees, pool: employees };
     }
