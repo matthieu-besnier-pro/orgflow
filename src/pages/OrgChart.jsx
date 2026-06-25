@@ -117,36 +117,65 @@ export default function OrgChart() {
     return () => document.removeEventListener('mousedown', handler);
   }, [filtersOpen]);
 
+  // Helper: given a set of employee ids, add all ancestor ids (up the manager chain)
+  function addAncestors(ids, allEmps) {
+    const empById = {};
+    allEmps.forEach(e => { empById[e.id] = e; });
+    const result = new Set(ids);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      result.forEach(id => {
+        const e = empById[id];
+        if (e?.manager_id && !result.has(e.manager_id) && empById[e.manager_id]) {
+          result.add(e.manager_id);
+          changed = true;
+        }
+      });
+    }
+    return result;
+  }
+
   // Build pool from zone/agency/ancienne entité filters
-  const pool = (() => {
-    if (selectedZone === 'Support Groupe') return employees.filter(e => e.is_group_support);
-    if (selectedAgency !== 'all') return employees.filter(e => e.agency_id === selectedAgency);
-    if (selectedAncienneEntite !== 'all') {
+  // baseFiltered = only the directly matching employees (for service view)
+  // pool = baseFiltered + ancestors (for tree view, so hierarchy connects)
+  const { baseFiltered, pool } = (() => {
+    let base;
+    if (selectedZone === 'Support Groupe') {
+      base = employees.filter(e => e.is_group_support);
+    } else if (selectedAgency !== 'all') {
+      base = employees.filter(e => e.agency_id === selectedAgency);
+    } else if (selectedAncienneEntite !== 'all') {
       const entiteAgencyIds = new Set(
         agencies.filter(a => getAncienneEntite(a) === selectedAncienneEntite).map(a => a.id)
       );
-      // Also include PY Pneus service employees for DURIS
       if (selectedAncienneEntite === 'DURIS') {
-        return employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.service === 'PY Pneus');
+        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.service === 'PY Pneus');
+      } else {
+        base = employees.filter(e => entiteAgencyIds.has(e.agency_id));
       }
-      return employees.filter(e => entiteAgencyIds.has(e.agency_id));
-    }
-    if (selectedZone !== 'all') {
+    } else if (selectedZone !== 'all') {
       const ids = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
-      return employees.filter(e => ids.has(e.agency_id));
+      base = employees.filter(e => ids.has(e.agency_id));
+    } else {
+      return { baseFiltered: employees, pool: employees };
     }
-    return employees;
+    // Add ancestors so the tree is connected
+    const withAncestors = addAncestors(base.map(e => e.id), employees);
+    return { baseFiltered: base, pool: employees.filter(e => withAncestors.has(e.id)) };
   })();
 
   const baseChildrenMap = buildChildrenMap(pool);
 
   // Apply manager filter
   let filteredPool = pool;
+  let filteredBase = baseFiltered;
   if (selectedManagerId !== 'all') {
     const fullMap = buildChildrenMap(employees);
     const desc = getDescendantIds(selectedManagerId, fullMap);
     desc.add(selectedManagerId);
     filteredPool = pool.filter(e => desc.has(e.id));
+    filteredBase = baseFiltered.filter(e => desc.has(e.id));
   }
 
   const finalChildrenMap = buildChildrenMap(filteredPool);
@@ -423,7 +452,7 @@ export default function OrgChart() {
       <div className="flex-1 overflow-auto p-8">
         {template === 'services' ? (
           <OrgServiceView
-            employees={filteredPool}
+            employees={filteredBase}
             agencies={agencies}
             onSelect={setSelectedEmployee}
             searchTerm={searchTerm}
