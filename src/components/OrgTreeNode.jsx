@@ -15,12 +15,12 @@ function matchesSearch(employee, searchTerm) {
   return haystack.includes(searchTerm);
 }
 
-// Depth-based gradient colors — Charte GONNIN DURIS (bleu foncé / jaune)
+// Depth-based colors — Charte GONNIN DURIS (solides, design moderne)
 const DEPTH_COLORS = [
-  { bg: 'linear-gradient(135deg, #003D7A 0%, #004B9D 100%)', shadow: 'rgba(0, 61, 122, 0.35)', border: '#003D7A' },
-  { bg: 'linear-gradient(135deg, #005BAA 0%, #0070D0 100%)', shadow: 'rgba(0, 91, 170, 0.28)', border: '#005BAA' },
-  { bg: 'linear-gradient(135deg, #0081E8 0%, #FDB913 100%)', shadow: 'rgba(8, 129, 232, 0.22)', border: '#0081E8' },
-  { bg: 'linear-gradient(135deg, #FDB913 0%, #FFD700 100%)', shadow: 'rgba(253, 185, 19, 0.18)', border: '#FDB913' },
+  { bg: '#003D7A', shadow: 'rgba(0, 61, 122, 0.12)', border: '#003D7A' },
+  { bg: '#0056B3', shadow: 'rgba(0, 86, 179, 0.12)', border: '#0056B3' },
+  { bg: '#0070D0', shadow: 'rgba(0, 112, 208, 0.12)', border: '#0070D0' },
+  { bg: '#FDB913', shadow: 'rgba(253, 185, 19, 0.12)', border: '#FDB913' },
 ];
 
 function getDepthColor(depth) {
@@ -39,10 +39,10 @@ function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, on
         draggable
         onDragStart={(e) => onDragStart(e, employee)}
         onClick={() => onSelect(employee)}
-        style={{ background: bg, boxShadow: `0 4px 18px ${shadow}` }}
-        className={`relative rounded-2xl cursor-grab active:cursor-grabbing active:opacity-60 hover:-translate-y-0.5 transition-all duration-150 flex flex-col items-center pt-4 pb-3 px-3 w-28
+        style={{ backgroundColor: bg, boxShadow: `0 8px 24px ${shadow}` }}
+        className={`relative rounded-xl cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col items-center pt-5 pb-4 px-4 w-28
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
-          ${isHighlighted ? 'ring-2 ring-amber-300 ring-offset-1' : ''}
+          ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}
         `}
       >
         {/* Avatar */}
