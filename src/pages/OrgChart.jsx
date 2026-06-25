@@ -9,6 +9,40 @@ import { useToast } from '@/components/ui/use-toast';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
+// Anciennes entités : mapping ville → entité
+const ANCIENNE_ENTITE_MAP = {
+  'Sauze': 'GONNIN',
+  'Naintré': 'GONNIN',
+  'Chasseneuil': 'GONNIN',
+  'La Ferrière': 'GONNIN',
+  'Melle': 'QUITTE',
+  'Niort': 'QUITTE',
+  'Chatillon': 'QUITTE',
+  'Vasles': 'QUITTE',
+  'Luçay': 'DURIS',
+  'Saint Maur': 'DURIS',
+  'Issoudun': 'DURIS',
+  'Noyers': 'DURIS',
+  'PY Pneus': 'DURIS',
+  'Arnac': 'DBS',
+  'Rivarennes': 'DBS',
+  'Béthines': 'DBS',
+};
+
+const ANCIENNES_ENTITES = ['GONNIN', 'QUITTE', 'DURIS', 'DBS'];
+
+function getAncienneEntite(agency) {
+  if (!agency) return null;
+  const city = agency.city || '';
+  const name = agency.name || '';
+  for (const [key, entite] of Object.entries(ANCIENNE_ENTITE_MAP)) {
+    if (city.toLowerCase().includes(key.toLowerCase()) || name.toLowerCase().includes(key.toLowerCase())) {
+      return entite;
+    }
+  }
+  return null;
+}
+
 function buildChildrenMap(pool) {
   const poolIds = new Set(pool.map(e => e.id));
   const map = {};
@@ -50,6 +84,7 @@ export default function OrgChart() {
   const [search, setSearch] = useState('');
   const [selectedZone, setSelectedZone] = useState('all');
   const [selectedAgency, setSelectedAgency] = useState('all');
+  const [selectedAncienneEntite, setSelectedAncienneEntite] = useState('all');
   const [selectedManagerId, setSelectedManagerId] = useState('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [managerSearch, setManagerSearch] = useState('');
@@ -81,10 +116,20 @@ export default function OrgChart() {
     return () => document.removeEventListener('mousedown', handler);
   }, [filtersOpen]);
 
-  // Build pool from zone/agency filters
+  // Build pool from zone/agency/ancienne entité filters
   const pool = (() => {
     if (selectedZone === 'Support Groupe') return employees.filter(e => e.is_group_support);
     if (selectedAgency !== 'all') return employees.filter(e => e.agency_id === selectedAgency);
+    if (selectedAncienneEntite !== 'all') {
+      const entiteAgencyIds = new Set(
+        agencies.filter(a => getAncienneEntite(a) === selectedAncienneEntite).map(a => a.id)
+      );
+      // Also include PY Pneus service employees for DURIS
+      if (selectedAncienneEntite === 'DURIS') {
+        return employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.service === 'PY Pneus');
+      }
+      return employees.filter(e => entiteAgencyIds.has(e.agency_id));
+    }
     if (selectedZone !== 'all') {
       const ids = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
       return employees.filter(e => ids.has(e.agency_id));
@@ -111,7 +156,7 @@ export default function OrgChart() {
   const searchTerm = search.trim().toLowerCase();
 
   // Count active filters
-  const activeFilters = [selectedZone !== 'all', selectedAgency !== 'all', selectedManagerId !== 'all'].filter(Boolean).length;
+  const activeFilters = [selectedZone !== 'all', selectedAgency !== 'all', selectedAncienneEntite !== 'all', selectedManagerId !== 'all'].filter(Boolean).length;
 
   // Managers list for filter dropdown (people with at least one direct report in pool)
   const managersInPool = pool.filter(e => baseChildrenMap[e.id]?.length > 0);
@@ -155,6 +200,7 @@ export default function OrgChart() {
   const resetFilters = () => {
     setSelectedZone('all');
     setSelectedAgency('all');
+    setSelectedAncienneEntite('all');
     setSelectedManagerId('all');
     setSearch('');
   };
@@ -217,8 +263,19 @@ export default function OrgChart() {
               </div>
 
               <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Ancienne entité</label>
+                <Select value={selectedAncienneEntite} onValueChange={v => { setSelectedAncienneEntite(v); setSelectedZone('all'); setSelectedAgency('all'); }}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les entités</SelectItem>
+                    {ANCIENNES_ENTITES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Zone géographique</label>
-                <Select value={selectedZone} onValueChange={v => { setSelectedZone(v); setSelectedAgency('all'); }}>
+                <Select value={selectedZone} onValueChange={v => { setSelectedZone(v); setSelectedAgency('all'); setSelectedAncienneEntite('all'); }}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Toutes les zones</SelectItem>
@@ -294,6 +351,12 @@ export default function OrgChart() {
         </div>
 
         {/* Active filter chips */}
+        {selectedAncienneEntite !== 'all' && (
+          <span className="hidden md:flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
+            Entité {selectedAncienneEntite}
+            <X className="w-3 h-3 cursor-pointer hover:text-primary/70" onClick={() => setSelectedAncienneEntite('all')} />
+          </span>
+        )}
         {selectedZone !== 'all' && (
           <span className="hidden md:flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
             {selectedZone}
