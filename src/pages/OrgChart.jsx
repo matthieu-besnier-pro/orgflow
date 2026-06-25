@@ -124,9 +124,11 @@ export default function OrgChart() {
     });
   }, []);
 
-  // Close filter panel on outside click
+  // Close filter panel on outside click — ignore clicks inside Radix portals
   useEffect(() => {
     const handler = (e) => {
+      // Radix Select portals render outside DOM tree but have data-radix-* attributes
+      if (e.target.closest('[data-radix-popper-content-wrapper]')) return;
       if (filterPanelRef.current && !filterPanelRef.current.contains(e.target)) {
         setFiltersOpen(false);
       }
