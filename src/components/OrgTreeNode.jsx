@@ -16,7 +16,7 @@ const STATUS_BADGE = {
   'Départ': 'bg-red-100 text-red-700',
 };
 
-function EmployeeCard({ employee, onSelect, hasChildren, expanded, onToggle }) {
+function EmployeeCard({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const borderColor = STATUS_COLORS[employee.status] || 'border-gray-200';
   const badge = STATUS_BADGE[employee.status];
@@ -24,21 +24,25 @@ function EmployeeCard({ employee, onSelect, hasChildren, expanded, onToggle }) {
   return (
     <div className="flex flex-col items-center">
       <div
+        draggable
+        onDragStart={(e) => onDragStart(e, employee)}
         onClick={() => onSelect(employee)}
-        className={`bg-white rounded-xl border-2 ${borderColor} shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-pointer p-2 flex flex-col items-center text-center w-28`}
+        className={`bg-white rounded-xl border-2 ${borderColor} shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-grab active:cursor-grabbing active:opacity-60 active:scale-95 p-2 flex flex-col items-center text-center w-28
+          ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-105' : ''}
+        `}
       >
         {employee.photo_url ? (
-          <img src={employee.photo_url} alt={initials} className="w-12 h-12 rounded-full object-cover mb-1.5" />
+          <img src={employee.photo_url} alt={initials} className="w-12 h-12 rounded-full object-cover mb-1.5 pointer-events-none" />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-lavender flex items-center justify-center mb-1.5">
+          <div className="w-12 h-12 rounded-full bg-lavender flex items-center justify-center mb-1.5 pointer-events-none">
             <span className="text-sm font-bold text-primary">{initials}</span>
           </div>
         )}
-        <p className="text-xs font-semibold text-foreground leading-tight">{employee.first_name}</p>
-        <p className="text-xs font-semibold text-foreground leading-tight">{employee.last_name}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-tight text-center" style={{ fontSize: '9px' }}>{employee.position}</p>
+        <p className="text-xs font-semibold text-foreground leading-tight pointer-events-none">{employee.first_name}</p>
+        <p className="text-xs font-semibold text-foreground leading-tight pointer-events-none">{employee.last_name}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-tight text-center pointer-events-none" style={{ fontSize: '9px' }}>{employee.position}</p>
         {badge && (
-          <span className={`mt-1 px-1.5 py-0.5 rounded-full font-medium ${badge}`} style={{ fontSize: '8px' }}>{employee.status}</span>
+          <span className={`mt-1 px-1.5 py-0.5 rounded-full font-medium pointer-events-none ${badge}`} style={{ fontSize: '8px' }}>{employee.status}</span>
         )}
       </div>
       {hasChildren && (
@@ -53,25 +57,50 @@ function EmployeeCard({ employee, onSelect, hasChildren, expanded, onToggle }) {
   );
 }
 
-export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultExpanded = false, depth = 0 }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultExpanded = false, depth = 0, onDragStart, onDrop }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
+  const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    onDrop(e, employee);
+  };
 
   return (
     <div className="flex flex-col items-center">
-      <EmployeeCard
-        employee={employee}
-        onSelect={onSelect}
-        hasChildren={children.length > 0}
-        expanded={expanded}
-        onToggle={() => setExpanded(v => !v)}
-      />
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <EmployeeCard
+          employee={employee}
+          onSelect={onSelect}
+          hasChildren={children.length > 0}
+          expanded={expanded}
+          onToggle={() => setExpanded(v => !v)}
+          onDragStart={onDragStart}
+          isDragOver={isDragOver}
+        />
+      </div>
 
       {expanded && children.length > 0 && (
         <div className="flex flex-col items-center mt-1">
-          {/* vertical line down */}
           <div className="w-px h-5 bg-border" />
-          {/* horizontal bar */}
           <div className="relative flex items-start gap-6">
             {children.length > 1 && (
               <div
@@ -79,15 +108,16 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
                 style={{ left: '14px', right: '14px' }}
               />
             )}
-            {children.map((child, idx) => (
+            {children.map((child) => (
               <div key={child.id} className="flex flex-col items-center">
-                {/* vertical stub */}
                 <div className="w-px h-5 bg-border" />
                 <OrgTreeNode
                   employee={child}
                   childrenMap={childrenMap}
                   onSelect={onSelect}
                   depth={depth + 1}
+                  onDragStart={onDragStart}
+                  onDrop={onDrop}
                 />
               </div>
             ))}

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { ZoomIn, ZoomOut, RefreshCw, Expand, Shrink } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function OrgChart() {
   const [employees, setEmployees] = useState([]);
@@ -14,6 +15,8 @@ export default function OrgChart() {
   const [zoom, setZoom] = useState(0.85);
   const [loading, setLoading] = useState(true);
   const [expandAll, setExpandAll] = useState(false);
+  const draggedId = useRef(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     Promise.all([
@@ -70,6 +73,37 @@ export default function OrgChart() {
   };
 
   const roots = getRoots();
+
+  const handleDragStart = (e, employee) => {
+    draggedId.current = employee.id;
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDrop = async (e, targetEmployee) => {
+    const sourceId = draggedId.current;
+    draggedId.current = null;
+    if (!sourceId || sourceId === targetEmployee.id) return;
+
+    // Prevent dropping onto own descendant
+    const isDescendant = (parentId, checkId) => {
+      const children = (childrenMap[parentId] || []).map(c => c.id);
+      if (children.includes(checkId)) return true;
+      return children.some(cid => isDescendant(cid, checkId));
+    };
+    if (isDescendant(sourceId, targetEmployee.id)) {
+      toast({ title: 'Impossible', description: 'Vous ne pouvez pas déplacer un collaborateur vers l\'un de ses subordonnés.', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const updated = await base44.entities.Employee.update(sourceId, { manager_id: targetEmployee.id });
+      setEmployees(prev => prev.map(e => e.id === sourceId ? { ...e, manager_id: targetEmployee.id } : e));
+      const source = employees.find(e => e.id === sourceId);
+      toast({ title: 'Hiérarchie mise à jour', description: `${source?.first_name} ${source?.last_name} rattaché(e) à ${targetEmployee.first_name} ${targetEmployee.last_name}` });
+    } catch {
+      toast({ title: 'Erreur', description: 'Impossible de mettre à jour la hiérarchie.', variant: 'destructive' });
+    }
+  };
 
   const handleSave = (updated) => {
     setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
@@ -150,6 +184,8 @@ export default function OrgChart() {
                 onSelect={setSelectedEmployee}
                 defaultExpanded={expandAll}
                 depth={0}
+                onDragStart={handleDragStart}
+                onDrop={handleDrop}
               />
             </div>
           ) : (
@@ -162,6 +198,8 @@ export default function OrgChart() {
                   onSelect={setSelectedEmployee}
                   defaultExpanded={expandAll}
                   depth={0}
+                  onDragStart={handleDragStart}
+                  onDrop={handleDrop}
                 />
               ))}
             </div>
