@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Mail, Phone, Building2, User, Camera, Save, Trash2, ArrowLeftRight } from 'lucide-react';
+import { X, Mail, Phone, Building2, User, Camera, Save, Trash2, Search } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,18 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
     onClose();
   };
 
-  const managers = allEmployees.filter(e => e.id !== employee.id);
+  const [managerSearch, setManagerSearch] = useState('');
+  const [managerDropdownOpen, setManagerDropdownOpen] = useState(false);
+
+  const managers = allEmployees
+    .filter(e => e.id !== employee.id)
+    .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr'));
+
+  const filteredManagers = managers.filter(m =>
+    `${m.first_name} ${m.last_name}`.toLowerCase().includes(managerSearch.toLowerCase())
+  );
+
+  const currentManager = managers.find(m => m.id === form.manager_id);
 
   return (
     <div className="fixed inset-0 z-50 flex" onClick={onClose}>
@@ -128,15 +139,51 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="relative">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Manager direct</label>
-                <Select value={form.manager_id || ''} onValueChange={v => set('manager_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={null}>Aucun</SelectItem>
-                    {managers.map(m => <SelectItem key={m.id} value={m.id}>{m.first_name} {m.last_name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div
+                  className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm cursor-pointer hover:bg-secondary/50 transition-colors"
+                  onClick={() => { setManagerDropdownOpen(v => !v); setManagerSearch(''); }}
+                >
+                  <span className={currentManager ? 'text-foreground' : 'text-muted-foreground'}>
+                    {currentManager ? `${currentManager.first_name} ${currentManager.last_name}` : 'Aucun'}
+                  </span>
+                  <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+                {managerDropdownOpen && (
+                  <div className="absolute z-50 mt-1 w-full bg-white border border-border rounded-lg shadow-lg overflow-hidden">
+                    <div className="p-2 border-b border-border">
+                      <Input
+                        autoFocus
+                        placeholder="Rechercher..."
+                        value={managerSearch}
+                        onChange={e => setManagerSearch(e.target.value)}
+                        className="h-8 text-sm"
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      <div
+                        className="px-3 py-2 text-sm text-muted-foreground hover:bg-secondary cursor-pointer"
+                        onClick={() => { set('manager_id', null); setManagerDropdownOpen(false); }}
+                      >
+                        Aucun
+                      </div>
+                      {filteredManagers.map(m => (
+                        <div
+                          key={m.id}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-secondary ${form.manager_id === m.id ? 'bg-lavender font-medium' : ''}`}
+                          onClick={() => { set('manager_id', m.id); setManagerDropdownOpen(false); setManagerSearch(''); }}
+                        >
+                          {m.last_name} {m.first_name}
+                        </div>
+                      ))}
+                      {filteredManagers.length === 0 && (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">Aucun résultat</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Statut</label>
