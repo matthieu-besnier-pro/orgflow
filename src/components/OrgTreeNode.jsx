@@ -24,8 +24,14 @@ const STATUS_BADGE = {
   'Départ': 'bg-red-100 text-red-700',
 };
 
+function matchesSearch(employee, searchTerm) {
+  if (!searchTerm) return false;
+  const haystack = `${employee.first_name} ${employee.last_name} ${employee.position || ''} ${employee.service || ''}`.toLowerCase();
+  return haystack.includes(searchTerm);
+}
+
 // ── Template: Classique ────────────────────────────────────────────────────
-function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver }) {
+function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const borderColor = STATUS_COLORS[employee.status] || 'border-gray-200';
   const badge = STATUS_BADGE[employee.status];
@@ -38,6 +44,7 @@ function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, on
         onClick={() => onSelect(employee)}
         className={`bg-white rounded-xl border-2 ${borderColor} shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-grab active:cursor-grabbing active:opacity-60 active:scale-95 p-2 flex flex-col items-center text-center w-28
           ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-105' : ''}
+          ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1 bg-amber-50' : ''}
         `}
       >
         {employee.photo_url ? (
@@ -67,7 +74,7 @@ function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, on
 }
 
 // ── Template: Moderne ──────────────────────────────────────────────────────
-function CardModerne({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver }) {
+function CardModerne({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const dot = STATUS_DOT[employee.status] || 'bg-gray-300';
 
@@ -79,6 +86,7 @@ function CardModerne({ employee, onSelect, hasChildren, expanded, onToggle, onDr
         onClick={() => onSelect(employee)}
         className={`relative bg-gradient-to-br from-white to-secondary/40 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-grab active:cursor-grabbing active:opacity-60 p-3 flex flex-col items-center text-center w-32 border border-border/60
           ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-105' : ''}
+          ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1 bg-amber-50' : ''}
         `}
       >
         <div className="relative mb-2 pointer-events-none">
@@ -110,7 +118,7 @@ function CardModerne({ employee, onSelect, hasChildren, expanded, onToggle, onDr
 }
 
 // ── Template: Compact ──────────────────────────────────────────────────────
-function CardCompact({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver }) {
+function CardCompact({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const dot = STATUS_DOT[employee.status] || 'bg-gray-300';
 
@@ -122,6 +130,7 @@ function CardCompact({ employee, onSelect, hasChildren, expanded, onToggle, onDr
         onClick={() => onSelect(employee)}
         className={`bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-grab active:cursor-grabbing active:opacity-60 px-3 py-2 flex items-center gap-2 w-52 border border-border
           ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-105' : ''}
+          ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1 bg-amber-50' : ''}
         `}
       >
         <div className="relative flex-shrink-0 pointer-events-none">
@@ -158,10 +167,11 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique' }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '' }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
+  const isHighlighted = matchesSearch(employee, searchTerm);
 
   const CardComponent = CARD_COMPONENTS[template] || CardClassique;
 
@@ -169,11 +179,13 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
   const handleDragLeave = (e) => { e.stopPropagation(); setIsDragOver(false); };
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); onDrop(e, employee); };
 
-  // Compact uses a vertical list layout for children
   const isCompact = template === 'compact';
 
+  // Dim nodes that don't match search (when search is active)
+  const isDimmed = searchTerm && !isHighlighted;
+
   return (
-    <div className={`flex flex-col ${isCompact ? 'items-start' : 'items-center'}`}>
+    <div className={`flex flex-col ${isCompact ? 'items-start' : 'items-center'} transition-opacity duration-150 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
       <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         <CardComponent
           employee={employee}
@@ -183,6 +195,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
           onToggle={() => setExpanded(v => !v)}
           onDragStart={onDragStart}
           isDragOver={isDragOver}
+          isHighlighted={isHighlighted}
         />
       </div>
 
@@ -201,6 +214,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
                   onDragStart={onDragStart}
                   onDrop={onDrop}
                   template={template}
+                  searchTerm={searchTerm}
                 />
               ))}
             </div>
@@ -223,6 +237,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
                     onDragStart={onDragStart}
                     onDrop={onDrop}
                     template={template}
+                    searchTerm={searchTerm}
                   />
                 </div>
               ))}

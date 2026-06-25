@@ -1,26 +1,62 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RefreshCw, Expand, Shrink, Search, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import OrgTreeNode from '@/components/OrgTreeNode';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+
+const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
+
+function buildChildrenMap(pool) {
+  const poolIds = new Set(pool.map(e => e.id));
+  const map = {};
+  pool.forEach(e => {
+    if (e.manager_id && poolIds.has(e.manager_id)) {
+      if (!map[e.manager_id]) map[e.manager_id] = [];
+      map[e.manager_id].push(e);
+    }
+  });
+  Object.keys(map).forEach(k => {
+    map[k].sort((a, b) => {
+      const ia = positionOrder.findIndex(p => a.position?.includes(p));
+      const ib = positionOrder.findIndex(p => b.position?.includes(p));
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+  });
+  return map;
+}
+
+function getDescendantIds(managerId, childrenMap) {
+  const result = new Set();
+  const traverse = (id) => {
+    (childrenMap[id] || []).forEach(child => { result.add(child.id); traverse(child.id); });
+  };
+  traverse(managerId);
+  return result;
+}
 
 export default function OrgChart() {
   const [employees, setEmployees] = useState([]);
   const [agencies, setAgencies] = useState([]);
-  const [selectedZone, setSelectedZone] = useState('all');
-  const [selectedAgency, setSelectedAgency] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [zoom, setZoom] = useState(0.85);
   const [loading, setLoading] = useState(true);
   const [expandAll, setExpandAll] = useState(false);
   const [template, setTemplate] = useState('classique');
+
+  // Filters
+  const [search, setSearch] = useState('');
+  const [selectedZone, setSelectedZone] = useState('all');
+  const [selectedAgency, setSelectedAgency] = useState('all');
   const [selectedManagerId, setSelectedManagerId] = useState('all');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [managerSearch, setManagerSearch] = useState('');
-  const [managerDropdownOpen, setManagerDropdownOpen] = useState(false);
+  const [managerDropOpen, setManagerDropOpen] = useState(false);
+
   const draggedId = useRef(null);
+  const filterPanelRef = useRef(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -34,91 +70,51 @@ export default function OrgChart() {
     });
   }, []);
 
-  // Compute filtered pool based on zone/agency selection
-  const getPool = () => {
+  // Close filter panel on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target)) {
+        setFiltersOpen(false);
+      }
+    };
+    if (filtersOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [filtersOpen]);
+
+  // Build pool from zone/agency filters
+  const pool = (() => {
     if (selectedZone === 'Support Groupe') return employees.filter(e => e.is_group_support);
     if (selectedAgency !== 'all') return employees.filter(e => e.agency_id === selectedAgency);
     if (selectedZone !== 'all') {
-      const zoneAgencyIds = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
-      return employees.filter(e => zoneAgencyIds.has(e.agency_id));
+      const ids = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
+      return employees.filter(e => ids.has(e.agency_id));
     }
     return employees;
-  };
+  })();
 
-  const pool = getPool();
-  const poolIds = new Set(pool.map(e => e.id));
+  const baseChildrenMap = buildChildrenMap(pool);
 
-  // Build children map only from pool
-  const childrenMap = {};
-  pool.forEach(e => {
-    if (e.manager_id && poolIds.has(e.manager_id)) {
-      if (!childrenMap[e.manager_id]) childrenMap[e.manager_id] = [];
-      childrenMap[e.manager_id].push(e);
-    }
-  });
-
-  // Sort children by position importance
-  const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
-  Object.keys(childrenMap).forEach(k => {
-    childrenMap[k].sort((a, b) => {
-      const ia = positionOrder.findIndex(p => a.position?.includes(p));
-      const ib = positionOrder.findIndex(p => b.position?.includes(p));
-      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-    });
-  });
-
-  // Get all descendant IDs of a given employee (recursively)
-  const getDescendantIds = (managerId, allChildrenMap) => {
-    const result = new Set();
-    const traverse = (id) => {
-      (allChildrenMap[id] || []).forEach(child => {
-        result.add(child.id);
-        traverse(child.id);
-      });
-    };
-    traverse(managerId);
-    return result;
-  };
-
-  // Apply manager filter on top of pool
-  let finalPool = pool;
+  // Apply manager filter
+  let filteredPool = pool;
   if (selectedManagerId !== 'all') {
-    const manager = employees.find(e => e.id === selectedManagerId);
-    if (manager) {
-      // Build full childrenMap from all employees for traversal
-      const fullChildrenMap = {};
-      employees.forEach(e => {
-        if (e.manager_id) {
-          if (!fullChildrenMap[e.manager_id]) fullChildrenMap[e.manager_id] = [];
-          fullChildrenMap[e.manager_id].push(e);
-        }
-      });
-      const descendantIds = getDescendantIds(selectedManagerId, fullChildrenMap);
-      descendantIds.add(selectedManagerId);
-      finalPool = pool.filter(e => descendantIds.has(e.id));
-    }
+    const fullMap = buildChildrenMap(employees);
+    const desc = getDescendantIds(selectedManagerId, fullMap);
+    desc.add(selectedManagerId);
+    filteredPool = pool.filter(e => desc.has(e.id));
   }
 
-  const finalPoolIds = new Set(finalPool.map(e => e.id));
+  const finalChildrenMap = buildChildrenMap(filteredPool);
+  const finalPoolIds = new Set(filteredPool.map(e => e.id));
+  const roots = filteredPool.filter(e => !e.manager_id || !finalPoolIds.has(e.manager_id));
 
-  // Rebuild childrenMap for finalPool
-  const finalChildrenMap = {};
-  finalPool.forEach(e => {
-    if (e.manager_id && finalPoolIds.has(e.manager_id)) {
-      if (!finalChildrenMap[e.manager_id]) finalChildrenMap[e.manager_id] = [];
-      finalChildrenMap[e.manager_id].push(e);
-    }
-  });
-  Object.keys(finalChildrenMap).forEach(k => {
-    finalChildrenMap[k].sort((a, b) => {
-      const ia = positionOrder.findIndex(p => a.position?.includes(p));
-      const ib = positionOrder.findIndex(p => b.position?.includes(p));
-      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-    });
-  });
+  // Search: highlight matching nodes (passed as prop)
+  const searchTerm = search.trim().toLowerCase();
 
-  // Roots = employees in finalPool whose manager is not in finalPool (or has no manager)
-  const roots = finalPool.filter(e => !e.manager_id || !finalPoolIds.has(e.manager_id));
+  // Count active filters
+  const activeFilters = [selectedZone !== 'all', selectedAgency !== 'all', selectedManagerId !== 'all'].filter(Boolean).length;
+
+  // Managers list for filter dropdown (people with at least one direct report in pool)
+  const managersInPool = pool.filter(e => baseChildrenMap[e.id]?.length > 0);
 
   const handleDragStart = (e, employee) => {
     draggedId.current = employee.id;
@@ -129,23 +125,19 @@ export default function OrgChart() {
     const sourceId = draggedId.current;
     draggedId.current = null;
     if (!sourceId || sourceId === targetEmployee.id) return;
-
-    // Prevent dropping onto own descendant
     const isDescendant = (parentId, checkId) => {
       const children = (finalChildrenMap[parentId] || []).map(c => c.id);
       if (children.includes(checkId)) return true;
       return children.some(cid => isDescendant(cid, checkId));
     };
     if (isDescendant(sourceId, targetEmployee.id)) {
-      toast({ title: 'Impossible', description: 'Vous ne pouvez pas déplacer un collaborateur vers l\'un de ses subordonnés.', variant: 'destructive' });
+      toast({ title: 'Impossible', description: "Vous ne pouvez pas déplacer un collaborateur vers l'un de ses subordonnés.", variant: 'destructive' });
       return;
     }
-
     try {
-      const updated = await base44.entities.Employee.update(sourceId, { manager_id: targetEmployee.id });
+      await base44.entities.Employee.update(sourceId, { manager_id: targetEmployee.id });
       setEmployees(prev => prev.map(e => e.id === sourceId ? { ...e, manager_id: targetEmployee.id } : e));
-      const source = employees.find(e => e.id === sourceId);
-      // pas de toast pour éviter l'accumulation
+      toast({ title: 'Hiérarchie mise à jour', description: `Rattaché à ${targetEmployee.first_name} ${targetEmployee.last_name}` });
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de mettre à jour la hiérarchie.', variant: 'destructive' });
     }
@@ -160,136 +152,219 @@ export default function OrgChart() {
     setSelectedEmployee(null);
   };
 
+  const resetFilters = () => {
+    setSelectedZone('all');
+    setSelectedAgency('all');
+    setSelectedManagerId('all');
+    setSearch('');
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-full">
       <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
     </div>
   );
 
+  const selectedManagerName = selectedManagerId !== 'all'
+    ? (() => { const m = employees.find(e => e.id === selectedManagerId); return m ? `${m.first_name} ${m.last_name}` : null; })()
+    : null;
+
   return (
     <div className="flex flex-col h-full bg-canvas">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-4 bg-white border-b border-border flex-wrap">
-        <h1 className="font-heading font-semibold text-foreground text-lg flex-1 min-w-0">Organigramme</h1>
+      {/* ── Toolbar ── */}
+      <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-border">
 
-        <Select value={selectedZone} onValueChange={v => { setSelectedZone(v); setSelectedAgency('all'); }}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Zone" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les zones</SelectItem>
-            <SelectItem value="Zone Centre">Zone Centre</SelectItem>
-            <SelectItem value="Zone Ouest">Zone Ouest</SelectItem>
-            <SelectItem value="Support Groupe">Support Groupe</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Title */}
+        <h1 className="font-heading font-semibold text-foreground text-base hidden sm:block mr-2">Organigramme</h1>
 
-        {selectedZone !== 'Support Groupe' && (
-          <Select value={selectedAgency} onValueChange={setSelectedAgency}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Agence" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les agences</SelectItem>
-              {agencies
-                .filter(a => selectedZone === 'all' || a.zone === selectedZone)
-                .map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
+        {/* Search bar */}
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            className="pl-8 h-8 text-sm"
+            placeholder="Rechercher un collaborateur..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => setSearch('')}>
+              <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
 
-        {/* Manager filter */}
-        <div className="relative">
-          <div
-            className="flex h-9 w-52 items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm cursor-pointer hover:bg-secondary/50 transition-colors"
-            onClick={() => { setManagerDropdownOpen(v => !v); setManagerSearch(''); }}
+        {/* Filters button */}
+        <div className="relative" ref={filterPanelRef}>
+          <button
+            onClick={() => setFiltersOpen(v => !v)}
+            className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm font-medium border transition-colors ${filtersOpen || activeFilters > 0 ? 'bg-primary text-white border-primary' : 'bg-white text-muted-foreground border-border hover:bg-secondary'}`}
           >
-            <span className={selectedManagerId !== 'all' ? 'text-foreground' : 'text-muted-foreground'}>
-              {selectedManagerId !== 'all'
-                ? (() => { const m = employees.find(e => e.id === selectedManagerId); return m ? `${m.first_name} ${m.last_name}` : 'Manager'; })()
-                : 'Filtrer par manager'}
-            </span>
-            <div className="flex items-center gap-1">
-              {selectedManagerId !== 'all' && (
-                <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" onClick={e => { e.stopPropagation(); setSelectedManagerId('all'); }} />
-              )}
-              <Search className="w-3.5 h-3.5 text-muted-foreground" />
-            </div>
-          </div>
-          {managerDropdownOpen && (
-            <div className="absolute z-50 mt-1 w-52 bg-white border border-border rounded-lg shadow-lg overflow-hidden">
-              <div className="p-2 border-b border-border">
-                <Input
-                  autoFocus
-                  placeholder="Rechercher..."
-                  value={managerSearch}
-                  onChange={e => setManagerSearch(e.target.value)}
-                  className="h-8 text-sm"
-                  onClick={e => e.stopPropagation()}
-                />
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Filtres</span>
+            {activeFilters > 0 && (
+              <span className="w-4 h-4 rounded-full bg-white text-primary text-xs font-bold flex items-center justify-center">{activeFilters}</span>
+            )}
+          </button>
+
+          {/* Filter panel dropdown */}
+          {filtersOpen && (
+            <div className="absolute left-0 top-full mt-2 w-72 bg-white border border-border rounded-xl shadow-xl z-50 p-4 space-y-3">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm font-semibold text-foreground">Filtres</p>
+                {activeFilters > 0 && (
+                  <button onClick={resetFilters} className="text-xs text-primary hover:underline">Réinitialiser</button>
+                )}
               </div>
-              <div className="max-h-48 overflow-y-auto">
-                <div
-                  className="px-3 py-2 text-sm text-muted-foreground hover:bg-secondary cursor-pointer"
-                  onClick={() => { setSelectedManagerId('all'); setManagerDropdownOpen(false); }}
-                >
-                  Tous les managers
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Zone géographique</label>
+                <Select value={selectedZone} onValueChange={v => { setSelectedZone(v); setSelectedAgency('all'); }}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les zones</SelectItem>
+                    <SelectItem value="Zone Centre">Zone Centre</SelectItem>
+                    <SelectItem value="Zone Ouest">Zone Ouest</SelectItem>
+                    <SelectItem value="Support Groupe">Support Groupe</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedZone !== 'Support Groupe' && (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Agence</label>
+                  <Select value={selectedAgency} onValueChange={setSelectedAgency}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les agences</SelectItem>
+                      {agencies
+                        .filter(a => selectedZone === 'all' || a.zone === selectedZone)
+                        .map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
-                {pool
-                  .filter(e => Object.keys(finalChildrenMap).includes(e.id) || childrenMap[e.id]?.length > 0)
-                  .filter(e => `${e.first_name} ${e.last_name}`.toLowerCase().includes(managerSearch.toLowerCase()))
-                  .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr'))
-                  .map(m => (
-                    <div
-                      key={m.id}
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-secondary ${selectedManagerId === m.id ? 'bg-lavender font-medium' : ''}`}
-                      onClick={() => { setSelectedManagerId(m.id); setManagerDropdownOpen(false); setManagerSearch(''); }}
-                    >
-                      {m.last_name} {m.first_name}
-                      <span className="text-xs text-muted-foreground ml-1">— {m.position}</span>
+              )}
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Vue centrée sur un manager</label>
+                <div className="relative">
+                  <div
+                    className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm cursor-pointer hover:bg-secondary/50 transition-colors"
+                    onClick={() => { setManagerDropOpen(v => !v); setManagerSearch(''); }}
+                  >
+                    <span className={selectedManagerId !== 'all' ? 'text-foreground truncate' : 'text-muted-foreground'}>
+                      {selectedManagerName || 'Choisir un manager'}
+                    </span>
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                      {selectedManagerId !== 'all' && (
+                        <X className="w-3 h-3 text-muted-foreground hover:text-foreground" onClick={e => { e.stopPropagation(); setSelectedManagerId('all'); }} />
+                      )}
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
-                  ))}
+                  </div>
+                  {managerDropOpen && (
+                    <div className="absolute z-50 mt-1 w-full bg-white border border-border rounded-lg shadow-lg overflow-hidden">
+                      <div className="p-2 border-b border-border">
+                        <Input autoFocus placeholder="Rechercher..." value={managerSearch}
+                          onChange={e => setManagerSearch(e.target.value)}
+                          className="h-7 text-xs" onClick={e => e.stopPropagation()} />
+                      </div>
+                      <div className="max-h-40 overflow-y-auto">
+                        <div className="px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary cursor-pointer"
+                          onClick={() => { setSelectedManagerId('all'); setManagerDropOpen(false); }}>
+                          Tous les managers
+                        </div>
+                        {managersInPool
+                          .filter(e => `${e.first_name} ${e.last_name}`.toLowerCase().includes(managerSearch.toLowerCase()))
+                          .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr'))
+                          .map(m => (
+                            <div key={m.id}
+                              className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-secondary ${selectedManagerId === m.id ? 'bg-lavender font-medium' : ''}`}
+                              onClick={() => { setSelectedManagerId(m.id); setManagerDropOpen(false); setManagerSearch(''); }}>
+                              {m.last_name} {m.first_name}
+                              <span className="text-muted-foreground ml-1">— {m.position}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Template selector */}
-        <div className="flex items-center gap-1 bg-secondary rounded-xl p-1">
-          {[{ key: 'classique', label: 'Classique' }, { key: 'moderne', label: 'Moderne' }, { key: 'compact', label: 'Compact' }].map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTemplate(t.key)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${template === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {t.label}
+        {/* Active filter chips */}
+        {selectedZone !== 'all' && (
+          <span className="hidden md:flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
+            {selectedZone}
+            <X className="w-3 h-3 cursor-pointer hover:text-primary/70" onClick={() => { setSelectedZone('all'); setSelectedAgency('all'); }} />
+          </span>
+        )}
+        {selectedAgency !== 'all' && (
+          <span className="hidden md:flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
+            {agencies.find(a => a.id === selectedAgency)?.name}
+            <X className="w-3 h-3 cursor-pointer hover:text-primary/70" onClick={() => setSelectedAgency('all')} />
+          </span>
+        )}
+        {selectedManagerId !== 'all' && selectedManagerName && (
+          <span className="hidden md:flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
+            <Users className="w-3 h-3" />
+            {selectedManagerName}
+            <X className="w-3 h-3 cursor-pointer hover:text-primary/70" onClick={() => setSelectedManagerId('all')} />
+          </span>
+        )}
+
+        <div className="flex-1" />
+
+        {/* Template toggle */}
+        <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+          {[
+            { key: 'classique', icon: <LayoutGrid className="w-3.5 h-3.5" />, label: 'Classique' },
+            { key: 'moderne', icon: <Rows3 className="w-3.5 h-3.5" />, label: 'Moderne' },
+            { key: 'compact', icon: <LayoutList className="w-3.5 h-3.5" />, label: 'Compact' },
+          ].map(t => (
+            <button key={t.key} onClick={() => setTemplate(t.key)} title={t.label}
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${template === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+              {t.icon}
             </button>
           ))}
         </div>
 
-        <button
-          onClick={() => setExpandAll(v => !v)}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl bg-secondary hover:bg-accent transition-colors"
-        >
-          {expandAll ? <Shrink className="w-3.5 h-3.5" /> : <Expand className="w-3.5 h-3.5" />}
-          {expandAll ? 'Réduire' : 'Tout déplier'}
+        {/* Expand/collapse */}
+        <button onClick={() => setExpandAll(v => !v)} title={expandAll ? 'Tout réduire' : 'Tout déplier'}
+          className="w-8 h-8 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+          {expandAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
 
-        <div className="flex items-center gap-1 bg-secondary rounded-xl p-1">
-          <button onClick={() => setZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))} className="w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center transition-colors">
-            <ZoomOut className="w-4 h-4" />
+        {/* Zoom controls */}
+        <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+          <button onClick={() => setZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))}
+            className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+            <ZoomOut className="w-3.5 h-3.5" />
           </button>
-          <span className="text-xs font-medium px-2 text-muted-foreground">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(z => Math.min(1.5, +(z + 0.1).toFixed(1)))} className="w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center transition-colors">
-            <ZoomIn className="w-4 h-4" />
+          <span className="text-xs font-medium px-1 text-muted-foreground w-9 text-center">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => setZoom(z => Math.min(1.5, +(z + 0.1).toFixed(1)))}
+            className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+            <ZoomIn className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setZoom(0.85)} className="w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center transition-colors">
-            <RefreshCw className="w-3.5 h-3.5" />
+          <button onClick={() => setZoom(0.85)} title="Réinitialiser le zoom"
+            className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+            <RotateCcw className="w-3 h-3" />
           </button>
         </div>
       </div>
 
-      {/* Canvas */}
+      {/* ── Canvas ── */}
       <div className="flex-1 overflow-auto p-8">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
           {roots.length === 0 ? (
-            <div className="text-center text-muted-foreground py-20">Aucun collaborateur trouvé</div>
+            <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+              <Search className="w-10 h-10 text-muted-foreground/40" />
+              <p className="text-muted-foreground font-medium">Aucun collaborateur trouvé</p>
+              {(activeFilters > 0 || search) && (
+                <button onClick={resetFilters} className="text-sm text-primary hover:underline">Réinitialiser les filtres</button>
+              )}
+            </div>
           ) : roots.length === 1 ? (
             <div className="flex justify-center">
               <OrgTreeNode
@@ -302,6 +377,7 @@ export default function OrgChart() {
                 onDragStart={handleDragStart}
                 onDrop={handleDrop}
                 template={template}
+                searchTerm={searchTerm}
               />
             </div>
           ) : (
@@ -317,6 +393,7 @@ export default function OrgChart() {
                   onDragStart={handleDragStart}
                   onDrop={handleDrop}
                   template={template}
+                  searchTerm={searchTerm}
                 />
               ))}
             </div>
