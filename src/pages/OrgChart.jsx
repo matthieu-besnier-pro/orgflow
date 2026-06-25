@@ -72,6 +72,24 @@ function getDescendantIds(managerId, childrenMap) {
   return result;
 }
 
+function addAncestors(ids, allEmps) {
+  const empById = {};
+  allEmps.forEach(e => { empById[e.id] = e; });
+  const result = new Set(ids);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    result.forEach(id => {
+      const e = empById[id];
+      if (e?.manager_id && !result.has(e.manager_id) && empById[e.manager_id]) {
+        result.add(e.manager_id);
+        changed = true;
+      }
+    });
+  }
+  return result;
+}
+
 export default function OrgChart() {
   const [employees, setEmployees] = useState([]);
   const [agencies, setAgencies] = useState([]);
@@ -116,25 +134,6 @@ export default function OrgChart() {
     if (filtersOpen) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [filtersOpen]);
-
-  // Helper: given a set of employee ids, add all ancestor ids (up the manager chain)
-  function addAncestors(ids, allEmps) {
-    const empById = {};
-    allEmps.forEach(e => { empById[e.id] = e; });
-    const result = new Set(ids);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      result.forEach(id => {
-        const e = empById[id];
-        if (e?.manager_id && !result.has(e.manager_id) && empById[e.manager_id]) {
-          result.add(e.manager_id);
-          changed = true;
-        }
-      });
-    }
-    return result;
-  }
 
   // Build pool from zone/agency/ancienne entité filters
   // baseFiltered = only the directly matching employees (for service view)
