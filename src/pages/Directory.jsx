@@ -52,7 +52,8 @@ export default function Directory() {
     setSelectedEmployee(null);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
+    await base44.entities.Employee.delete(id);
     setEmployees(prev => prev.filter(e => e.id !== id));
     setSelectedEmployee(null);
   };
@@ -133,6 +134,8 @@ export default function Directory() {
                 key={e.id}
                 employee={e}
                 onClick={() => setSelectedEmployee(e)}
+                isHR={isHR}
+                onDelete={handleDelete}
               />
             ))}
           </div>

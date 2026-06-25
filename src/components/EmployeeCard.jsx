@@ -1,5 +1,4 @@
-import { User, Mail, Phone, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Mail, Phone, ChevronRight, Trash2 } from 'lucide-react';
 
 const statusColors = {
   'Actif': 'bg-mint text-emerald-700',
@@ -9,7 +8,7 @@ const statusColors = {
   'Départ': 'bg-red-100 text-red-600',
 };
 
-export default function EmployeeCard({ employee, compact = false, onClick }) {
+export default function EmployeeCard({ employee, compact = false, onClick, onDelete, isHR }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
 
   if (compact) {
@@ -58,9 +57,19 @@ export default function EmployeeCard({ employee, compact = false, onClick }) {
               <p className="font-heading font-semibold text-foreground text-base">{employee.first_name} {employee.last_name}</p>
               <p className="text-sm text-muted-foreground">{employee.position}</p>
             </div>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColors[employee.status] || 'bg-gray-100 text-gray-600'}`}>
-              {employee.status || 'Actif'}
-            </span>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[employee.status] || 'bg-gray-100 text-gray-600'}`}>
+                {employee.status || 'Actif'}
+              </span>
+              {isHR && onDelete && (
+                <button
+                  onClick={e => { e.stopPropagation(); if (confirm(`Supprimer ${employee.first_name} ${employee.last_name} ?`)) onDelete(employee.id); }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
           {(employee.email || employee.phone) && (
             <div className="mt-3 space-y-1">
