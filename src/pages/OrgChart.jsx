@@ -257,7 +257,7 @@ export default function OrgChart() {
     : null;
 
   return (
-    <div className="flex flex-col h-full bg-canvas">
+    <div className="flex flex-col h-full" style={{ background: '#f0effa' }}>
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-border">
 
