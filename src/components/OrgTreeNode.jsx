@@ -15,12 +15,12 @@ function matchesSearch(employee, searchTerm) {
   return haystack.includes(searchTerm);
 }
 
-// Depth-based gradient colors
+// Depth-based gradient colors — Charte GONNIN DURIS (bleu foncé / jaune)
 const DEPTH_COLORS = [
-  { bg: 'linear-gradient(135deg, #6c63ff 0%, #7c73ff 100%)', shadow: 'rgba(108,99,255,0.35)', border: '#6c63ff' },
-  { bg: 'linear-gradient(135deg, #7c73ff 0%, #8c83ff 100%)', shadow: 'rgba(124,115,255,0.28)', border: '#7c73ff' },
-  { bg: 'linear-gradient(135deg, #9c93ff 0%, #b0a9ff 100%)', shadow: 'rgba(156,147,255,0.22)', border: '#9c93ff' },
-  { bg: 'linear-gradient(135deg, #b0a9ff 0%, #c4bfff 100%)', shadow: 'rgba(176,169,255,0.18)', border: '#b0a9ff' },
+  { bg: 'linear-gradient(135deg, #003D7A 0%, #004B9D 100%)', shadow: 'rgba(0, 61, 122, 0.35)', border: '#003D7A' },
+  { bg: 'linear-gradient(135deg, #005BAA 0%, #0070D0 100%)', shadow: 'rgba(0, 91, 170, 0.28)', border: '#005BAA' },
+  { bg: 'linear-gradient(135deg, #0081E8 0%, #FDB913 100%)', shadow: 'rgba(8, 129, 232, 0.22)', border: '#0081E8' },
+  { bg: 'linear-gradient(135deg, #FDB913 0%, #FFD700 100%)', shadow: 'rgba(253, 185, 19, 0.18)', border: '#FDB913' },
 ];
 
 function getDepthColor(depth) {
@@ -143,7 +143,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
   const isCompact = template === 'compact';
   const isDimmed = searchTerm && !isHighlighted;
 
-  const lineColor = isModernStyle ? '#c4bfff' : 'hsl(var(--border))';
+  const lineColor = isModernStyle ? '#003D7A' : 'hsl(var(--border))';
   // border color of the team group box — slightly darker than line
   const { border: groupBorderColor } = getDepthColor(Math.min(depth + 1, DEPTH_COLORS.length - 1));
 
