@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Search, Plus, Filter, Download, UserPlus } from 'lucide-react';
+import { Search, UserPlus, Trash2, CheckSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +22,8 @@ export default function Directory() {
   const [filterStatus, setFilterStatus] = useState('Tous');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectMode, setSelectMode] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -58,6 +60,22 @@ export default function Directory() {
     setSelectedEmployee(null);
   };
 
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Supprimer ${selectedIds.size} collaborateur(s) ?`)) return;
+    await Promise.all([...selectedIds].map(id => base44.entities.Employee.delete(id)));
+    setEmployees(prev => prev.filter(e => !selectedIds.has(e.id)));
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  };
+
   const handleAdd = (newEmp) => {
     setEmployees(prev => [newEmp, ...prev]);
     setShowAdd(false);
@@ -79,10 +97,22 @@ export default function Directory() {
             <p className="text-sm text-muted-foreground">{filtered.length} collaborateur{filtered.length > 1 ? 's' : ''}</p>
           </div>
           {isHR && (
-            <Button className="gap-2" onClick={() => setShowAdd(true)}>
-              <UserPlus className="w-4 h-4" />
-              Ajouter
-            </Button>
+            <div className="flex items-center gap-2">
+              {selectMode && selectedIds.size > 0 && (
+                <Button variant="destructive" className="gap-2" onClick={handleBulkDelete}>
+                  <Trash2 className="w-4 h-4" />
+                  Supprimer ({selectedIds.size})
+                </Button>
+              )}
+              <Button variant={selectMode ? 'secondary' : 'outline'} className="gap-2" onClick={() => { setSelectMode(v => !v); setSelectedIds(new Set()); }}>
+                <CheckSquare className="w-4 h-4" />
+                {selectMode ? 'Annuler' : 'Sélectionner'}
+              </Button>
+              <Button className="gap-2" onClick={() => setShowAdd(true)}>
+                <UserPlus className="w-4 h-4" />
+                Ajouter
+              </Button>
+            </div>
           )}
         </div>
 
@@ -130,13 +160,24 @@ export default function Directory() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map(e => (
-              <EmployeeCard
-                key={e.id}
-                employee={e}
-                onClick={() => setSelectedEmployee(e)}
-                isHR={isHR}
-                onDelete={handleDelete}
-              />
+              <div key={e.id} className="relative">
+                {selectMode && (
+                  <div
+                    className={`absolute top-2 left-2 z-10 w-5 h-5 rounded-md border-2 flex items-center justify-center cursor-pointer transition-colors ${selectedIds.has(e.id) ? 'bg-primary border-primary' : 'bg-white border-border'}`}
+                    onClick={() => toggleSelect(e.id)}
+                  >
+                    {selectedIds.has(e.id) && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                )}
+                <div className={selectMode ? 'cursor-pointer' : ''} onClick={selectMode ? () => toggleSelect(e.id) : undefined}>
+                  <EmployeeCard
+                    employee={e}
+                    onClick={selectMode ? undefined : () => setSelectedEmployee(e)}
+                    isHR={isHR && !selectMode}
+                    onDelete={handleDelete}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         )}
