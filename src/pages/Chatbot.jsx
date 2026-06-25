@@ -1,16 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Send, Bot, Sparkles, MessageSquareText } from 'lucide-react';
+import { Send, Bot, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ReactMarkdown from 'react-markdown';
-
-const SUGGESTIONS = [
-  "Qui sont les responsables d'atelier ?",
-  "Combien de collaborateurs dans la Zone Ouest ?",
-  "Liste tous les commerciaux",
-  "Qui est en recrutement actuellement ?",
-  "Quels sont les apprentis du groupe ?",
-];
+import ChatSuggestionsPanel from '@/components/ChatSuggestionsPanel';
 
 export default function Chatbot() {
   const [conversation, setConversation] = useState(null);
@@ -83,28 +76,7 @@ export default function Chatbot() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
-            <div className="w-16 h-16 rounded-2xl bg-lavender flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-primary" />
-            </div>
-            <div>
-              <h2 className="font-heading font-semibold text-foreground text-lg">Bonjour ! Je suis votre assistant RH</h2>
-              <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                Posez-moi vos questions sur l'organigramme, les collaborateurs, ou demandez-moi d'effectuer des modifications.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center max-w-lg">
-              {SUGGESTIONS.map(s => (
-                <button
-                  key={s}
-                  onClick={() => sendMessage(s)}
-                  className="px-4 py-2 bg-white border border-border rounded-xl text-sm text-foreground hover:border-primary hover:bg-lavender/30 transition-all duration-200"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
+          <ChatSuggestionsPanel onSelect={sendMessage} />
         ) : (
           messages.map((msg, i) => (
             <MessageBubble key={i} message={msg} />

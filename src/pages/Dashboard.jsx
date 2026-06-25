@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Users, Building2, ArrowLeftRight, UserPlus, TrendingUp, Network } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import OnboardingModal from '@/components/OnboardingModal';
 
 export default function Dashboard() {
   const [employees, setEmployees] = useState([]);
@@ -9,6 +10,7 @@ export default function Dashboard() {
   const [movements, setMovements] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -22,6 +24,11 @@ export default function Dashboard() {
       setMovements(movs);
       setUser(u);
       setLoading(false);
+      // Afficher onboarding si c'est la 1ère visite (pas d'employé encore ou localStorage)
+      if (!localStorage.getItem('onboarding_shown')) {
+        setShowOnboarding(true);
+        localStorage.setItem('onboarding_shown', 'true');
+      }
     });
   }, []);
 
@@ -76,6 +83,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
+      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
       {/* Welcome */}
       <div className="flex items-start justify-between">
         <div>
