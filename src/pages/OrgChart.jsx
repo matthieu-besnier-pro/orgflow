@@ -30,10 +30,22 @@ export default function OrgChart() {
     });
   }, []);
 
-  // Build children map
+  // Compute filtered pool based on zone/agency selection
+  const getPool = () => {
+    if (selectedZone === 'all') return employees;
+    if (selectedZone === 'Support Groupe') return employees.filter(e => e.is_group_support);
+    const zoneAgencyIds = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
+    if (selectedAgency !== 'all') return employees.filter(e => e.agency_id === selectedAgency);
+    return employees.filter(e => zoneAgencyIds.has(e.agency_id));
+  };
+
+  const pool = getPool();
+  const poolIds = new Set(pool.map(e => e.id));
+
+  // Build children map only from pool
   const childrenMap = {};
-  employees.forEach(e => {
-    if (e.manager_id) {
+  pool.forEach(e => {
+    if (e.manager_id && poolIds.has(e.manager_id)) {
       if (!childrenMap[e.manager_id]) childrenMap[e.manager_id] = [];
       childrenMap[e.manager_id].push(e);
     }
@@ -49,31 +61,8 @@ export default function OrgChart() {
     });
   });
 
-  // Find roots based on filters
-  const getRoots = () => {
-    const hasManager = new Set(employees.filter(e => e.manager_id).map(e => e.id));
-    let pool = employees;
-
-    if (selectedZone !== 'all') {
-      if (selectedZone === 'Support Groupe') {
-        pool = employees.filter(e => e.is_group_support);
-      } else {
-        const zoneAgencyIds = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
-        if (selectedAgency !== 'all') {
-          pool = employees.filter(e => e.agency_id === selectedAgency);
-        } else {
-          pool = employees.filter(e => zoneAgencyIds.has(e.agency_id));
-        }
-      }
-    }
-
-    const poolIds = new Set(pool.map(e => e.id));
-
-    // Roots = employees in pool whose manager is not in pool (or has no manager)
-    return pool.filter(e => !e.manager_id || !poolIds.has(e.manager_id));
-  };
-
-  const roots = getRoots();
+  // Roots = employees in pool whose manager is not in pool (or has no manager)
+  const roots = pool.filter(e => !e.manager_id || !poolIds.has(e.manager_id));
 
   const handleDragStart = (e, employee) => {
     draggedId.current = employee.id;
