@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RefreshCw, Expand, Shrink } from 'lucide-react';
+import { ZoomIn, ZoomOut, RefreshCw, Expand, Shrink, Search, X } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function OrgChart() {
@@ -16,6 +17,9 @@ export default function OrgChart() {
   const [loading, setLoading] = useState(true);
   const [expandAll, setExpandAll] = useState(false);
   const [template, setTemplate] = useState('classique');
+  const [selectedManagerId, setSelectedManagerId] = useState('all');
+  const [managerSearch, setManagerSearch] = useState('');
+  const [managerDropdownOpen, setManagerDropdownOpen] = useState(false);
   const draggedId = useRef(null);
   const { toast } = useToast();
 
@@ -63,8 +67,58 @@ export default function OrgChart() {
     });
   });
 
-  // Roots = employees in pool whose manager is not in pool (or has no manager)
-  const roots = pool.filter(e => !e.manager_id || !poolIds.has(e.manager_id));
+  // Get all descendant IDs of a given employee (recursively)
+  const getDescendantIds = (managerId, allChildrenMap) => {
+    const result = new Set();
+    const traverse = (id) => {
+      (allChildrenMap[id] || []).forEach(child => {
+        result.add(child.id);
+        traverse(child.id);
+      });
+    };
+    traverse(managerId);
+    return result;
+  };
+
+  // Apply manager filter on top of pool
+  let finalPool = pool;
+  if (selectedManagerId !== 'all') {
+    const manager = employees.find(e => e.id === selectedManagerId);
+    if (manager) {
+      // Build full childrenMap from all employees for traversal
+      const fullChildrenMap = {};
+      employees.forEach(e => {
+        if (e.manager_id) {
+          if (!fullChildrenMap[e.manager_id]) fullChildrenMap[e.manager_id] = [];
+          fullChildrenMap[e.manager_id].push(e);
+        }
+      });
+      const descendantIds = getDescendantIds(selectedManagerId, fullChildrenMap);
+      descendantIds.add(selectedManagerId);
+      finalPool = pool.filter(e => descendantIds.has(e.id));
+    }
+  }
+
+  const finalPoolIds = new Set(finalPool.map(e => e.id));
+
+  // Rebuild childrenMap for finalPool
+  const finalChildrenMap = {};
+  finalPool.forEach(e => {
+    if (e.manager_id && finalPoolIds.has(e.manager_id)) {
+      if (!finalChildrenMap[e.manager_id]) finalChildrenMap[e.manager_id] = [];
+      finalChildrenMap[e.manager_id].push(e);
+    }
+  });
+  Object.keys(finalChildrenMap).forEach(k => {
+    finalChildrenMap[k].sort((a, b) => {
+      const ia = positionOrder.findIndex(p => a.position?.includes(p));
+      const ib = positionOrder.findIndex(p => b.position?.includes(p));
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+  });
+
+  // Roots = employees in finalPool whose manager is not in finalPool (or has no manager)
+  const roots = finalPool.filter(e => !e.manager_id || !finalPoolIds.has(e.manager_id));
 
   const handleDragStart = (e, employee) => {
     draggedId.current = employee.id;
@@ -78,7 +132,7 @@ export default function OrgChart() {
 
     // Prevent dropping onto own descendant
     const isDescendant = (parentId, checkId) => {
-      const children = (childrenMap[parentId] || []).map(c => c.id);
+      const children = (finalChildrenMap[parentId] || []).map(c => c.id);
       if (children.includes(checkId)) return true;
       return children.some(cid => isDescendant(cid, checkId));
     };
@@ -140,6 +194,62 @@ export default function OrgChart() {
           </Select>
         )}
 
+        {/* Manager filter */}
+        <div className="relative">
+          <div
+            className="flex h-9 w-52 items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm cursor-pointer hover:bg-secondary/50 transition-colors"
+            onClick={() => { setManagerDropdownOpen(v => !v); setManagerSearch(''); }}
+          >
+            <span className={selectedManagerId !== 'all' ? 'text-foreground' : 'text-muted-foreground'}>
+              {selectedManagerId !== 'all'
+                ? (() => { const m = employees.find(e => e.id === selectedManagerId); return m ? `${m.first_name} ${m.last_name}` : 'Manager'; })()
+                : 'Filtrer par manager'}
+            </span>
+            <div className="flex items-center gap-1">
+              {selectedManagerId !== 'all' && (
+                <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" onClick={e => { e.stopPropagation(); setSelectedManagerId('all'); }} />
+              )}
+              <Search className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
+          </div>
+          {managerDropdownOpen && (
+            <div className="absolute z-50 mt-1 w-52 bg-white border border-border rounded-lg shadow-lg overflow-hidden">
+              <div className="p-2 border-b border-border">
+                <Input
+                  autoFocus
+                  placeholder="Rechercher..."
+                  value={managerSearch}
+                  onChange={e => setManagerSearch(e.target.value)}
+                  className="h-8 text-sm"
+                  onClick={e => e.stopPropagation()}
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                <div
+                  className="px-3 py-2 text-sm text-muted-foreground hover:bg-secondary cursor-pointer"
+                  onClick={() => { setSelectedManagerId('all'); setManagerDropdownOpen(false); }}
+                >
+                  Tous les managers
+                </div>
+                {pool
+                  .filter(e => Object.keys(finalChildrenMap).includes(e.id) || childrenMap[e.id]?.length > 0)
+                  .filter(e => `${e.first_name} ${e.last_name}`.toLowerCase().includes(managerSearch.toLowerCase()))
+                  .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr'))
+                  .map(m => (
+                    <div
+                      key={m.id}
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-secondary ${selectedManagerId === m.id ? 'bg-lavender font-medium' : ''}`}
+                      onClick={() => { setSelectedManagerId(m.id); setManagerDropdownOpen(false); setManagerSearch(''); }}
+                    >
+                      {m.last_name} {m.first_name}
+                      <span className="text-xs text-muted-foreground ml-1">— {m.position}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Template selector */}
         <div className="flex items-center gap-1 bg-secondary rounded-xl p-1">
           {[{ key: 'classique', label: 'Classique' }, { key: 'moderne', label: 'Moderne' }, { key: 'compact', label: 'Compact' }].map(t => (
@@ -185,7 +295,7 @@ export default function OrgChart() {
               <OrgTreeNode
                 key={`${roots[0].id}-${expandAll}`}
                 employee={roots[0]}
-                childrenMap={childrenMap}
+                childrenMap={finalChildrenMap}
                 onSelect={setSelectedEmployee}
                 defaultExpanded={expandAll}
                 depth={0}
@@ -200,7 +310,7 @@ export default function OrgChart() {
                 <OrgTreeNode
                   key={`${root.id}-${expandAll}`}
                   employee={root}
-                  childrenMap={childrenMap}
+                  childrenMap={finalChildrenMap}
                   onSelect={setSelectedEmployee}
                   defaultExpanded={expandAll}
                   depth={0}
