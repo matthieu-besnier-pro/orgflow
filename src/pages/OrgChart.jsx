@@ -15,6 +15,7 @@ export default function OrgChart() {
   const [zoom, setZoom] = useState(0.85);
   const [loading, setLoading] = useState(true);
   const [expandAll, setExpandAll] = useState(false);
+  const [template, setTemplate] = useState('classique');
   const draggedId = useRef(null);
   const { toast } = useToast();
 
@@ -148,6 +149,19 @@ export default function OrgChart() {
           </Select>
         )}
 
+        {/* Template selector */}
+        <div className="flex items-center gap-1 bg-secondary rounded-xl p-1">
+          {[{ key: 'classique', label: 'Classique' }, { key: 'moderne', label: 'Moderne' }, { key: 'compact', label: 'Compact' }].map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTemplate(t.key)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${template === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => setExpandAll(v => !v)}
           className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl bg-secondary hover:bg-accent transition-colors"
@@ -186,6 +200,7 @@ export default function OrgChart() {
                 depth={0}
                 onDragStart={handleDragStart}
                 onDrop={handleDrop}
+                template={template}
               />
             </div>
           ) : (
@@ -200,6 +215,7 @@ export default function OrgChart() {
                   depth={0}
                   onDragStart={handleDragStart}
                   onDrop={handleDrop}
+                  template={template}
                 />
               ))}
             </div>
