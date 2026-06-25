@@ -1,0 +1,49 @@
+{
+  "name": "Agency",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Nom de l'agence"
+    },
+    "zone": {
+      "type": "string",
+      "title": "Zone g\u00e9ographique",
+      "enum": [
+        "Zone Centre",
+        "Zone Ouest",
+        "Support Groupe"
+      ]
+    },
+    "city": {
+      "type": "string",
+      "title": "Ville"
+    },
+    "department_code": {
+      "type": "string",
+      "title": "D\u00e9partement"
+    },
+    "email": {
+      "type": "string",
+      "title": "Email agence"
+    },
+    "phone": {
+      "type": "string",
+      "title": "T\u00e9l\u00e9phone"
+    },
+    "address": {
+      "type": "string",
+      "title": "Adresse"
+    },
+    "is_active": {
+      "type": "boolean",
+      "title": "Active",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "zone",
+    "city"
+  ]
+}

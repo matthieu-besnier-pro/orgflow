@@ -1,0 +1,68 @@
+{
+  "name": "HRMovement",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "title": "Collaborateur"
+    },
+    "employee_name": {
+      "type": "string",
+      "title": "Nom collaborateur"
+    },
+    "movement_type": {
+      "type": "string",
+      "title": "Type de mouvement",
+      "enum": [
+        "Arriv\u00e9e",
+        "D\u00e9part",
+        "Mutation",
+        "Changement de poste",
+        "Promotion"
+      ]
+    },
+    "from_agency_id": {
+      "type": "string",
+      "title": "Agence d'origine"
+    },
+    "to_agency_id": {
+      "type": "string",
+      "title": "Agence de destination"
+    },
+    "from_position": {
+      "type": "string",
+      "title": "Ancien poste"
+    },
+    "to_position": {
+      "type": "string",
+      "title": "Nouveau poste"
+    },
+    "movement_date": {
+      "type": "string",
+      "title": "Date du mouvement",
+      "format": "date"
+    },
+    "reason": {
+      "type": "string",
+      "title": "Motif"
+    },
+    "validated_by": {
+      "type": "string",
+      "title": "Valid\u00e9 par"
+    },
+    "status": {
+      "type": "string",
+      "title": "Statut",
+      "enum": [
+        "En attente",
+        "Valid\u00e9",
+        "Annul\u00e9"
+      ],
+      "default": "Valid\u00e9"
+    }
+  },
+  "required": [
+    "movement_type",
+    "movement_date"
+  ]
+}

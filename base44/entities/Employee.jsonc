@@ -1,0 +1,100 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string",
+      "title": "Pr\u00e9nom"
+    },
+    "last_name": {
+      "type": "string",
+      "title": "Nom"
+    },
+    "position": {
+      "type": "string",
+      "title": "Poste"
+    },
+    "service": {
+      "type": "string",
+      "title": "Service",
+      "enum": [
+        "Direction",
+        "Service Commercial",
+        "Magasin",
+        "Atelier",
+        "Administratif",
+        "Ressources Humaines",
+        "Comptabilit\u00e9",
+        "Gestion",
+        "Informatique",
+        "Communication Marketing",
+        "Support Technique",
+        "Garanties",
+        "Agriculture de Pr\u00e9cision",
+        "RSE",
+        "Accueil T\u00e9l.",
+        "Service Occasions",
+        "Commercial Quads",
+        "Commercial TP",
+        "PY Pneus"
+      ]
+    },
+    "email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "phone": {
+      "type": "string",
+      "title": "T\u00e9l\u00e9phone"
+    },
+    "photo_url": {
+      "type": "string",
+      "title": "Photo",
+      "format": "uri"
+    },
+    "agency_id": {
+      "type": "string",
+      "title": "Agence"
+    },
+    "manager_id": {
+      "type": "string",
+      "title": "Manager direct"
+    },
+    "status": {
+      "type": "string",
+      "title": "Statut",
+      "enum": [
+        "Actif",
+        "En recrutement",
+        "Apprenti",
+        "Alternant",
+        "D\u00e9part"
+      ],
+      "default": "Actif"
+    },
+    "hire_date": {
+      "type": "string",
+      "title": "Date d'entr\u00e9e",
+      "format": "date"
+    },
+    "departure_date": {
+      "type": "string",
+      "title": "Date de d\u00e9part",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes RH"
+    },
+    "is_group_support": {
+      "type": "boolean",
+      "title": "Support Groupe",
+      "default": false
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name",
+    "position"
+  ]
+}
