@@ -99,7 +99,7 @@ export default function OrgChart() {
       const updated = await base44.entities.Employee.update(sourceId, { manager_id: targetEmployee.id });
       setEmployees(prev => prev.map(e => e.id === sourceId ? { ...e, manager_id: targetEmployee.id } : e));
       const source = employees.find(e => e.id === sourceId);
-      toast({ title: 'Hiérarchie mise à jour', description: `${source?.first_name} ${source?.last_name} rattaché(e) à ${targetEmployee.first_name} ${targetEmployee.last_name}` });
+      // pas de toast pour éviter l'accumulation
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de mettre à jour la hiérarchie.', variant: 'destructive' });
     }

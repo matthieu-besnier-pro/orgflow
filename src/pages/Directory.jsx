@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Search, UserPlus, Trash2, CheckSquare } from 'lucide-react';
+import { Search, UserPlus, Trash2, CheckSquare, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -68,6 +68,28 @@ export default function Directory() {
     });
   };
 
+  const handleExportCSV = () => {
+    const agencyMap = Object.fromEntries(agencies.map(a => [a.id, a.name]));
+    const headers = ['Prénom', 'Nom', 'Poste', 'Service', 'Agence', 'Email', 'Téléphone', 'Statut', "Date d'entrée"];
+    const rows = filtered.map(e => [
+      e.first_name || '',
+      e.last_name || '',
+      e.position || '',
+      e.service || '',
+      agencyMap[e.agency_id] || '',
+      e.email || '',
+      e.phone || '',
+      e.status || 'Actif',
+      e.hire_date || '',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'annuaire.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleBulkDelete = async () => {
     if (!confirm(`Supprimer ${selectedIds.size} collaborateur(s) ?`)) return;
     await Promise.all([...selectedIds].map(id => base44.entities.Employee.delete(id)));
@@ -95,6 +117,12 @@ export default function Directory() {
           <div>
             <h1 className="font-heading font-semibold text-foreground text-lg">Annuaire</h1>
             <p className="text-sm text-muted-foreground">{filtered.length} collaborateur{filtered.length > 1 ? 's' : ''}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2" onClick={handleExportCSV}>
+              <Download className="w-4 h-4" />
+              Exporter
+            </Button>
           </div>
           {isHR && (
             <div className="flex items-center gap-2">
