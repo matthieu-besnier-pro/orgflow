@@ -32,11 +32,13 @@ export default function OrgChart() {
 
   // Compute filtered pool based on zone/agency selection
   const getPool = () => {
-    if (selectedZone === 'all') return employees;
     if (selectedZone === 'Support Groupe') return employees.filter(e => e.is_group_support);
-    const zoneAgencyIds = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
     if (selectedAgency !== 'all') return employees.filter(e => e.agency_id === selectedAgency);
-    return employees.filter(e => zoneAgencyIds.has(e.agency_id));
+    if (selectedZone !== 'all') {
+      const zoneAgencyIds = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
+      return employees.filter(e => zoneAgencyIds.has(e.agency_id));
+    }
+    return employees;
   };
 
   const pool = getPool();
