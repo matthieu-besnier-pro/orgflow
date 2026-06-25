@@ -38,6 +38,14 @@ export default function Directory() {
     });
   }, []);
 
+  // Recharger les employés en temps réel quand le chat en ajoute
+  useEffect(() => {
+    const unsubscribe = base44.entities.Employee.subscribe(() => {
+      base44.entities.Employee.list().then(emps => setEmployees(emps));
+    });
+    return unsubscribe;
+  }, []);
+
   const isHR = user?.role === 'admin';
 
   const filtered = employees.filter(e => {

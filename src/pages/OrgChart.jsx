@@ -132,6 +132,14 @@ export default function OrgChart() {
     });
   }, []);
 
+  // Recharger les employés en temps réel quand le chat en ajoute
+  useEffect(() => {
+    const unsubscribe = base44.entities.Employee.subscribe(() => {
+      base44.entities.Employee.list().then(emps => setEmployees(emps));
+    });
+    return unsubscribe;
+  }, []);
+
   // Close filter panel on outside click — ignore clicks inside Radix portals
   useEffect(() => {
     const handler = (e) => {

@@ -25,6 +25,20 @@ export default function Dashboard() {
     });
   }, []);
 
+  // Recharger les employés en temps réel quand le chat en ajoute
+  useEffect(() => {
+    const unsubscribe = base44.entities.Employee.subscribe(() => {
+      Promise.all([
+        base44.entities.Employee.list(),
+        base44.entities.HRMovement.list('-created_date', 10)
+      ]).then(([emps, movs]) => {
+        setEmployees(emps);
+        setMovements(movs);
+      });
+    });
+    return unsubscribe;
+  }, []);
+
   if (loading) return (
     <div className="flex items-center justify-center h-full">
       <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
