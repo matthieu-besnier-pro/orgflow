@@ -228,15 +228,15 @@ export default function OrgChart() {
       return children.some(cid => isDescendant(cid, checkId));
     };
     if (isDescendant(sourceId, targetEmployee.id)) {
-      toast({ title: 'Impossible', description: "Vous ne pouvez pas déplacer un collaborateur vers l'un de ses subordonnés.", variant: 'destructive' });
+      toast({ title: 'Impossible', description: "Vous ne pouvez pas déplacer un collaborateur vers l'un de ses subordonnés.", variant: 'destructive', duration: 3000 });
       return;
     }
     try {
       await base44.entities.Employee.update(sourceId, { manager_id: targetEmployee.id });
       setEmployees(prev => prev.map(e => e.id === sourceId ? { ...e, manager_id: targetEmployee.id } : e));
-      toast({ title: 'Hiérarchie mise à jour', description: `Rattaché à ${targetEmployee.first_name} ${targetEmployee.last_name}` });
+      toast({ title: 'Hiérarchie mise à jour', description: `Rattaché à ${targetEmployee.first_name} ${targetEmployee.last_name}`, duration: 3000 });
     } catch {
-      toast({ title: 'Erreur', description: 'Impossible de mettre à jour la hiérarchie.', variant: 'destructive' });
+      toast({ title: 'Erreur', description: 'Impossible de mettre à jour la hiérarchie.', variant: 'destructive', duration: 3000 });
     }
   };
 
