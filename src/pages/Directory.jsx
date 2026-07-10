@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Search, UserPlus, Trash2, CheckSquare, Download, ImagePlus, FileSpreadsheet } from 'lucide-react';
+import { Search, UserPlus, Trash2, CheckSquare, Download, ImagePlus, FileSpreadsheet, FileUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import EmployeeCard from '@/components/EmployeeCard';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import AddEmployeeModal from '@/components/AddEmployeeModal';
 import BulkPhotoImport from '@/components/BulkPhotoImport';
+import BulkImportModal from '@/components/BulkImportModal';
 import { getAssignmentLabel } from '@/components/AssignmentSelector';
 
 const SERVICES = ["Tous","Direction","Service Commercial","Magasin","Atelier","Administratif","Ressources Humaines","Comptabilité","Gestion","Informatique","Communication Marketing","Support Technique","Garanties","Agriculture de Précision","RSE","Accueil Tél.","Service Occasions","Commercial Quads","Commercial TP","PY Pneus"];
@@ -26,6 +27,7 @@ export default function Directory() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showPhotoImport, setShowPhotoImport] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [selectMode, setSelectMode] = useState(false);
 
@@ -206,6 +208,10 @@ export default function Directory() {
                 <ImagePlus className="w-4 h-4" />
                 <span className="hidden sm:inline">Importer photos</span>
               </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setShowBulkImport(true)}>
+                <FileUp className="w-4 h-4" />
+                <span className="hidden sm:inline">Importer</span>
+              </Button>
               <Button className="gap-2" onClick={() => setShowAdd(true)}>
                 <UserPlus className="w-4 h-4" />
                 Ajouter
@@ -310,6 +316,16 @@ export default function Directory() {
         <BulkPhotoImport
           employees={employees}
           onClose={() => setShowPhotoImport(false)}
+          onDone={() => base44.entities.Employee.list().then(emps => setEmployees(emps))}
+        />
+      )}
+
+      {/* Bulk Import (Excel/CSV) */}
+      {showBulkImport && (
+        <BulkImportModal
+          employees={employees}
+          agencies={agencies}
+          onClose={() => setShowBulkImport(false)}
           onDone={() => base44.entities.Employee.list().then(emps => setEmployees(emps))}
         />
       )}
