@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AssignmentSelector, { getAssignmentLabel } from '@/components/AssignmentSelector';
 
 const SERVICES = ["Direction","Service Commercial","Magasin","Atelier","Administratif","Ressources Humaines","Comptabilité","Gestion","Informatique","Communication Marketing","Support Technique","Garanties","Agriculture de Précision","RSE","Accueil Tél.","Service Occasions","Commercial Quads","Commercial TP","PY Pneus"];
 const STATUSES = ["Actif","En recrutement","Apprenti","Alternant","Départ"];
@@ -130,15 +131,7 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Agence</label>
-                <Select value={form.agency_id || ''} onValueChange={v => set('agency_id', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {agencies.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              <AssignmentSelector form={form} agencies={agencies} onChange={setForm} />
               <div className="relative">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Manager direct</label>
                 <div
@@ -225,12 +218,10 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
                   <span className="text-sm text-foreground">{employee.service}</span>
                 </div>
               )}
-              {agencies.find(a => a.id === employee.agency_id) && (
-                <div className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
-                  <Building2 className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-foreground">{agencies.find(a => a.id === employee.agency_id)?.name}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+                <Building2 className="w-4 h-4 text-primary" />
+                <span className="text-sm text-foreground">{getAssignmentLabel(employee, agencies)}</span>
+              </div>
             </div>
           )}
         </div>

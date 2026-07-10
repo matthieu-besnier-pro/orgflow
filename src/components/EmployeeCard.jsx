@@ -1,4 +1,5 @@
-import { Mail, Phone, ChevronRight, Trash2 } from 'lucide-react';
+import { Mail, Phone, ChevronRight, Trash2, Building2 } from 'lucide-react';
+import { getAssignmentLabel } from '@/components/AssignmentSelector';
 
 const statusColors = {
   'Actif': 'bg-mint text-emerald-700',
@@ -8,7 +9,7 @@ const statusColors = {
   'Départ': 'bg-red-100 text-red-600',
 };
 
-export default function EmployeeCard({ employee, compact = false, onClick, onDelete, isHR }) {
+export default function EmployeeCard({ employee, compact = false, onClick, onDelete, isHR, agencies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
 
   if (compact) {
@@ -71,22 +72,24 @@ export default function EmployeeCard({ employee, compact = false, onClick, onDel
               )}
             </div>
           </div>
-          {(employee.email || employee.phone) && (
-            <div className="mt-3 space-y-1">
-              {employee.email && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Mail className="w-3.5 h-3.5" />
-                  <span className="truncate">{employee.email}</span>
-                </div>
-              )}
-              {employee.phone && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>{employee.phone}</span>
-                </div>
-              )}
+          <div className="mt-3 space-y-1">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Building2 className="w-3.5 h-3.5" />
+              <span className="truncate">{getAssignmentLabel(employee, agencies)}</span>
             </div>
-          )}
+            {employee.email && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Mail className="w-3.5 h-3.5" />
+                <span className="truncate">{employee.email}</span>
+              </div>
+            )}
+            {employee.phone && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Phone className="w-3.5 h-3.5" />
+                <span>{employee.phone}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

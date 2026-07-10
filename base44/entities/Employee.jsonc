@@ -56,6 +56,24 @@
       "type": "string",
       "title": "Agence"
     },
+    "ancienne_entite": {
+      "type": "string",
+      "title": "Ancienne entit\u00e9",
+      "enum": [
+        "GONNIN",
+        "QUITTE",
+        "DURIS",
+        "DBS"
+      ]
+    },
+    "zone": {
+      "type": "string",
+      "title": "Zone g\u00e9ographique",
+      "enum": [
+        "Zone Centre",
+        "Zone Ouest"
+      ]
+    },
     "manager_id": {
       "type": "string",
       "title": "Manager direct"

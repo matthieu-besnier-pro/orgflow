@@ -173,13 +173,13 @@ export default function OrgChart() {
         agencies.filter(a => getAncienneEntite(a) === selectedAncienneEntite).map(a => a.id)
       );
       if (selectedAncienneEntite === 'DURIS') {
-        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.service === 'PY Pneus' || e.is_group_support);
+        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.ancienne_entite === selectedAncienneEntite || e.service === 'PY Pneus' || e.is_group_support);
       } else {
-        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.is_group_support);
+        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.ancienne_entite === selectedAncienneEntite || e.is_group_support);
       }
     } else if (selectedZone !== 'all') {
       const ids = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
-      base = employees.filter(e => ids.has(e.agency_id) || e.is_group_support);
+      base = employees.filter(e => ids.has(e.agency_id) || e.zone === selectedZone || e.is_group_support);
     } else {
       return { baseFiltered: employees, pool: employees };
     }

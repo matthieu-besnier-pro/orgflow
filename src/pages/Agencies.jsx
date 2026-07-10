@@ -103,6 +103,12 @@ export default function Agencies() {
   };
 
   const countEmployees = (id) => employees.filter(e => e.agency_id === id).length;
+  const countEntityEmployees = (entite) => {
+    const agencyIds = new Set(agencies.filter(a => getAncienneEntite(a) === entite).map(a => a.id));
+    return employees.filter(e =>
+      (e.agency_id && agencyIds.has(e.agency_id)) || e.ancienne_entite === entite
+    ).length;
+  };
 
   // Group agencies by old entity
   const grouped = {};
@@ -202,7 +208,7 @@ export default function Agencies() {
               <Layers className="w-4 h-4 text-muted-foreground" />
               <h2 className="font-heading font-semibold text-foreground text-sm">{entite}</h2>
               <span className={`text-xs px-2 py-0.5 rounded-full ${ENTITE_BADGE[entite]}`}>
-                {grouped[entite].length} agence(s)
+                {grouped[entite].length} agence(s) · {countEntityEmployees(entite)} collab.
               </span>
               <div className="flex-1 h-px bg-border ml-2" />
             </div>

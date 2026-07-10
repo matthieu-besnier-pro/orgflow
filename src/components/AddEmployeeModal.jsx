@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AssignmentSelector from '@/components/AssignmentSelector';
 
 const SERVICES = ["Direction","Service Commercial","Magasin","Atelier","Administratif","Ressources Humaines","Comptabilité","Gestion","Informatique","Communication Marketing","Support Technique","Garanties","Agriculture de Précision","RSE","Accueil Tél.","Service Occasions","Commercial Quads","Commercial TP","PY Pneus"];
 const STATUSES = ["Actif","En recrutement","Apprenti","Alternant","Départ"];
@@ -100,15 +101,7 @@ export default function AddEmployeeModal({ agencies, allEmployees, onClose, onAd
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Agence</label>
-            <Select value={form.agency_id || ''} onValueChange={v => set('agency_id', v)}>
-              <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-              <SelectContent>
-                {agencies.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <AssignmentSelector form={form} agencies={agencies} onChange={setForm} />
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Manager direct</label>
             <Select value={form.manager_id || ''} onValueChange={v => set('manager_id', v)}>

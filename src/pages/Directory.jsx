@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import EmployeeCard from '@/components/EmployeeCard';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import AddEmployeeModal from '@/components/AddEmployeeModal';
+import { getAssignmentLabel } from '@/components/AssignmentSelector';
 
 const SERVICES = ["Tous","Direction","Service Commercial","Magasin","Atelier","Administratif","Ressources Humaines","Comptabilité","Gestion","Informatique","Communication Marketing","Support Technique","Garanties","Agriculture de Précision","RSE","Accueil Tél.","Service Occasions","Commercial Quads","Commercial TP","PY Pneus"];
 const STATUSES = ["Tous","Actif","En recrutement","Apprenti","Alternant","Départ"];
@@ -77,14 +78,13 @@ export default function Directory() {
   };
 
   const handleExportCSV = () => {
-    const agencyMap = Object.fromEntries(agencies.map(a => [a.id, a.name]));
-    const headers = ['Prénom', 'Nom', 'Poste', 'Service', 'Agence', 'Email', 'Téléphone', 'Statut', "Date d'entrée"];
+    const headers = ['Prénom', 'Nom', 'Poste', 'Service', 'Affectation', 'Email', 'Téléphone', 'Statut', "Date d'entrée"];
     const rows = filtered.map(e => [
       e.first_name || '',
       e.last_name || '',
       e.position || '',
       e.service || '',
-      agencyMap[e.agency_id] || '',
+      getAssignmentLabel(e, agencies),
       e.email || '',
       e.phone || '',
       e.status || 'Actif',
@@ -208,6 +208,7 @@ export default function Directory() {
                 <div className={selectMode ? 'cursor-pointer' : ''} onClick={selectMode ? () => toggleSelect(e.id) : undefined}>
                   <EmployeeCard
                     employee={e}
+                    agencies={agencies}
                     onClick={selectMode ? undefined : () => setSelectedEmployee(e)}
                     isHR={isHR && !selectMode}
                     onDelete={handleDelete}
