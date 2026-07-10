@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Search, UserPlus, Trash2, CheckSquare, Download, ImagePlus } from 'lucide-react';
+import { Search, UserPlus, Trash2, CheckSquare, Download, ImagePlus, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -117,6 +118,40 @@ export default function Directory() {
     URL.revokeObjectURL(url);
   };
 
+  const buildExportRows = () => {
+    const empById = {};
+    employees.forEach(e => { empById[e.id] = e; });
+    return filtered.map(e => {
+      const manager = e.manager_id ? empById[e.manager_id] : null;
+      return {
+        'Prénom': e.first_name || '',
+        'Nom': e.last_name || '',
+        'Poste': e.position || '',
+        'Service': e.service || '',
+        'Affectation': getAssignmentLabel(e, agencies),
+        'Email': e.email || '',
+        'Téléphone': e.phone || '',
+        'Statut': e.status || 'Actif',
+        "Date d'entrée": e.hire_date || '',
+        'Date de départ': e.departure_date || '',
+        'Ancienne entité': e.ancienne_entite || '',
+        'Zone géographique': e.zone || '',
+        'Support Groupe': e.is_group_support ? 'Oui' : 'Non',
+        'Responsable direct': manager ? `${manager.first_name || ''} ${manager.last_name || ''}`.trim() : '',
+        'Notes RH': e.notes || '',
+      };
+    });
+  };
+
+  const handleExportExcel = () => {
+    const rows = buildExportRows();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 24 }, { wch: 22 }, { wch: 18 }, { wch: 28 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 22 }, { wch: 40 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Annuaire');
+    XLSX.writeFile(wb, 'annuaire.xlsx');
+  };
+
   const handleBulkDelete = async () => {
     if (!confirm(`Supprimer ${selectedIds.size} collaborateur(s) ?`)) return;
     await Promise.all([...selectedIds].map(id => base44.entities.Employee.delete(id)));
@@ -146,9 +181,13 @@ export default function Directory() {
             <p className="text-sm text-muted-foreground">{filtered.length} collaborateur{filtered.length > 1 ? 's' : ''}</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2" onClick={handleExportExcel}>
+              <FileSpreadsheet className="w-4 h-4" />
+              Excel
+            </Button>
             <Button variant="outline" className="gap-2" onClick={handleExportCSV}>
               <Download className="w-4 h-4" />
-              Exporter
+              CSV
             </Button>
           </div>
           {isHR && (
