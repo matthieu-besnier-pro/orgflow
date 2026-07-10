@@ -27,6 +27,7 @@ const ANCIENNE_ENTITE_MAP = {
   'Noyers': 'DURIS',
   'PY Pneus': 'DURIS',
   'Arnac': 'DBS',
+  'Arnac la Poste': 'DBS',
   'Rivarennes': 'DBS',
   'Béthines': 'DBS',
 };
