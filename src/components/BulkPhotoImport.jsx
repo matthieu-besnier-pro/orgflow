@@ -19,28 +19,79 @@ function normalizeName(str) {
   return normalize(str).replace(/[^a-z]/g, '');
 }
 
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  let curr = Array(n + 1).fill(0);
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+function tokenThreshold(name) {
+  if (name.length <= 4) return 1;
+  if (name.length <= 7) return 2;
+  return 3;
+}
+
 function matchFilenameToEmployee(filename, employees) {
   const base = filename.replace(PHOTO_EXTENSIONS, '');
-  const normalized = normalizeName(base);
+  const normalized = normalize(base);
   if (!normalized) return null;
+  const fullNorm = normalized.replace(/[^a-z]/g, '');
 
+  // 1. Correspondance exacte concaténée (prénom+nom ou nom+prénom)
   for (const emp of employees) {
     const first = normalizeName(emp.first_name);
     const last = normalizeName(emp.last_name);
     if (!first || !last) continue;
-    if (normalized === first + last || normalized === last + first) return emp;
+    if (fullNorm === first + last || fullNorm === last + first) return emp;
   }
 
+  // 2. Correspondance floue par jetons (tolère fautes + ordre inversé)
+  const tokens = normalized.split(/[^a-z]+/).filter(t => t.length >= 2);
+  if (tokens.length > 0) {
+    let best = null;
+    let bestScore = -1;
+    for (const emp of employees) {
+      const first = normalizeName(emp.first_name);
+      const last = normalizeName(emp.last_name);
+      if (!first || !last) continue;
+      let firstDist = Infinity, lastDist = Infinity;
+      for (const token of tokens) {
+        firstDist = Math.min(firstDist, levenshtein(token, first));
+        lastDist = Math.min(lastDist, levenshtein(token, last));
+      }
+      const firstThreshold = tokenThreshold(first);
+      const lastThreshold = tokenThreshold(last);
+      if (firstDist <= firstThreshold && lastDist <= lastThreshold) {
+        const score = (firstThreshold - firstDist) + (lastThreshold - lastDist);
+        if (score > bestScore) {
+          bestScore = score;
+          best = emp;
+        }
+      }
+    }
+    if (best) return best;
+  }
+
+  // 3. Correspondance floue concaténée (ex: "jeandupon" → "jeandupont")
   for (const emp of employees) {
     const first = normalizeName(emp.first_name);
     const last = normalizeName(emp.last_name);
     if (!first || !last) continue;
-    if (normalized.includes(first + last) || normalized.includes(last + first)) return emp;
-  }
-
-  for (const emp of employees) {
-    const last = normalizeName(emp.last_name);
-    if (last && last.length >= 3 && normalized.includes(last)) return emp;
+    const concat1 = first + last;
+    const concat2 = last + first;
+    const threshold = tokenThreshold(concat1);
+    if (levenshtein(fullNorm, concat1) <= threshold || levenshtein(fullNorm, concat2) <= threshold) return emp;
   }
 
   return null;
