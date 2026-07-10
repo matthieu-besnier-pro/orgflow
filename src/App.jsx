@@ -12,6 +12,7 @@ import Dashboard from '@/pages/Dashboard';
 import OrgChart from '@/pages/OrgChart';
 import Directory from '@/pages/Directory';
 import Movements from '@/pages/Movements';
+import Agencies from '@/pages/Agencies';
 import Chatbot from '@/pages/Chatbot';
 
 const AuthenticatedApp = () => {
@@ -41,6 +42,7 @@ const AuthenticatedApp = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/organigramme" element={<OrgChart />} />
           <Route path="/annuaire" element={<Directory />} />
+          <Route path="/agences" element={<Agencies />} />
           <Route path="/mouvements" element={<Movements />} />
           <Route path="/chatbot" element={<Chatbot />} />
         </Route>

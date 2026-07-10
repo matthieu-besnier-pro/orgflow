@@ -2,13 +2,14 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { 
   LayoutDashboard, Network, Users, ArrowLeftRight, 
-  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle
+  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin
 } from 'lucide-react';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Tableau de bord', help: 'Vue d\'ensemble et statistiques clés' },
   { path: '/organigramme', icon: Network, label: 'Organigramme', help: 'Visualisez la hiérarchie (cliquez sur les noms)' },
   { path: '/annuaire', icon: Users, label: 'Annuaire', help: 'Cherchez et modifiez les collaborateurs' },
+  { path: '/agences', icon: MapPin, label: 'Agences', help: 'Gérez les agences du groupe' },
   { path: '/mouvements', icon: ArrowLeftRight, label: 'Mouvements RH', help: 'Enregistrez arrivées, départs, mutations...' },
   { path: '/chatbot', icon: MessageSquareText, label: 'Assistant IA', help: '⭐ L\'outil le plus simple pour débuter !' },
 ];
