@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeftRight, Plus, X, Check } from 'lucide-react';
+import { ArrowLeftRight, Plus, X, Check, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const MOVEMENT_TYPES = ["Arrivée","Départ","Mutation","Changement de poste","Promotion"];
+const STATUSES = ["En attente","Validé","Annulé"];
 
 const typeColors = {
   'Arrivée': 'bg-mint text-emerald-700',
@@ -15,14 +16,17 @@ const typeColors = {
   'Promotion': 'bg-yellow-100 text-yellow-700',
 };
 
+const emptyForm = () => ({ status: 'Validé', movement_date: new Date().toISOString().split('T')[0] });
+
 export default function Movements() {
   const [movements, setMovements] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [agencies, setAgencies] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ status: 'Validé', movement_date: new Date().toISOString().split('T')[0] });
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -47,18 +51,51 @@ export default function Movements() {
     const emp = employees.find(e => e.id === empId);
     set('employee_id', empId);
     set('employee_name', emp ? `${emp.first_name} ${emp.last_name}` : '');
-    set('from_agency_id', emp?.agency_id || '');
-    set('from_position', emp?.position || '');
+    if (!editingId) {
+      set('from_agency_id', emp?.agency_id || '');
+      set('from_position', emp?.position || '');
+    }
+  };
+
+  const openAdd = () => {
+    setForm(emptyForm());
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (m) => {
+    setForm({ ...m });
+    setEditingId(m.id);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm());
   };
 
   const handleSave = async () => {
     if (!form.movement_type || !form.movement_date) return;
     setSaving(true);
-    const created = await base44.entities.HRMovement.create(form);
-    setMovements(prev => [created, ...prev]);
-    setForm({ status: 'Validé', movement_date: new Date().toISOString().split('T')[0] });
-    setShowAdd(false);
-    setSaving(false);
+    try {
+      if (editingId) {
+        const updated = await base44.entities.HRMovement.update(editingId, form);
+        setMovements(prev => prev.map(m => m.id === editingId ? updated : m));
+      } else {
+        const created = await base44.entities.HRMovement.create(form);
+        setMovements(prev => [created, ...prev]);
+      }
+      closeForm();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (m) => {
+    if (!confirm(`Supprimer le mouvement de ${m.employee_name || 'ce collaborateur'} ?`)) return;
+    await base44.entities.HRMovement.delete(m.id);
+    setMovements(prev => prev.filter(x => x.id !== m.id));
   };
 
   if (loading) return (
@@ -78,20 +115,20 @@ export default function Movements() {
           <p className="text-sm text-muted-foreground">{movements.length} mouvement{movements.length > 1 ? 's' : ''} enregistré{movements.length > 1 ? 's' : ''}</p>
         </div>
         {isHR && (
-          <Button className="gap-2" onClick={() => setShowAdd(true)}>
+          <Button className="gap-2" onClick={openAdd}>
             <Plus className="w-4 h-4" />
             Nouveau mouvement
           </Button>
         )}
       </div>
 
-      {/* Add form */}
-      {showAdd && (
+      {/* Add/Edit form */}
+      {showForm && isHR && (
         <div className="bg-lavender/40 border-b border-border p-6">
           <div className="max-w-3xl mx-auto bg-white rounded-2xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-heading font-semibold">Nouveau mouvement RH</h2>
-              <button onClick={() => setShowAdd(false)} className="w-7 h-7 rounded-lg hover:bg-secondary flex items-center justify-center">
+              <h2 className="font-heading font-semibold">{editingId ? 'Modifier le mouvement' : 'Nouveau mouvement RH'}</h2>
+              <button onClick={closeForm} className="w-7 h-7 rounded-lg hover:bg-secondary flex items-center justify-center">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -117,6 +154,15 @@ export default function Movements() {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Date</label>
                 <Input type="date" value={form.movement_date || ''} onChange={e => set('movement_date', e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Statut</label>
+                <Select value={form.status || 'Validé'} onValueChange={v => set('status', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Agence d'origine</label>
@@ -145,15 +191,19 @@ export default function Movements() {
                 <Input value={form.to_position || ''} onChange={e => set('to_position', e.target.value)} />
               </div>
               <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Validé par</label>
+                <Input value={form.validated_by || ''} onChange={e => set('validated_by', e.target.value)} placeholder="Optionnel" />
+              </div>
+              <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Motif</label>
                 <Input value={form.reason || ''} onChange={e => set('reason', e.target.value)} placeholder="Optionnel" />
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Annuler</Button>
+              <Button variant="outline" onClick={closeForm}>Annuler</Button>
               <Button className="gap-2" onClick={handleSave} disabled={saving || !form.movement_type}>
                 {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
-                Enregistrer
+                {editingId ? 'Mettre à jour' : 'Enregistrer'}
               </Button>
             </div>
           </div>
@@ -189,7 +239,20 @@ export default function Movements() {
                       {m.to_position && <><span>→</span><span className="text-foreground font-medium">{m.to_position}</span></>}
                     </div>
                     {m.reason && <p className="text-xs text-muted-foreground mt-1 italic">{m.reason}</p>}
+                    {m.status && m.status !== 'Validé' && (
+                      <span className={`inline-block text-xs px-2 py-0.5 rounded-full mt-1 ${m.status === 'Annulé' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>{m.status}</span>
+                    )}
                   </div>
+                  {isHR && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button onClick={() => openEdit(m)} className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleDelete(m)} className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-muted-foreground hover:text-destructive">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
