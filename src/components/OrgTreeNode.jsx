@@ -218,6 +218,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
                   employee={child}
                   childrenMap={childrenMap}
                   onSelect={onSelect}
+                  defaultExpanded={defaultExpanded}
                   depth={depth + 1}
                   onDragStart={onDragStart}
                   onDrop={onDrop}
@@ -251,6 +252,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
                       employee={child}
                       childrenMap={childrenMap}
                       onSelect={onSelect}
+                      defaultExpanded={defaultExpanded}
                       depth={depth + 1}
                       onDragStart={onDragStart}
                       onDrop={onDrop}
