@@ -159,6 +159,7 @@ export default function BulkImportModal({ employees, agencies, onClose, onDone }
               <p className="font-heading font-semibold text-foreground mb-1">Glissez votre fichier ici</p>
               <p className="text-sm text-muted-foreground">ou cliquez pour parcourir — formats .xlsx, .csv</p>
               <p className="text-xs text-muted-foreground mt-4">Exportez l'annuaire en Excel/CSV, modifiez-le puis réimportez-le. Les lignes sont rapprochées par email ou par nom.</p>
+              <p className="text-xs text-emerald-600 mt-2 font-medium">✓ Les photos déjà affectées sont conservées lors des mises à jour.</p>
               <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => e.target.files[0] && handleFile(e.target.files[0])} />
             </div>
           )}
