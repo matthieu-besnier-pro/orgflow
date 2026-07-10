@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2 } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import OrgServiceView from '@/components/OrgServiceView';
@@ -125,6 +125,7 @@ export default function OrgChart() {
 
   const draggedId = useRef(null);
   const filterPanelRef = useRef(null);
+  const contentRef = useRef(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -158,6 +159,30 @@ export default function OrgChart() {
     if (filtersOpen) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [filtersOpen]);
+
+  // Ajuster le zoom pour que tout l'organigramme tienne dans l'écran
+  const fitToScreen = () => {
+    const el = contentRef.current;
+    if (!el) return;
+    const container = el.parentElement;
+    const contentWidth = el.offsetWidth;
+    const availWidth = container.clientWidth - 64; // p-8 = 32px de chaque côté
+    if (contentWidth > availWidth) {
+      setZoom(Math.max(0.1, Math.min(1, availWidth / contentWidth)));
+    } else {
+      setZoom(0.85);
+    }
+  };
+
+  // Auto-ajuster quand on déplie tout
+  useEffect(() => {
+    if (expandAll) {
+      const timer = setTimeout(fitToScreen, 200);
+      return () => clearTimeout(timer);
+    } else {
+      setZoom(0.85);
+    }
+  }, [expandAll]);
 
   // Build pool from zone/agency/ancienne entité filters
   // baseFiltered = only the directly matching employees (for service view)
@@ -481,7 +506,7 @@ export default function OrgChart() {
         {/* Zoom controls (tree only) */}
         {viewMode === 'hierarchical' && (
           <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
-            <button onClick={() => setZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))}
+            <button onClick={() => setZoom(z => Math.max(0.1, +(z - 0.1).toFixed(1)))}
               className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
@@ -493,6 +518,10 @@ export default function OrgChart() {
             <button onClick={() => setZoom(0.85)} title="Réinitialiser le zoom"
               className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
               <RotateCcw className="w-3 h-3" />
+            </button>
+            <button onClick={fitToScreen} title="Ajuster à l'écran"
+              className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              <Maximize className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
@@ -566,7 +595,7 @@ export default function OrgChart() {
                 searchTerm={searchTerm}
               />
             ) : (
-              <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
+              <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
                 {roots.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
                     <Search className="w-10 h-10 text-muted-foreground/40" />
