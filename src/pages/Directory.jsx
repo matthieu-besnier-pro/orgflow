@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Search, UserPlus, Trash2, CheckSquare, Download } from 'lucide-react';
+import { Search, UserPlus, Trash2, CheckSquare, Download, ImagePlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EmployeeCard from '@/components/EmployeeCard';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import AddEmployeeModal from '@/components/AddEmployeeModal';
+import BulkPhotoImport from '@/components/BulkPhotoImport';
 import { getAssignmentLabel } from '@/components/AssignmentSelector';
 
 const SERVICES = ["Tous","Direction","Service Commercial","Magasin","Atelier","Administratif","Ressources Humaines","Comptabilité","Gestion","Informatique","Communication Marketing","Support Technique","Garanties","Agriculture de Précision","RSE","Accueil Tél.","Service Occasions","Commercial Quads","Commercial TP","PY Pneus"];
@@ -23,6 +24,7 @@ export default function Directory() {
   const [filterStatus, setFilterStatus] = useState('Tous');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showPhotoImport, setShowPhotoImport] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [selectMode, setSelectMode] = useState(false);
 
@@ -144,6 +146,10 @@ export default function Directory() {
                 <CheckSquare className="w-4 h-4" />
                 {selectMode ? 'Annuler' : 'Sélectionner'}
               </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setShowPhotoImport(true)}>
+                <ImagePlus className="w-4 h-4" />
+                <span className="hidden sm:inline">Importer photos</span>
+              </Button>
               <Button className="gap-2" onClick={() => setShowAdd(true)}>
                 <UserPlus className="w-4 h-4" />
                 Ajouter
@@ -240,6 +246,15 @@ export default function Directory() {
           allEmployees={employees}
           onClose={() => setShowAdd(false)}
           onAdd={handleAdd}
+        />
+      )}
+
+      {/* Bulk Photo Import */}
+      {showPhotoImport && (
+        <BulkPhotoImport
+          employees={employees}
+          onClose={() => setShowPhotoImport(false)}
+          onDone={() => base44.entities.Employee.list().then(emps => setEmployees(emps))}
         />
       )}
     </div>
