@@ -498,8 +498,9 @@ export default function OrgChart() {
         {/* Expand/collapse (tree only) */}
         {viewMode === 'hierarchical' && (
           <button onClick={() => setExpandAll(v => !v)} title={expandAll ? 'Tout réduire' : 'Tout déplier'}
-            className="w-8 h-8 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+            className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm font-medium border transition-colors ${expandAll ? 'bg-primary text-white border-primary' : 'bg-white text-foreground border-border hover:bg-secondary'}`}>
             {expandAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span>{expandAll ? 'Tout réduire' : 'Tout déplier'}</span>
           </button>
         )}
 
