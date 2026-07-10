@@ -298,7 +298,7 @@ export default function OrgChart() {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* ── Toolbar ── */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-border">
+      <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-border flex-wrap">
 
         {/* Title */}
         <h1 className="font-heading font-semibold text-foreground text-base hidden sm:block mr-2">Organigramme</h1>
@@ -520,7 +520,7 @@ export default function OrgChart() {
               <RotateCcw className="w-3 h-3" />
             </button>
             <button onClick={fitToScreen} title="Ajuster à l'écran"
-              className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              className="w-7 h-7 rounded-md bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors text-primary">
               <Maximize className="w-3.5 h-3.5" />
             </button>
           </div>
