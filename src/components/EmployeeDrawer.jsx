@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Mail, Phone, Building2, User, Camera, Save, Trash2, Search } from 'lucide-react';
+import { X, Mail, Phone, Building2, User, Camera, Save, Trash2, Search, Trash } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,12 +81,23 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
                 </div>
               )}
               {isHR && (
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                >
-                  {uploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                </button>
+                <>
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                  >
+                    {uploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                  </button>
+                  {form.photo_url && (
+                    <button
+                      onClick={() => set('photo_url', null)}
+                      className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-destructive text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                      title="Supprimer la photo"
+                    >
+                      <Trash className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </>
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
