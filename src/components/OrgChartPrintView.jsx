@@ -26,8 +26,6 @@ function PrintCard({ employee, depth = 0 }) {
   return (
     <div
       style={{
-        display: 'inline-block',
-        verticalAlign: 'top',
         pageBreakInside: 'avoid',
         breakInside: 'avoid',
       }}
@@ -110,47 +108,26 @@ function PrintCard({ employee, depth = 0 }) {
 // ── Nœud arborescent avec connecteurs ───────────────────────────────────────
 function PrintNode({ employee, childrenMap, depth = 0 }) {
   const children = childrenMap[employee.id] || [];
-  const accent = getAccent(depth);
-  const lineColor = depth === 0 ? '#003D7A' : getAccent(depth).bar;
+  const lineColor = getAccent(depth).bar;
 
   return (
-    <div style={{ display: 'inline-block', verticalAlign: 'top', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
       {/* Carte du nœud */}
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <PrintCard employee={employee} depth={depth} />
-      </div>
+      <PrintCard employee={employee} depth={depth} />
 
       {/* Enfants avec connecteurs */}
       {children.length > 0 && (
-        <div style={{ marginTop: '0' }}>
+        <>
           {/* Tige verticale sous le parent */}
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: '1.5px', height: '16px', backgroundColor: lineColor }} />
-          </div>
+          <div style={{ width: '1.5px', height: '16px', backgroundColor: lineColor }} />
 
           {/* Barre horizontale reliant les enfants */}
           {children.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
-              <div
-                style={{
-                  height: '1.5px',
-                  backgroundColor: lineColor,
-                  width: `${children.length * 180 - 10}px`,
-                }}
-              />
-            </div>
+            <div style={{ height: '1.5px', backgroundColor: lineColor, width: `${children.length * 180 - 10}px` }} />
           )}
 
           {/* Conteneur des enfants */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '10px',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-              flexWrap: 'nowrap',
-            }}
-          >
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'flex-start' }}>
             {children.map((child) => (
               <div key={child.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 {/* Tige verticale au-dessus de chaque enfant */}
@@ -159,7 +136,7 @@ function PrintNode({ employee, childrenMap, depth = 0 }) {
               </div>
             ))}
           </div>
-        </div>
+        </>
       )}
     </div>
   );
