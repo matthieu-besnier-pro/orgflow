@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2 } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import OrgServiceView from '@/components/OrgServiceView';
+import OrgGroupedView from '@/components/OrgGroupedView';
 import OrgChartPrintView from '@/components/OrgChartPrintView';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -108,6 +109,7 @@ export default function OrgChart() {
   const [loading, setLoading] = useState(true);
   const [expandAll, setExpandAll] = useState(false);
   const [template, setTemplate] = useState('classique');
+  const [viewMode, setViewMode] = useState('hierarchical');
   const [printMode, setPrintMode] = useState(false);
   const [printFormat, setPrintFormat] = useState('A4');
 
@@ -436,43 +438,64 @@ export default function OrgChart() {
 
         <div className="flex-1" />
 
-        {/* Template toggle */}
+        {/* View mode toggle */}
         <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
           {[
-            { key: 'classique', icon: <LayoutGrid className="w-3.5 h-3.5" />, label: 'Classique' },
-            { key: 'moderne', icon: <Rows3 className="w-3.5 h-3.5" />, label: 'Moderne' },
-            { key: 'compact', icon: <LayoutList className="w-3.5 h-3.5" />, label: 'Compact' },
+            { key: 'hierarchical', icon: <LayoutGrid className="w-3.5 h-3.5" />, label: 'Vue hiérarchique' },
             { key: 'services', icon: <Columns className="w-3.5 h-3.5" />, label: 'Par services' },
+            { key: 'zone', icon: <MapPin className="w-3.5 h-3.5" />, label: 'Par zone géographique' },
+            { key: 'entite', icon: <Layers className="w-3.5 h-3.5" />, label: 'Par ancienne entité' },
+            { key: 'base', icon: <Building2 className="w-3.5 h-3.5" />, label: 'Par base / agence' },
           ].map(t => (
-            <button key={t.key} onClick={() => setTemplate(t.key)} title={t.label}
-              className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${template === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            <button key={t.key} onClick={() => setViewMode(t.key)} title={t.label}
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${viewMode === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
               {t.icon}
             </button>
           ))}
         </div>
 
-        {/* Expand/collapse */}
-        <button onClick={() => setExpandAll(v => !v)} title={expandAll ? 'Tout réduire' : 'Tout déplier'}
-          className="w-8 h-8 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-          {expandAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+        {/* Template toggle (tree only) */}
+        {viewMode === 'hierarchical' && (
+          <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+            {[
+              { key: 'classique', icon: <LayoutGrid className="w-3.5 h-3.5" />, label: 'Classique' },
+              { key: 'moderne', icon: <Rows3 className="w-3.5 h-3.5" />, label: 'Moderne' },
+              { key: 'compact', icon: <LayoutList className="w-3.5 h-3.5" />, label: 'Compact' },
+            ].map(t => (
+              <button key={t.key} onClick={() => setTemplate(t.key)} title={t.label}
+                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${template === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                {t.icon}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* Zoom controls */}
-        <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
-          <button onClick={() => setZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))}
-            className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-            <ZoomOut className="w-3.5 h-3.5" />
+        {/* Expand/collapse (tree only) */}
+        {viewMode === 'hierarchical' && (
+          <button onClick={() => setExpandAll(v => !v)} title={expandAll ? 'Tout réduire' : 'Tout déplier'}
+            className="w-8 h-8 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+            {expandAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
-          <span className="text-xs font-medium px-1 text-muted-foreground w-9 text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(z => Math.min(1.5, +(z + 0.1).toFixed(1)))}
-            className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => setZoom(0.85)} title="Réinitialiser le zoom"
-            className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-            <RotateCcw className="w-3 h-3" />
-          </button>
-        </div>
+        )}
+
+        {/* Zoom controls (tree only) */}
+        {viewMode === 'hierarchical' && (
+          <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+            <button onClick={() => setZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))}
+              className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-xs font-medium px-1 text-muted-foreground w-9 text-center">{Math.round(zoom * 100)}%</span>
+            <button onClick={() => setZoom(z => Math.min(1.5, +(z + 0.1).toFixed(1)))}
+              className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setZoom(0.85)} title="Réinitialiser le zoom"
+              className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              <RotateCcw className="w-3 h-3" />
+            </button>
+          </div>
+        )}
 
         {/* Print button */}
         <button
@@ -527,10 +550,18 @@ export default function OrgChart() {
           </div>
         ) : (
           <>
-            {template === 'services' ? (
+            {viewMode === 'services' ? (
               <OrgServiceView
                 employees={filteredBase}
                 agencies={agencies}
+                onSelect={setSelectedEmployee}
+                searchTerm={searchTerm}
+              />
+            ) : (viewMode === 'zone' || viewMode === 'entite' || viewMode === 'base') ? (
+              <OrgGroupedView
+                employees={filteredBase}
+                agencies={agencies}
+                groupBy={viewMode}
                 onSelect={setSelectedEmployee}
                 searchTerm={searchTerm}
               />
