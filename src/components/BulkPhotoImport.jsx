@@ -101,18 +101,39 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
   const [items, setItems] = useState([]);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [dragging, setDragging] = useState(false);
   const fileRef = useRef();
   const { toast } = useToast();
 
-  const handleFiles = (e) => {
-    const files = Array.from(e.target.files || []);
-    const newItems = files.map(file => ({
+  const addFiles = (files) => {
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    const newItems = imageFiles.map(file => ({
       file,
       preview: URL.createObjectURL(file),
       matchedEmployee: matchFilenameToEmployee(file.name, employees),
       uploaded: false,
     }));
     setItems(prev => [...prev, ...newItems]);
+  };
+
+  const handleFiles = (e) => {
+    addFiles(Array.from(e.target.files || []));
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    addFiles(Array.from(e.dataTransfer.files || []));
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragging(false);
   };
 
   const setMatch = (idx, employeeId) => {
@@ -181,12 +202,15 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
         <div className="flex-1 overflow-y-auto p-6">
           {items.length === 0 ? (
             <div
-              className="border-2 border-dashed border-border rounded-xl py-16 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary hover:bg-lavender/20 transition-colors"
+              className={`border-2 border-dashed rounded-xl py-16 flex flex-col items-center justify-center gap-4 cursor-pointer transition-colors ${dragging ? 'border-primary bg-lavender/30' : 'border-border hover:border-primary hover:bg-lavender/20'}`}
               onClick={() => fileRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
             >
-              <ImagePlus className="w-12 h-12 text-muted-foreground" />
+              <ImagePlus className={`w-12 h-12 ${dragging ? 'text-primary' : 'text-muted-foreground'}`} />
               <div className="text-center">
-                <p className="font-medium text-foreground">Cliquez pour sélectionner des photos</p>
+                <p className="font-medium text-foreground">{dragging ? 'Déposez vos fichiers ici' : 'Glissez vos photos ici ou cliquez pour sélectionner'}</p>
                 <p className="text-sm text-muted-foreground mt-1">JPG, PNG, WEBP — plusieurs fichiers possibles</p>
               </div>
             </div>
