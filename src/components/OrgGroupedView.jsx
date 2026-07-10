@@ -132,7 +132,7 @@ function GroupSection({ title, employees, agencyMap, onSelect, searchTerm, showA
 
 export default function OrgGroupedView({ employees, agencies, groupBy, onSelect, searchTerm = '' }) {
   const agencyMap = {};
-  agencies.forEach(a => { agencyMap[a.id] = a; });
+  agencies.forEach(a => { agencyMap[a.id] = a.name; });
 
   const getGroup = (e) => {
     if (groupBy === 'zone') {
