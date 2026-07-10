@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Building2, Layers, MapPin, Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -39,9 +40,10 @@ export function getAssignmentLabel(employee, agencies = []) {
 }
 
 export default function AssignmentSelector({ form, agencies, onChange }) {
-  const currentType = getAssignmentType(form);
+  const [selectedType, setSelectedType] = useState(() => getAssignmentType(form));
 
   const handleTypeChange = (type) => {
+    setSelectedType(type);
     // Reset all assignment fields, then set the relevant one
     const update = { agency_id: null, ancienne_entite: null, zone: null, is_group_support: false };
     if (type === 'groupe') update.is_group_support = true;
@@ -53,7 +55,7 @@ export default function AssignmentSelector({ form, agencies, onChange }) {
   return (
     <div className="space-y-2">
       <label className="text-xs font-medium text-muted-foreground mb-1 block">Affectation</label>
-      <Select value={currentType} onValueChange={handleTypeChange}>
+      <Select value={selectedType} onValueChange={handleTypeChange}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
           {ASSIGNMENT_TYPES.map(t => {
@@ -70,7 +72,7 @@ export default function AssignmentSelector({ form, agencies, onChange }) {
         </SelectContent>
       </Select>
 
-      {currentType === 'agency' && (
+      {selectedType === 'agency' && (
         <Select value={form.agency_id || ''} onValueChange={v => set('agency_id', v)}>
           <SelectTrigger><SelectValue placeholder="Sélectionner une agence..." /></SelectTrigger>
           <SelectContent>
@@ -79,7 +81,7 @@ export default function AssignmentSelector({ form, agencies, onChange }) {
         </Select>
       )}
 
-      {currentType === 'ancienne_entite' && (
+      {selectedType === 'ancienne_entite' && (
         <Select value={form.ancienne_entite || ''} onValueChange={v => set('ancienne_entite', v)}>
           <SelectTrigger><SelectValue placeholder="Sélectionner une entité..." /></SelectTrigger>
           <SelectContent>
@@ -88,7 +90,7 @@ export default function AssignmentSelector({ form, agencies, onChange }) {
         </Select>
       )}
 
-      {currentType === 'zone' && (
+      {selectedType === 'zone' && (
         <Select value={form.zone || ''} onValueChange={v => set('zone', v)}>
           <SelectTrigger><SelectValue placeholder="Sélectionner une zone..." /></SelectTrigger>
           <SelectContent>
@@ -97,7 +99,7 @@ export default function AssignmentSelector({ form, agencies, onChange }) {
         </Select>
       )}
 
-      {currentType === 'groupe' && (
+      {selectedType === 'groupe' && (
         <div className="flex items-center gap-2 px-3 py-2 bg-lavender/50 rounded-lg text-sm text-primary">
           <Globe className="w-4 h-4" />
           <span>Rattaché au groupe GONNIN DURIS (transversal)</span>
