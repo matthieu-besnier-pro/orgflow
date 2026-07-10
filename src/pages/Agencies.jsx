@@ -13,6 +13,9 @@ const ZONE_COLORS = {
 // Anciennes entités du groupe GONNIN DURIS
 const ANCIENNE_ENTITE_MAP = {
   'Sauze': 'GONNIN',
+  'Sauzé': 'GONNIN',
+  'Sauzé-Vaussais': 'GONNIN',
+  'Vaussais': 'GONNIN',
   'Naintré': 'GONNIN',
   'Chasseneuil': 'GONNIN',
   'La Ferrière': 'GONNIN',
