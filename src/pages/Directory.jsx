@@ -80,18 +80,35 @@ export default function Directory() {
   };
 
   const handleExportCSV = () => {
-    const headers = ['Prénom', 'Nom', 'Poste', 'Service', 'Affectation', 'Email', 'Téléphone', 'Statut', "Date d'entrée"];
-    const rows = filtered.map(e => [
-      e.first_name || '',
-      e.last_name || '',
-      e.position || '',
-      e.service || '',
-      getAssignmentLabel(e, agencies),
-      e.email || '',
-      e.phone || '',
-      e.status || 'Actif',
-      e.hire_date || '',
-    ]);
+    const empById = {};
+    employees.forEach(e => { empById[e.id] = e; });
+    const headers = [
+      'Prénom', 'Nom', 'Poste', 'Service', 'Affectation',
+      'Email', 'Téléphone', 'Statut',
+      "Date d'entrée", 'Date de départ',
+      'Ancienne entité', 'Zone géographique', 'Support Groupe',
+      'Responsable direct', 'Notes RH'
+    ];
+    const rows = filtered.map(e => {
+      const manager = e.manager_id ? empById[e.manager_id] : null;
+      return [
+        e.first_name || '',
+        e.last_name || '',
+        e.position || '',
+        e.service || '',
+        getAssignmentLabel(e, agencies),
+        e.email || '',
+        e.phone || '',
+        e.status || 'Actif',
+        e.hire_date || '',
+        e.departure_date || '',
+        e.ancienne_entite || '',
+        e.zone || '',
+        e.is_group_support ? 'Oui' : 'Non',
+        manager ? `${manager.first_name || ''} ${manager.last_name || ''}`.trim() : '',
+        e.notes || '',
+      ];
+    });
     const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
