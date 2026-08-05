@@ -3,11 +3,12 @@ import { base44 } from '@/api/base44Client';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
-function anomaliesOf(e) {
+function anomaliesOf(e, managerIds) {
   const list = [];
   if (!e.service) list.push('Sans service');
   if (!e.agency_id && !e.is_group_support) list.push('Sans agence');
-  if (!e.manager_id) list.push('Sans manager');
+  // Un collaborateur sans manager mais qui encadre une équipe est un sommet légitime (direction)
+  if (!e.manager_id && !managerIds.has(e.id)) list.push('Sans manager');
   if (!e.position) list.push('Sans poste');
   return list;
 }
@@ -16,8 +17,10 @@ export default function AnomalyList({ employees, agencies, onChanged }) {
   const [saving, setSaving] = useState(null);
   const { toast } = useToast();
 
+  const managerIds = new Set(employees.map(e => e.manager_id).filter(Boolean));
+
   const flagged = employees
-    .map(e => ({ e, issues: anomaliesOf(e) }))
+    .map(e => ({ e, issues: anomaliesOf(e, managerIds) }))
     .filter(x => x.issues.length > 0)
     .sort((a, b) => b.issues.length - a.issues.length);
 
