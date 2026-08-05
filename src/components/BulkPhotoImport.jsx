@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Upload, ImagePlus, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -103,10 +103,22 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef();
+  const dragDepth = useRef(0);
   const { toast } = useToast();
 
+  // Empêche le navigateur d'ouvrir le fichier si on le dépose à côté de la zone
+  useEffect(() => {
+    const prevent = (e) => e.preventDefault();
+    window.addEventListener('dragover', prevent);
+    window.addEventListener('drop', prevent);
+    return () => {
+      window.removeEventListener('dragover', prevent);
+      window.removeEventListener('drop', prevent);
+    };
+  }, []);
+
   const addFiles = (files) => {
-    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    const imageFiles = files.filter(f => f.type.startsWith('image/') || PHOTO_EXTENSIONS.test(f.name));
     const newItems = imageFiles.map(file => ({
       file,
       preview: URL.createObjectURL(file),
@@ -122,18 +134,35 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
 
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    dragDepth.current = 0;
     setDragging(false);
-    addFiles(Array.from(e.dataTransfer.files || []));
+    addFiles(Array.from(e.dataTransfer?.files || []));
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragDepth.current += 1;
     setDragging(true);
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
-    setDragging(false);
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDragging(false);
+  };
+
+  const dropHandlers = {
+    onDrop: handleDrop,
+    onDragOver: handleDragOver,
+    onDragEnter: handleDragEnter,
+    onDragLeave: handleDragLeave,
   };
 
   const setMatch = (idx, employeeId) => {
@@ -199,14 +228,16 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="relative flex-1 overflow-y-auto p-6" {...dropHandlers}>
+          {dragging && items.length > 0 && (
+            <div className="absolute inset-3 z-10 rounded-xl border-2 border-dashed border-primary bg-lavender/60 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+              <p className="font-medium text-primary">Déposez vos photos ici</p>
+            </div>
+          )}
           {items.length === 0 ? (
             <div
               className={`border-2 border-dashed rounded-xl py-16 flex flex-col items-center justify-center gap-4 cursor-pointer transition-colors ${dragging ? 'border-primary bg-lavender/30' : 'border-border hover:border-primary hover:bg-lavender/20'}`}
               onClick={() => fileRef.current?.click()}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
             >
               <ImagePlus className={`w-12 h-12 ${dragging ? 'text-primary' : 'text-muted-foreground'}`} />
               <div className="text-center">
