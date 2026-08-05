@@ -57,9 +57,10 @@ function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, on
           <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
         </div>
         {/* Nom */}
-        <p className="text-xs font-bold text-white leading-tight text-center pointer-events-none w-full truncate">
-          {employee.first_name} {employee.last_name}
-        </p>
+        <div className="text-center pointer-events-none w-full">
+          <p className="text-xs font-bold text-white leading-tight truncate">{employee.first_name}</p>
+          <p className="text-xs font-bold text-white leading-tight truncate">{employee.last_name}</p>
+        </div>
         {/* Fonction */}
         <p className="text-white/70 leading-tight text-center pointer-events-none w-full mt-0.5 line-clamp-2" style={{ fontSize: '9px' }}>
           {employee.position}
@@ -106,7 +107,8 @@ function CardModerne({ employee, onSelect, hasChildren, expanded, onToggle, onDr
           <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${dot}`} />
         </div>
         <div className="flex-1 min-w-0 pointer-events-none">
-          <p className="text-xs font-bold text-white truncate">{employee.first_name} {employee.last_name}</p>
+          <p className="text-xs font-bold text-white leading-tight truncate">{employee.first_name}</p>
+          <p className="text-xs font-bold text-white leading-tight truncate">{employee.last_name}</p>
           <p className="text-white/70 truncate" style={{ fontSize: '9px' }}>{employee.position}</p>
         </div>
         {hasChildren && (
@@ -149,7 +151,8 @@ function CardCompact({ employee, onSelect, hasChildren, expanded, onToggle, onDr
           <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${dot}`} />
         </div>
         <div className="flex-1 min-w-0 pointer-events-none">
-          <p className="text-xs font-semibold text-foreground truncate">{employee.first_name} {employee.last_name}</p>
+          <p className="text-xs font-semibold text-foreground leading-tight truncate">{employee.first_name}</p>
+          <p className="text-xs font-semibold text-foreground leading-tight truncate">{employee.last_name}</p>
           <p className="text-muted-foreground truncate" style={{ fontSize: '9px' }}>{employee.position}</p>
         </div>
         {hasChildren && (
