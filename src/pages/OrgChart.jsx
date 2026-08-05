@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2, Clipboard } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2, Clipboard, Presentation, Palette, AlertTriangle } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
@@ -8,6 +8,7 @@ import OrgServiceView from '@/components/OrgServiceView';
 import OrgGroupedView from '@/components/OrgGroupedView';
 import OrgChartPrintView from '@/components/OrgChartPrintView';
 import OrgWhiteboardView from '@/components/OrgWhiteboardView';
+import OrgPresentationFrame from '@/components/OrgPresentationFrame';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
@@ -115,6 +116,8 @@ export default function OrgChart() {
   const [viewMode, setViewMode] = useState('hierarchical');
   const [printMode, setPrintMode] = useState(false);
   const [printFormat, setPrintFormat] = useState('A4');
+  const [colorMode, setColorMode] = useState('depth');
+  const [showAnomalies, setShowAnomalies] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -268,11 +271,36 @@ export default function OrgChart() {
       return;
     }
     try {
+      const source = employees.find(e => e.id === sourceId);
       await base44.entities.Employee.update(sourceId, { manager_id: targetEmployee.id });
       setEmployees(prev => prev.map(e => e.id === sourceId ? { ...e, manager_id: targetEmployee.id } : e));
+      // Traçabilité : enregistrer le changement de rattachement dans les mouvements RH
+      if (source) {
+        const oldManager = employees.find(e => e.id === source.manager_id);
+        await base44.entities.HRMovement.create({
+          company_id: selectedCompanyId,
+          employee_id: sourceId,
+          employee_name: `${source.first_name} ${source.last_name}`,
+          movement_type: 'Changement de poste',
+          movement_date: new Date().toISOString().split('T')[0],
+          reason: `Changement de rattachement : ${oldManager ? `${oldManager.first_name} ${oldManager.last_name}` : 'aucun manager'} → ${targetEmployee.first_name} ${targetEmployee.last_name}`,
+          status: 'Validé',
+        });
+      }
       toast({ title: 'Hiérarchie mise à jour', description: `Rattaché à ${targetEmployee.first_name} ${targetEmployee.last_name}`, duration: 3000 });
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de mettre à jour la hiérarchie.', variant: 'destructive', duration: 3000 });
+    }
+  };
+
+  // Double-clic sur une carte : centrer l'organigramme sur ce collaborateur
+  const handleFocus = (employee) => {
+    if (selectedManagerId === employee.id) {
+      setSelectedManagerId('all');
+      toast({ title: 'Vue complète rétablie', duration: 2000 });
+    } else {
+      setSelectedManagerId(employee.id);
+      toast({ title: 'Vue centrée', description: `${employee.first_name} ${employee.last_name} et son équipe`, duration: 2500 });
     }
   };
 
@@ -496,12 +524,31 @@ export default function OrgChart() {
               { key: 'classique', icon: <LayoutGrid className="w-3.5 h-3.5" />, label: 'Classique' },
               { key: 'moderne', icon: <Rows3 className="w-3.5 h-3.5" />, label: 'Moderne' },
               { key: 'compact', icon: <LayoutList className="w-3.5 h-3.5" />, label: 'Compact' },
+              { key: 'presentation', icon: <Presentation className="w-3.5 h-3.5" />, label: 'Présentation' },
             ].map(t => (
               <button key={t.key} onClick={() => setTemplate(t.key)} title={t.label}
                 className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${template === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                 {t.icon}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Couleur par service + anomalies (tree only) */}
+        {viewMode === 'hierarchical' && (
+          <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+            <button
+              onClick={() => setColorMode(m => m === 'service' ? 'depth' : 'service')}
+              title={colorMode === 'service' ? 'Couleurs par niveau hiérarchique' : 'Couleurs par service'}
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${colorMode === 'service' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Palette className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setShowAnomalies(v => !v)}
+              title={showAnomalies ? 'Masquer les anomalies de données' : 'Afficher les anomalies de données'}
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${showAnomalies ? 'bg-white shadow-sm text-amber-600' : 'text-muted-foreground hover:text-foreground'}`}>
+              <AlertTriangle className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
 
@@ -615,6 +662,7 @@ export default function OrgChart() {
               />
             ) : (
               <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
+                <OrgPresentationFrame active={template === 'presentation'} company={selectedCompany}>
                 {roots.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
                     <Search className="w-10 h-10 text-muted-foreground/40" />
@@ -636,6 +684,9 @@ export default function OrgChart() {
                       onDrop={handleDrop}
                       template={template}
                       searchTerm={searchTerm}
+                      onFocus={handleFocus}
+                      colorMode={colorMode}
+                      showAnomalies={showAnomalies}
                     />
                   </div>
                 ) : (
@@ -652,10 +703,14 @@ export default function OrgChart() {
                         onDrop={handleDrop}
                         template={template}
                         searchTerm={searchTerm}
+                        onFocus={handleFocus}
+                        colorMode={colorMode}
+                        showAnomalies={showAnomalies}
                       />
                     ))}
                   </div>
                 )}
+                </OrgPresentationFrame>
               </div>
             )}
           </>

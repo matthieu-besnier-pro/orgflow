@@ -1,5 +1,17 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
+import { getServiceColor } from '@/lib/serviceColors';
+import OrgCardPresentation from '@/components/OrgCardPresentation';
+
+// Détection d'anomalies de données sur une fiche collaborateur
+export function getAnomalies(employee, depth) {
+  const list = [];
+  if (depth > 0 && !employee.manager_id) list.push('Sans manager');
+  if (!employee.service) list.push('Sans service');
+  if (!employee.agency_id && !employee.is_group_support) list.push('Sans agence');
+  if (!employee.position) list.push('Sans poste');
+  return list;
+}
 
 const STATUS_DOT = {
   'Actif': 'bg-emerald-400',
@@ -28,9 +40,9 @@ function getDepthColor(depth) {
 }
 
 // ── Carte verticale : photo / nom / fonction ──────────────────────────────
-function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, depth }) {
+function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, color, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
-  const { bg, shadow } = getDepthColor(depth || 0);
+  const { bg, shadow } = color;
   const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
 
   return (
@@ -39,12 +51,19 @@ function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, on
         draggable
         onDragStart={(e) => onDragStart(e, employee)}
         onClick={() => onSelect(employee)}
+        onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(employee); }}
+        title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
         style={{ backgroundColor: bg, boxShadow: `0 8px 24px ${shadow}` }}
         className={`relative rounded-xl cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col items-center pt-5 pb-4 px-4 w-28
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
           ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}
         `}
       >
+        {anomalies.length > 0 && (
+          <span title={anomalies.join(' · ')} className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center shadow">
+            <AlertTriangle className="w-2.5 h-2.5 text-amber-900" />
+          </span>
+        )}
         {/* Avatar */}
         <div className="relative pointer-events-none mb-2">
           {employee.photo_url ? (
@@ -79,9 +98,9 @@ function CardClassique({ employee, onSelect, hasChildren, expanded, onToggle, on
   );
 }
 
-function CardModerne({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, depth }) {
+function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, color, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
-  const { bg, shadow } = getDepthColor(depth || 0);
+  const { bg, shadow } = color;
   const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
 
   return (
@@ -90,12 +109,19 @@ function CardModerne({ employee, onSelect, hasChildren, expanded, onToggle, onDr
         draggable
         onDragStart={(e) => onDragStart(e, employee)}
         onClick={() => onSelect(employee)}
+        onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(employee); }}
+        title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
         style={{ backgroundColor: bg, boxShadow: `0 8px 24px ${shadow}` }}
         className={`relative rounded-xl cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-3 px-4 py-3 w-56
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
           ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}
         `}
       >
+        {anomalies.length > 0 && (
+          <span title={anomalies.join(' · ')} className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center shadow">
+            <AlertTriangle className="w-2.5 h-2.5 text-amber-900" />
+          </span>
+        )}
         <div className="relative pointer-events-none flex-shrink-0">
           {employee.photo_url ? (
             <img src={employee.photo_url} alt={initials} className="w-10 h-10 rounded-full object-cover border-2 border-white/80" />
@@ -125,7 +151,7 @@ function CardModerne({ employee, onSelect, hasChildren, expanded, onToggle, onDr
 }
 
 // ── Template: Compact ──────────────────────────────────────────────────────
-function CardCompact({ employee, onSelect, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted }) {
+function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const dot = STATUS_DOT[employee.status] || 'bg-gray-300';
 
@@ -135,11 +161,18 @@ function CardCompact({ employee, onSelect, hasChildren, expanded, onToggle, onDr
         draggable
         onDragStart={(e) => onDragStart(e, employee)}
         onClick={() => onSelect(employee)}
-        className={`bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-grab active:cursor-grabbing active:opacity-60 px-3 py-2 flex items-center gap-2 w-48 border border-border
+        onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(employee); }}
+        title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
+        className={`relative bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-grab active:cursor-grabbing active:opacity-60 px-3 py-2 flex items-center gap-2 w-48 border border-border
           ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-105' : ''}
           ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1 bg-amber-50' : ''}
         `}
       >
+        {anomalies.length > 0 && (
+          <span title={anomalies.join(' · ')} className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center">
+            <AlertTriangle className="w-2 h-2 text-amber-900" />
+          </span>
+        )}
         <div className="relative flex-shrink-0 pointer-events-none">
           {employee.photo_url ? (
             <img src={employee.photo_url} alt={initials} className="w-8 h-8 rounded-full object-cover" />
@@ -172,21 +205,30 @@ const CARD_COMPONENTS = {
   classique: CardClassique,
   moderne: CardModerne,
   compact: CardCompact,
+  presentation: OrgCardPresentation,
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '' }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
   const isHighlighted = matchesSearch(employee, searchTerm);
 
   const CardComponent = CARD_COMPONENTS[template] || CardClassique;
-  const isModernStyle = template === 'classique' || template === 'moderne';
   const isCompact = template === 'compact';
+  const isPresentation = template === 'presentation';
+  const isModernStyle = !isCompact;
   const isDimmed = searchTerm && !isHighlighted;
 
-  const lineColor = isModernStyle ? '#003D7A' : 'hsl(var(--border))';
+  // Couleur de la carte : par profondeur hiérarchique ou par service
+  const cardColor = colorMode === 'service'
+    ? (() => { const c = getServiceColor(employee.service); return { bg: c.bg, shadow: `${c.bg}22`, border: c.bg }; })()
+    : getDepthColor(depth || 0);
+
+  const anomalies = showAnomalies ? getAnomalies(employee, depth) : [];
+
+  const lineColor = isModernStyle ? '#94A3B8' : 'hsl(var(--border))';
   // border color of the team group box — slightly darker than line
   const { border: groupBorderColor } = getDepthColor(Math.min(depth + 1, DEPTH_COLORS.length - 1));
 
@@ -200,13 +242,15 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
         <CardComponent
           employee={employee}
           onSelect={onSelect}
+          onFocus={onFocus}
           hasChildren={children.length > 0}
           expanded={expanded}
           onToggle={() => setExpanded(v => !v)}
           onDragStart={onDragStart}
           isDragOver={isDragOver}
           isHighlighted={isHighlighted}
-          depth={depth}
+          color={cardColor}
+          anomalies={anomalies}
         />
       </div>
 
@@ -221,46 +265,59 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, defaultEx
                   employee={child}
                   childrenMap={childrenMap}
                   onSelect={onSelect}
+                  onFocus={onFocus}
                   defaultExpanded={defaultExpanded}
                   depth={depth + 1}
                   onDragStart={onDragStart}
                   onDrop={onDrop}
                   template={template}
                   searchTerm={searchTerm}
+                  colorMode={colorMode}
+                  showAnomalies={showAnomalies}
                 />
               ))}
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center mt-1">
-            {/* vertical stem from parent */}
+            {/* tronc vertical sortant du parent */}
             <div className="w-px h-5" style={{ backgroundColor: lineColor }} />
-            {/* Team group box */}
+            {/* Groupe d'équipe */}
             <div
-              className="rounded-2xl p-3"
-              style={{
-                border: `1.5px solid ${groupBorderColor}44`,
-                background: `${groupBorderColor}0d`,
-                boxShadow: `0 2px 12px ${groupBorderColor}18`,
+              className={isPresentation ? '' : 'rounded-2xl px-3 pb-3'}
+              style={isPresentation ? undefined : {
+                border: `1.5px solid ${groupBorderColor}33`,
+                background: `${groupBorderColor}0a`,
               }}
             >
-              <div className="relative flex items-start gap-3 flex-wrap justify-center">
-                {children.length > 1 && (
-                  <div className="absolute top-0 h-px" style={{ backgroundColor: lineColor, left: '14px', right: '14px' }} />
-                )}
-                {children.map((child) => (
+              <div className="flex items-start gap-4 justify-center">
+                {children.map((child, i) => (
                   <div key={child.id} className="flex flex-col items-center">
-                    <div className="w-px h-4" style={{ backgroundColor: lineColor }} />
+                    {/* connecteur orthogonal : demi-barres horizontales + descente verticale */}
+                    <div className="flex w-full h-4">
+                      <div
+                        className="flex-1"
+                        style={{ borderTop: children.length > 1 && i > 0 ? `1px solid ${lineColor}` : 'none' }}
+                      />
+                      <div className="w-px" style={{ backgroundColor: lineColor }} />
+                      <div
+                        className="flex-1"
+                        style={{ borderTop: children.length > 1 && i < children.length - 1 ? `1px solid ${lineColor}` : 'none' }}
+                      />
+                    </div>
                     <OrgTreeNode
                       employee={child}
                       childrenMap={childrenMap}
                       onSelect={onSelect}
+                      onFocus={onFocus}
                       defaultExpanded={defaultExpanded}
                       depth={depth + 1}
                       onDragStart={onDragStart}
                       onDrop={onDrop}
                       template={template}
                       searchTerm={searchTerm}
+                      colorMode={colorMode}
+                      showAnomalies={showAnomalies}
                     />
                   </div>
                 ))}

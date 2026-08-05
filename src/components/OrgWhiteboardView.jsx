@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pin } from 'lucide-react';
+import { Pin, Printer } from 'lucide-react';
 
 const STATUS_DOT = {
   'Actif': 'bg-emerald-400',
@@ -166,8 +166,28 @@ export default function OrgWhiteboardView({ employees, agencies, onSelect, searc
 
   return (
     <div className="mx-auto" style={{ width: '100%', maxWidth: '1600px' }}>
+      <style>{`
+        @media print {
+          @page { size: A3 landscape; margin: 8mm; }
+          body * { visibility: hidden; }
+          #whiteboard-print, #whiteboard-print * { visibility: visible; }
+          #whiteboard-print { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border: none; }
+          .whiteboard-no-print { display: none !important; }
+        }
+      `}</style>
+
+      <div className="flex justify-end mb-2 whiteboard-no-print">
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm font-medium bg-primary text-white hover:opacity-90"
+        >
+          <Printer className="w-3.5 h-3.5" />
+          Imprimer / PDF (A3 paysage)
+        </button>
+      </div>
+
       {/* Whiteboard surface */}
-      <div className="relative bg-white rounded-lg shadow-xl border-4 border-slate-200 p-4"
+      <div id="whiteboard-print" className="relative bg-white rounded-lg shadow-xl border-4 border-slate-200 p-4"
         style={{
           backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)',
           backgroundSize: '16px 16px',
