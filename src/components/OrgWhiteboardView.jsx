@@ -46,7 +46,17 @@ const SERVICES_ORDER = [
   'PY Pneus',
 ];
 
-function StickyCard({ employee, agencyName, onSelect, searchTerm }) {
+// Managers d'abord, puis les autres (ordre alphabétique dans chaque groupe)
+function sortManagersFirst(list, managerIds) {
+  return [...list].sort((a, b) => {
+    const ma = managerIds.has(a.id) ? 0 : 1;
+    const mb = managerIds.has(b.id) ? 0 : 1;
+    if (ma !== mb) return ma - mb;
+    return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr');
+  });
+}
+
+function StickyCard({ employee, agencyName, onSelect, searchTerm, isManager = false }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const dot = STATUS_DOT[employee.status] || 'bg-gray-300';
 
@@ -57,33 +67,33 @@ function StickyCard({ employee, agencyName, onSelect, searchTerm }) {
   return (
     <div
       onClick={() => onSelect(employee)}
-      className={`relative bg-white rounded-md shadow-sm border border-border/70 px-2 py-1.5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${isDimmed ? 'opacity-25' : 'opacity-100'} ${isHighlighted ? 'ring-2 ring-amber-400' : ''}`}
+      className={`relative rounded-md px-2 py-1.5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${isManager ? 'bg-slate-700 border border-slate-800 shadow-md' : 'bg-white border border-border/70 shadow-sm'} ${isDimmed ? 'opacity-25' : 'opacity-100'} ${isHighlighted ? 'ring-2 ring-amber-400' : ''}`}
     >
       <div className="flex items-center gap-1.5">
         <div className="relative flex-shrink-0">
           {employee.photo_url ? (
             <img src={employee.photo_url} alt={initials} className="w-7 h-7 rounded-full object-cover border border-border" />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-lavender flex items-center justify-center">
-              <span className="text-[9px] font-bold text-primary">{initials}</span>
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isManager ? 'bg-slate-500' : 'bg-lavender'}`}>
+              <span className={`text-[9px] font-bold ${isManager ? 'text-white' : 'text-primary'}`}>{initials}</span>
             </div>
           )}
           <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${dot}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold text-foreground leading-tight truncate">{employee.first_name}</p>
-          <p className="text-[10px] font-bold text-foreground leading-tight truncate">{employee.last_name}</p>
+          <p className={`text-[10px] font-bold leading-tight truncate ${isManager ? 'text-white' : 'text-foreground'}`}>{employee.first_name}</p>
+          <p className={`text-[10px] font-bold leading-tight truncate ${isManager ? 'text-white' : 'text-foreground'}`}>{employee.last_name}</p>
         </div>
       </div>
-      <p className="text-muted-foreground leading-tight mt-0.5 truncate" style={{ fontSize: '8px' }}>{employee.position}</p>
+      <p className={`leading-tight mt-0.5 truncate ${isManager ? 'text-slate-200' : 'text-muted-foreground'}`} style={{ fontSize: '8px' }}>{employee.position}</p>
       {agencyName && (
-        <p className="text-muted-foreground/60 leading-tight truncate" style={{ fontSize: '7px' }}>{agencyName}</p>
+        <p className={`leading-tight truncate ${isManager ? 'text-slate-300' : 'text-muted-foreground/60'}`} style={{ fontSize: '7px' }}>{agencyName}</p>
       )}
     </div>
   );
 }
 
-function ServiceColumn({ service, employees, agencyMap, onSelect, searchTerm, colorIndex }) {
+function ServiceColumn({ service, employees, agencyMap, onSelect, searchTerm, colorIndex, managerIds }) {
   const [collapsed, setCollapsed] = useState(false);
   const color = SERVICE_COLORS[colorIndex % SERVICE_COLORS.length];
 
@@ -93,7 +103,7 @@ function ServiceColumn({ service, employees, agencyMap, onSelect, searchTerm, co
     if (!byAgency[agName]) byAgency[agName] = [];
     byAgency[agName].push(e);
   });
-  const agencyGroups = Object.entries(byAgency);
+  const agencyGroups = Object.entries(byAgency).map(([n, list]) => [n, sortManagersFirst(list, managerIds)]);
   const showAgencyGroups = agencyGroups.length > 1;
 
   return (
@@ -122,18 +132,20 @@ function ServiceColumn({ service, employees, agencyMap, onSelect, searchTerm, co
                       agencyName={null}
                       onSelect={onSelect}
                       searchTerm={searchTerm}
+                      isManager={managerIds.has(e.id)}
                     />
                   ))}
                 </div>
               </div>
             )) : (
-              employees.map(e => (
+              sortManagersFirst(employees, managerIds).map(e => (
                 <StickyCard
                   key={e.id}
                   employee={e}
                   agencyName={null}
                   onSelect={onSelect}
                   searchTerm={searchTerm}
+                  isManager={managerIds.has(e.id)}
                 />
               ))
             )}
@@ -147,6 +159,9 @@ function ServiceColumn({ service, employees, agencyMap, onSelect, searchTerm, co
 export default function OrgWhiteboardView({ employees, agencies, onSelect, searchTerm = '', company = null }) {
   const agencyMap = {};
   agencies.forEach(a => { agencyMap[a.id] = a.name; });
+
+  // Managers = collaborateurs ayant au moins un subordonné
+  const managerIds = new Set(employees.map(e => e.manager_id).filter(Boolean));
 
   const byService = {};
   employees.forEach(e => {
@@ -214,6 +229,7 @@ export default function OrgWhiteboardView({ employees, agencies, onSelect, searc
               onSelect={onSelect}
               searchTerm={searchTerm}
               colorIndex={i}
+              managerIds={managerIds}
             />
           ))}
         </div>
