@@ -24,6 +24,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
   const [dirty, setDirty] = useState(false);
   const drag = useRef(null);
   const canvasRef = useRef(null);
+  const areaRef = useRef(null);
   const { toast } = useToast();
 
   // Regroupement par service
@@ -63,26 +64,36 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [services.join('|')]);
 
+  // Déplacement d'un bloc : coordonnées relatives à la zone de dépôt (areaRef)
   const handleDragStart = (e, service) => {
     e.preventDefault();
-    const rect = canvasRef.current.getBoundingClientRect();
+    const rect = areaRef.current.getBoundingClientRect();
+    const pos = positions[service] || { x: 20, y: 20 };
     drag.current = {
       service,
-      offsetX: e.clientX - rect.left - positions[service].x,
-      offsetY: e.clientY - rect.top - positions[service].y,
+      offsetX: e.clientX - rect.left - pos.x,
+      offsetY: e.clientY - rect.top - pos.y,
     };
   };
 
-  const handleMouseMove = (e) => {
-    if (!drag.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(PAGE_W - BLOCK_W, e.clientX - rect.left - drag.current.offsetX));
-    const y = Math.max(0, e.clientY - rect.top - drag.current.offsetY);
-    setPositions(prev => ({ ...prev, [drag.current.service]: { x, y } }));
-    setDirty(true);
-  };
-
-  const handleMouseUp = () => { drag.current = null; };
+  // Écoute globale pendant le glissement : le curseur peut sortir du canevas
+  useEffect(() => {
+    const move = (e) => {
+      if (!drag.current || !areaRef.current) return;
+      const rect = areaRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(PAGE_W - BLOCK_W, e.clientX - rect.left - drag.current.offsetX));
+      const y = Math.max(0, e.clientY - rect.top - drag.current.offsetY);
+      setPositions(prev => ({ ...prev, [drag.current.service]: { x, y } }));
+      setDirty(true);
+    };
+    const up = () => { drag.current = null; };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    return () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+  }, []);
 
   const save = async () => {
     const payload = Object.entries(positions).map(([service, p]) => ({ service, x: Math.round(p.x), y: Math.round(p.y) }));
@@ -138,17 +149,14 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
 
       <div
         ref={canvasRef}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        className="freeboard-page relative bg-white border border-border shadow-lg"
+        className="freeboard-page relative bg-white border border-border shadow-lg select-none"
         style={{ width: PAGE_W, height: maxY }}
       >
         <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-3 border-b border-border">
           <p className="font-heading font-bold text-foreground">{company?.name || 'Organigramme'} — Services</p>
           <p className="text-xs text-muted-foreground">{employees.length} collaborateurs</p>
         </div>
-        <div className="absolute inset-0 pt-14">
+        <div ref={areaRef} className="absolute inset-x-0 bottom-0" style={{ top: 56 }}>
           {services.map(s => (
             <FreeServiceBlock
               key={s}
