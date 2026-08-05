@@ -15,6 +15,7 @@ import Movements from '@/pages/Movements';
 import Agencies from '@/pages/Agencies';
 import Companies from '@/pages/Companies';
 import Chatbot from '@/pages/Chatbot';
+import DataQuality from '@/pages/DataQuality';
 import { CompanyProvider } from '@/lib/CompanyContext';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
             <Route path="/mouvements" element={<Movements />} />
             <Route path="/societes" element={<Companies />} />
             <Route path="/chatbot" element={<Chatbot />} />
+            <Route path="/qualite-donnees" element={<DataQuality />} />
           </Route>
         </Route>
         <Route path="*" element={<PageNotFound />} />

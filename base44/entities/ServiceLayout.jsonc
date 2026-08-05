@@ -1,0 +1,31 @@
+{
+  "name": "ServiceLayout",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "title": "Soci\u00e9t\u00e9"
+    },
+    "positions": {
+      "type": "array",
+      "title": "Positions des blocs",
+      "items": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "company_id"
+  ]
+}

@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { 
   LayoutDashboard, Network, Users, ArrowLeftRight, 
-  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin, Layers
+  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin, Layers, ShieldCheck
 } from 'lucide-react';
 import CompanySelector from '@/components/CompanySelector';
 import { useCompany } from '@/lib/CompanyContext';
@@ -14,6 +14,7 @@ const navItems = [
   { path: '/agences', icon: MapPin, label: 'Agences', help: 'Gérez les agences du groupe' },
   { path: '/mouvements', icon: ArrowLeftRight, label: 'Mouvements RH', help: 'Enregistrez arrivées, départs, mutations...' },
   { path: '/societes', icon: Layers, label: 'Sociétés', help: 'Gérez les sociétés et leur structure' },
+  { path: '/qualite-donnees', icon: ShieldCheck, label: 'Qualité des données', help: 'Fiches incomplètes et libellés à harmoniser' },
   { path: '/chatbot', icon: MessageSquareText, label: 'Assistant IA', help: '⭐ L\'outil le plus simple pour débuter !' },
 ];
 

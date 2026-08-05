@@ -1,0 +1,58 @@
+import { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { AlertTriangle, Merge, ShieldCheck } from 'lucide-react';
+import { useCompany } from '@/lib/CompanyContext';
+import AnomalyList from '@/components/AnomalyList';
+import ServiceMergePanel from '@/components/ServiceMergePanel';
+
+export default function DataQuality() {
+  const [employees, setEmployees] = useState([]);
+  const [agencies, setAgencies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('anomalies');
+  const { selectedCompanyId } = useCompany();
+
+  const load = () => {
+    if (!selectedCompanyId) return;
+    setLoading(true);
+    Promise.all([
+      base44.entities.Employee.filter({ company_id: selectedCompanyId }),
+      base44.entities.Agency.filter({ company_id: selectedCompanyId }),
+    ]).then(([emps, ags]) => { setEmployees(emps); setAgencies(ags); setLoading(false); });
+  };
+
+  useEffect(load, [selectedCompanyId]);
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="flex items-center gap-3 mb-1">
+        <ShieldCheck className="w-6 h-6 text-primary" />
+        <h1 className="font-heading text-2xl font-bold text-foreground">Qualité des données</h1>
+      </div>
+      <p className="text-sm text-muted-foreground mb-6">Corrigez les fiches incomplètes et harmonisez les libellés de services.</p>
+
+      <div className="flex items-center gap-1 bg-secondary rounded-xl p-1 w-fit mb-6">
+        <button onClick={() => setTab('anomalies')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'anomalies' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'}`}>
+          <AlertTriangle className="w-4 h-4" /> Anomalies
+        </button>
+        <button onClick={() => setTab('services')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'services' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'}`}>
+          <Merge className="w-4 h-4" /> Harmonisation des services
+        </button>
+      </div>
+
+      {tab === 'anomalies' ? (
+        <AnomalyList employees={employees} agencies={agencies} onChanged={load} />
+      ) : (
+        <ServiceMergePanel employees={employees} onChanged={load} />
+      )}
+    </div>
+  );
+}

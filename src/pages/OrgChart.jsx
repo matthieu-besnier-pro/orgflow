@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2, Clipboard, Presentation, Palette, AlertTriangle } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2, Clipboard, Presentation, Palette, AlertTriangle, Move } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
@@ -9,6 +9,10 @@ import OrgGroupedView from '@/components/OrgGroupedView';
 import OrgChartPrintView from '@/components/OrgChartPrintView';
 import OrgWhiteboardView from '@/components/OrgWhiteboardView';
 import OrgPresentationFrame from '@/components/OrgPresentationFrame';
+import OrgFreeBoard from '@/components/OrgFreeBoard';
+import ServiceLegend from '@/components/ServiceLegend';
+import OrgBreadcrumb from '@/components/OrgBreadcrumb';
+import usePanDrag from '@/hooks/usePanDrag';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
@@ -135,6 +139,7 @@ export default function OrgChart() {
   const { toast } = useToast();
 
   const { selectedCompanyId, selectedCompany, zones: companyZones } = useCompany();
+  const pan = usePanDrag();
 
   useEffect(() => {
     if (!selectedCompanyId) return;
@@ -509,6 +514,7 @@ export default function OrgChart() {
             { key: 'entite', icon: <Layers className="w-3.5 h-3.5" />, label: 'Par ancienne entité' },
             { key: 'base', icon: <Building2 className="w-3.5 h-3.5" />, label: 'Par base / agence' },
             { key: 'tableau', icon: <Clipboard className="w-3.5 h-3.5" />, label: 'Tableau blanc (A3 paysage)' },
+            { key: 'libre', icon: <Move className="w-3.5 h-3.5" />, label: 'Disposition libre (A3 paysage, blocs déplaçables)' },
           ].map(t => (
             <button key={t.key} onClick={() => setViewMode(t.key)} title={t.label}
               className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${viewMode === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -596,8 +602,21 @@ export default function OrgChart() {
         </button>
       </div>
 
+      {/* Fil d'Ariane quand la vue est centrée sur un manager */}
+      {selectedManagerId !== 'all' && (
+        <OrgBreadcrumb employees={employees} focusedId={selectedManagerId} onNavigate={setSelectedManagerId} />
+      )}
+
+      {/* Légende des couleurs de services */}
+      {!printMode && (colorMode === 'service' || viewMode === 'libre') && (
+        <ServiceLegend services={[...new Set(filteredBase.map(e => e.service || 'Sans service'))].sort((a, b) => a.localeCompare(b, 'fr'))} />
+      )}
+
       {/* ── Canvas ── */}
-      <div className={`flex-1 overflow-auto ${printMode ? 'p-0 bg-gray-100' : 'p-8'}`}>
+      <div
+        ref={pan.ref}
+        {...(viewMode === 'hierarchical' && !printMode ? pan.handlers : {})}
+        className={`flex-1 overflow-auto ${printMode ? 'p-0 bg-gray-100' : 'p-8'} ${viewMode === 'hierarchical' && !printMode ? (pan.panning ? 'cursor-grabbing' : 'cursor-grab') : ''}`}>
         {printMode && (
           <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-border p-4 flex items-center gap-4 shadow-sm">
             <div className="flex items-center gap-2">
@@ -643,6 +662,14 @@ export default function OrgChart() {
                 agencies={agencies}
                 onSelect={setSelectedEmployee}
                 searchTerm={searchTerm}
+              />
+            ) : viewMode === 'libre' ? (
+              <OrgFreeBoard
+                employees={filteredBase}
+                onSelect={setSelectedEmployee}
+                searchTerm={searchTerm}
+                companyId={selectedCompanyId}
+                company={selectedCompany}
               />
             ) : viewMode === 'tableau' ? (
               <OrgWhiteboardView
