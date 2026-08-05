@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { useCompany } from '@/lib/CompanyContext';
+import readDroppedFiles from '@/lib/readDroppedFiles';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
@@ -264,6 +265,23 @@ export default function OrgChart() {
   };
 
   const handleDrop = async (e, targetEmployee) => {
+    // Dépôt d'un fichier image depuis l'ordinateur → mise à jour de la photo
+    const droppedFiles = await readDroppedFiles(e.dataTransfer);
+    const image = droppedFiles.find(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i.test(f.name));
+    if (image) {
+      draggedId.current = null;
+      toast({ title: 'Envoi de la photo…', duration: 2000 });
+      try {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: image });
+        await base44.entities.Employee.update(targetEmployee.id, { photo_url: file_url });
+        setEmployees(prev => prev.map(emp => emp.id === targetEmployee.id ? { ...emp, photo_url: file_url } : emp));
+        toast({ title: 'Photo mise à jour', description: `${targetEmployee.first_name} ${targetEmployee.last_name}`, duration: 3000 });
+      } catch {
+        toast({ title: 'Erreur', description: "Impossible d'envoyer la photo.", variant: 'destructive', duration: 3000 });
+      }
+      return;
+    }
+
     const sourceId = draggedId.current;
     draggedId.current = null;
     if (!sourceId || sourceId === targetEmployee.id) return;
