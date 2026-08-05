@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import readDroppedFiles from '@/lib/readDroppedFiles';
 
 const PHOTO_EXTENSIONS = /\.(jpg|jpeg|png|webp|gif|bmp|heic)$/i;
 
@@ -119,6 +120,10 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
 
   const addFiles = (files) => {
     const imageFiles = files.filter(f => f.type.startsWith('image/') || PHOTO_EXTENSIONS.test(f.name));
+    if (imageFiles.length === 0) {
+      toast({ title: 'Aucune image détectée', description: 'Déposez des fichiers JPG, PNG ou WEBP (ou un dossier de photos).', variant: 'destructive', duration: 4000 });
+      return;
+    }
     const newItems = imageFiles.map(file => ({
       file,
       preview: URL.createObjectURL(file),
@@ -132,12 +137,13 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
     addFiles(Array.from(e.target.files || []));
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     dragDepth.current = 0;
     setDragging(false);
-    addFiles(Array.from(e.dataTransfer?.files || []));
+    const files = await readDroppedFiles(e.dataTransfer);
+    addFiles(files);
   };
 
   const handleDragOver = (e) => {
