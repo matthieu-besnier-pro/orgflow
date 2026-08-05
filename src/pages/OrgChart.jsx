@@ -13,6 +13,7 @@ import OrgFreeBoard from '@/components/OrgFreeBoard';
 import ServiceLegend from '@/components/ServiceLegend';
 import OrgBreadcrumb from '@/components/OrgBreadcrumb';
 import usePanDrag from '@/hooks/usePanDrag';
+import OrgMiniMap from '@/components/OrgMiniMap';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
@@ -743,6 +744,14 @@ export default function OrgChart() {
           </>
         )}
       </div>
+
+      {viewMode === 'hierarchical' && !printMode && (
+        <OrgMiniMap
+          containerRef={pan.ref}
+          contentRef={contentRef}
+          deps={`${zoom}-${expandAll}-${template}-${filteredPool.length}-${selectedManagerId}`}
+        />
+      )}
 
       {selectedEmployee && (
         <EmployeeDrawer
