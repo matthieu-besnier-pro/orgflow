@@ -2,8 +2,10 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { 
   LayoutDashboard, Network, Users, ArrowLeftRight, 
-  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin
+  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin, Layers
 } from 'lucide-react';
+import CompanySelector from '@/components/CompanySelector';
+import { useCompany } from '@/lib/CompanyContext';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Tableau de bord', help: 'Vue d\'ensemble et statistiques clés' },
@@ -11,12 +13,16 @@ const navItems = [
   { path: '/annuaire', icon: Users, label: 'Annuaire', help: 'Cherchez et modifiez les collaborateurs' },
   { path: '/agences', icon: MapPin, label: 'Agences', help: 'Gérez les agences du groupe' },
   { path: '/mouvements', icon: ArrowLeftRight, label: 'Mouvements RH', help: 'Enregistrez arrivées, départs, mutations...' },
+  { path: '/societes', icon: Layers, label: 'Sociétés', help: 'Gérez les sociétés et leur structure' },
   { path: '/chatbot', icon: MessageSquareText, label: 'Assistant IA', help: '⭐ L\'outil le plus simple pour débuter !' },
 ];
 
 export default function Layout() {
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
+  const { selectedCompany } = useCompany();
+
+  const companyName = selectedCompany?.name || 'Multi-Sociétés';
 
   return (
     <div className="flex h-screen bg-canvas overflow-hidden">
@@ -26,16 +32,22 @@ export default function Layout() {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-3 py-4 border-b border-border h-16">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
-            <Building2 className="w-5 h-5 text-white" />
-          </div>
+          {selectedCompany?.logo_url ? (
+            <img src={selectedCompany.logo_url} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
+          )}
           {expanded && (
             <div className="overflow-hidden">
-              <p className="font-heading font-700 text-sm text-foreground leading-tight">GONNIN</p>
-              <p className="font-heading font-700 text-sm text-primary leading-tight">DURIS</p>
+              <p className="font-heading font-700 text-sm text-foreground leading-tight truncate">{companyName}</p>
             </div>
           )}
         </div>
+
+        {/* Company selector */}
+        {expanded && <CompanySelector />}
 
         {/* Nav */}
         <nav className="flex-1 py-4 space-y-1 px-2 group">

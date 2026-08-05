@@ -13,7 +13,9 @@ import OrgChart from '@/pages/OrgChart';
 import Directory from '@/pages/Directory';
 import Movements from '@/pages/Movements';
 import Agencies from '@/pages/Agencies';
+import Companies from '@/pages/Companies';
 import Chatbot from '@/pages/Chatbot';
+import { CompanyProvider } from '@/lib/CompanyContext';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -52,6 +54,7 @@ const AuthenticatedApp = () => {
           <Route path="/annuaire" element={<Directory />} />
           <Route path="/agences" element={<Agencies />} />
           <Route path="/mouvements" element={<Movements />} />
+          <Route path="/societes" element={<Companies />} />
           <Route path="/chatbot" element={<Chatbot />} />
         </Route>
       </Route>
@@ -66,7 +69,9 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <ScrollToTop />
-          <AuthenticatedApp />
+          <CompanyProvider>
+            <AuthenticatedApp />
+          </CompanyProvider>
         </Router>
         <Toaster />
       </QueryClientProvider>

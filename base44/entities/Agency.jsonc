@@ -2,18 +2,17 @@
   "name": "Agency",
   "type": "object",
   "properties": {
+    "company_id": {
+      "type": "string",
+      "title": "Soci\u00e9t\u00e9"
+    },
     "name": {
       "type": "string",
       "title": "Nom de l'agence"
     },
     "zone": {
       "type": "string",
-      "title": "Zone g\u00e9ographique",
-      "enum": [
-        "Zone Centre",
-        "Zone Ouest",
-        "Support Groupe"
-      ]
+      "title": "Zone g\u00e9ographique"
     },
     "city": {
       "type": "string",
@@ -45,5 +44,63 @@
     "name",
     "zone",
     "city"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    }
+  }
 }

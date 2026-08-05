@@ -2,6 +2,10 @@
   "name": "Employee",
   "type": "object",
   "properties": {
+    "company_id": {
+      "type": "string",
+      "title": "Soci\u00e9t\u00e9"
+    },
     "first_name": {
       "type": "string",
       "title": "Pr\u00e9nom"
@@ -16,28 +20,7 @@
     },
     "service": {
       "type": "string",
-      "title": "Service",
-      "enum": [
-        "Direction",
-        "Service Commercial",
-        "Magasin",
-        "Atelier",
-        "Administratif",
-        "Ressources Humaines",
-        "Comptabilit\u00e9",
-        "Gestion",
-        "Informatique",
-        "Communication Marketing",
-        "Support Technique",
-        "Garanties",
-        "Agriculture de Pr\u00e9cision",
-        "RSE",
-        "Accueil T\u00e9l.",
-        "Service Occasions",
-        "Commercial Quads",
-        "Commercial TP",
-        "PY Pneus"
-      ]
+      "title": "Service"
     },
     "email": {
       "type": "string",
@@ -58,21 +41,11 @@
     },
     "ancienne_entite": {
       "type": "string",
-      "title": "Ancienne entit\u00e9",
-      "enum": [
-        "GONNIN",
-        "QUITTE",
-        "DURIS",
-        "DBS"
-      ]
+      "title": "Ancienne entit\u00e9"
     },
     "zone": {
       "type": "string",
-      "title": "Zone g\u00e9ographique",
-      "enum": [
-        "Zone Centre",
-        "Zone Ouest"
-      ]
+      "title": "Zone g\u00e9ographique"
     },
     "manager_id": {
       "type": "string",
@@ -81,13 +54,6 @@
     "status": {
       "type": "string",
       "title": "Statut",
-      "enum": [
-        "Actif",
-        "En recrutement",
-        "Apprenti",
-        "Alternant",
-        "D\u00e9part"
-      ],
       "default": "Actif"
     },
     "hire_date": {
@@ -114,5 +80,63 @@
     "first_name",
     "last_name",
     "position"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    }
+  }
 }

@@ -2,6 +2,10 @@
   "name": "HRMovement",
   "type": "object",
   "properties": {
+    "company_id": {
+      "type": "string",
+      "title": "Soci\u00e9t\u00e9"
+    },
     "employee_id": {
       "type": "string",
       "title": "Collaborateur"
@@ -64,5 +68,63 @@
   "required": [
     "movement_type",
     "movement_date"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.company_id": {
+            "$in": "{{user.data.accessible_company_ids}}"
+          }
+        }
+      ]
+    }
+  }
 }

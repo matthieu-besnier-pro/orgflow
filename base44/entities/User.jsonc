@@ -7,6 +7,14 @@
         "admin",
         "user"
       ]
+    },
+    "accessible_company_ids": {
+      "type": "array",
+      "title": "Soci\u00e9t\u00e9s accessibles",
+      "items": {
+        "type": "string"
+      },
+      "description": "Liste des IDs de soci\u00e9t\u00e9s que cet utilisateur peut g\u00e9rer. Vide = acc\u00e8s \u00e0 toutes (super admin)."
     }
   },
   "required": [
