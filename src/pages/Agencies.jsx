@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Plus, Building2, MapPin, Phone, Mail, Pencil, Trash2, Users, Layers } from 'lucide-react';
 import AddAgencyModal from '@/components/AddAgencyModal';
 import { useToast } from '@/components/ui/use-toast';
+import { useCompany } from '@/lib/CompanyContext';
 
 const ZONE_COLORS = {
   'Zone Centre': 'bg-blue-100 text-blue-700',
@@ -69,17 +70,19 @@ export default function Agencies() {
   const [showModal, setShowModal] = useState(false);
   const [editingAgency, setEditingAgency] = useState(null);
   const { toast } = useToast();
+  const { selectedCompanyId } = useCompany();
 
   useEffect(() => {
     loadData();
     const unsub = base44.entities.Agency.subscribe(() => loadData());
     return unsub;
-  }, []);
+  }, [selectedCompanyId]);
 
   const loadData = async () => {
+    if (!selectedCompanyId) return;
     const [ags, emps] = await Promise.all([
-      base44.entities.Agency.list(),
-      base44.entities.Employee.list(),
+      base44.entities.Agency.filter({ company_id: selectedCompanyId }),
+      base44.entities.Employee.filter({ company_id: selectedCompanyId }),
     ]);
     setAgencies(ags);
     setEmployees(emps);

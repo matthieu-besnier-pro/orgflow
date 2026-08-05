@@ -4,6 +4,7 @@ import { Building2, Plus, Pencil, Trash2, Users, MapPin, Layers } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import AddCompanyModal from '@/components/AddCompanyModal';
+import UserAccessManager from '@/components/UserAccessManager';
 
 export default function Companies() {
   const [companies, setCompanies] = useState([]);
@@ -136,6 +137,9 @@ export default function Companies() {
           </div>
         ))}
       </div>
+
+      {/* User access management */}
+      <UserAccessManager />
 
       {modalOpen && (
         <AddCompanyModal

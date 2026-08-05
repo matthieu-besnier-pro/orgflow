@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AssignmentSelector, { getAssignmentLabel } from '@/components/AssignmentSelector';
-
-const SERVICES = ["Direction","Service Commercial","Magasin","Atelier","Administratif","Ressources Humaines","Comptabilité","Gestion","Informatique","Communication Marketing","Support Technique","Garanties","Agriculture de Précision","RSE","Accueil Tél.","Service Occasions","Commercial Quads","Commercial TP","PY Pneus"];
-const STATUSES = ["Actif","En recrutement","Apprenti","Alternant","Départ"];
+import { useCompany } from '@/lib/CompanyContext';
 
 export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR, onClose, onSave, onDelete }) {
+  const { services: SERVICES, statuses: STATUSES } = useCompany();
   const [form, setForm] = useState({ ...employee });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Building2, Layers, MapPin, Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCompany } from '@/lib/CompanyContext';
 
 const ANCIENNES_ENTITES = ['GONNIN', 'QUITTE', 'DURIS', 'DBS'];
-const ZONES = ['Zone Centre', 'Zone Ouest'];
 
 const ASSIGNMENT_TYPES = [
   { value: 'agency', label: 'Agence', icon: Building2 },
@@ -33,13 +33,14 @@ export function getAssignmentLabel(employee, agencies = []) {
     case 'zone':
       return employee.zone;
     case 'groupe':
-      return 'Groupe GONNIN DURIS';
+      return 'Groupe';
     default:
       return 'Non assigné';
   }
 }
 
 export default function AssignmentSelector({ form, agencies, onChange }) {
+  const { zones: ZONES, selectedCompany } = useCompany();
   const [selectedType, setSelectedType] = useState(() => getAssignmentType(form));
 
   const handleTypeChange = (type) => {
@@ -102,7 +103,7 @@ export default function AssignmentSelector({ form, agencies, onChange }) {
       {selectedType === 'groupe' && (
         <div className="flex items-center gap-2 px-3 py-2 bg-lavender/50 rounded-lg text-sm text-primary">
           <Globe className="w-4 h-4" />
-          <span>Rattaché au groupe GONNIN DURIS (transversal)</span>
+          <span>Rattaché au groupe {selectedCompany?.name || 'entier'} (transversal)</span>
         </div>
       )}
     </div>

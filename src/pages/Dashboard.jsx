@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Users, Building2, ArrowLeftRight, UserPlus, TrendingUp, Network } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import OnboardingModal from '@/components/OnboardingModal';
+import { useCompany } from '@/lib/CompanyContext';
 
 export default function Dashboard() {
   const [employees, setEmployees] = useState([]);
@@ -12,11 +13,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  const { selectedCompanyId } = useCompany();
+
   useEffect(() => {
+    if (!selectedCompanyId) return;
+    setLoading(true);
     Promise.all([
-      base44.entities.Employee.list(),
-      base44.entities.Agency.list(),
-      base44.entities.HRMovement.list('-created_date', 10),
+      base44.entities.Employee.filter({ company_id: selectedCompanyId }),
+      base44.entities.Agency.filter({ company_id: selectedCompanyId }),
+      base44.entities.HRMovement.filter({ company_id: selectedCompanyId }, '-created_date', 10),
       base44.auth.me()
     ]).then(([emps, ags, movs, u]) => {
       setEmployees(emps);
@@ -24,27 +29,27 @@ export default function Dashboard() {
       setMovements(movs);
       setUser(u);
       setLoading(false);
-      // Afficher onboarding si c'est la 1ère visite (pas d'employé encore ou localStorage)
       if (!localStorage.getItem('onboarding_shown')) {
         setShowOnboarding(true);
         localStorage.setItem('onboarding_shown', 'true');
       }
     });
-  }, []);
+  }, [selectedCompanyId]);
 
   // Recharger les employés en temps réel quand le chat en ajoute
   useEffect(() => {
     const unsubscribe = base44.entities.Employee.subscribe(() => {
+      if (!selectedCompanyId) return;
       Promise.all([
-        base44.entities.Employee.list(),
-        base44.entities.HRMovement.list('-created_date', 10)
+        base44.entities.Employee.filter({ company_id: selectedCompanyId }),
+        base44.entities.HRMovement.filter({ company_id: selectedCompanyId }, '-created_date', 10)
       ]).then(([emps, movs]) => {
         setEmployees(emps);
         setMovements(movs);
       });
     });
     return unsubscribe;
-  }, []);
+  }, [selectedCompanyId]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-full">

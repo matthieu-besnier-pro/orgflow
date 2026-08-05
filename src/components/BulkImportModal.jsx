@@ -3,11 +3,13 @@ import * as XLSX from 'xlsx';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Upload, Check, X, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { useCompany } from '@/lib/CompanyContext';
 
 const ENTITIES = ['GONNIN', 'QUITTE', 'DURIS', 'DBS'];
 const ZONES = ['Zone Centre', 'Zone Ouest'];
 
 export default function BulkImportModal({ employees, agencies, onClose, onDone }) {
+  const { selectedCompanyId } = useCompany();
   const [step, setStep] = useState('upload');
   const [rows, setRows] = useState([]);
   const [stats, setStats] = useState({ updates: 0, creates: 0, errors: 0 });
@@ -69,6 +71,7 @@ export default function BulkImportModal({ employees, agencies, onClose, onDone }
         const managerId = managerName ? empByName[managerName.toLowerCase()]?.id : null;
 
         const empData = {
+          company_id: selectedCompanyId,
           first_name: firstName,
           last_name: lastName,
           position: String(row['Poste'] || '').trim() || undefined,

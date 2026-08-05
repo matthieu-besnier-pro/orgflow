@@ -11,11 +11,13 @@ import AddEmployeeModal from '@/components/AddEmployeeModal';
 import BulkPhotoImport from '@/components/BulkPhotoImport';
 import BulkImportModal from '@/components/BulkImportModal';
 import { getAssignmentLabel } from '@/components/AssignmentSelector';
-
-const SERVICES = ["Tous","Direction","Service Commercial","Magasin","Atelier","Administratif","Ressources Humaines","Comptabilité","Gestion","Informatique","Communication Marketing","Support Technique","Garanties","Agriculture de Précision","RSE","Accueil Tél.","Service Occasions","Commercial Quads","Commercial TP","PY Pneus"];
-const STATUSES = ["Tous","Actif","En recrutement","Apprenti","Alternant","Départ"];
+import { useCompany } from '@/lib/CompanyContext';
 
 export default function Directory() {
+  const { selectedCompanyId, services: companyServices, statuses: companyStatuses } = useCompany();
+  const SERVICES = ['Tous', ...companyServices];
+  const STATUSES = ['Tous', ...companyStatuses];
+
   const [employees, setEmployees] = useState([]);
   const [agencies, setAgencies] = useState([]);
   const [user, setUser] = useState(null);
@@ -32,9 +34,11 @@ export default function Directory() {
   const [selectMode, setSelectMode] = useState(false);
 
   useEffect(() => {
+    if (!selectedCompanyId) return;
+    setLoading(true);
     Promise.all([
-      base44.entities.Employee.list(),
-      base44.entities.Agency.list(),
+      base44.entities.Employee.filter({ company_id: selectedCompanyId }),
+      base44.entities.Agency.filter({ company_id: selectedCompanyId }),
       base44.auth.me()
     ]).then(([emps, ags, u]) => {
       setEmployees(emps);
@@ -42,15 +46,16 @@ export default function Directory() {
       setUser(u);
       setLoading(false);
     });
-  }, []);
+  }, [selectedCompanyId]);
 
   // Recharger les employés en temps réel quand le chat en ajoute
   useEffect(() => {
     const unsubscribe = base44.entities.Employee.subscribe(() => {
-      base44.entities.Employee.list().then(emps => setEmployees(emps));
+      if (!selectedCompanyId) return;
+      base44.entities.Employee.filter({ company_id: selectedCompanyId }).then(emps => setEmployees(emps));
     });
     return unsubscribe;
-  }, []);
+  }, [selectedCompanyId]);
 
   const isHR = user?.role === 'admin';
 

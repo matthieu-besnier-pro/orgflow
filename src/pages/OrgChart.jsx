@@ -9,6 +9,7 @@ import OrgChartPrintView from '@/components/OrgChartPrintView';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { useCompany } from '@/lib/CompanyContext';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
@@ -128,24 +129,29 @@ export default function OrgChart() {
   const contentRef = useRef(null);
   const { toast } = useToast();
 
+  const { selectedCompanyId, zones: companyZones } = useCompany();
+
   useEffect(() => {
+    if (!selectedCompanyId) return;
+    setLoading(true);
     Promise.all([
-      base44.entities.Employee.list(),
-      base44.entities.Agency.list(),
+      base44.entities.Employee.filter({ company_id: selectedCompanyId }),
+      base44.entities.Agency.filter({ company_id: selectedCompanyId }),
     ]).then(([emps, ags]) => {
       setEmployees(emps);
       setAgencies(ags);
       setLoading(false);
     });
-  }, []);
+  }, [selectedCompanyId]);
 
   // Recharger les employés en temps réel quand le chat en ajoute
   useEffect(() => {
     const unsubscribe = base44.entities.Employee.subscribe(() => {
-      base44.entities.Employee.list().then(emps => setEmployees(emps));
+      if (!selectedCompanyId) return;
+      base44.entities.Employee.filter({ company_id: selectedCompanyId }).then(emps => setEmployees(emps));
     });
     return unsubscribe;
-  }, []);
+  }, [selectedCompanyId]);
 
   // Close filter panel on outside click — ignore clicks inside Radix portals
   useEffect(() => {
@@ -359,9 +365,7 @@ export default function OrgChart() {
                   <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Toutes les zones</SelectItem>
-                    <SelectItem value="Zone Centre">Zone Centre</SelectItem>
-                    <SelectItem value="Zone Ouest">Zone Ouest</SelectItem>
-                    <SelectItem value="Support Groupe">Support Groupe</SelectItem>
+                    {companyZones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

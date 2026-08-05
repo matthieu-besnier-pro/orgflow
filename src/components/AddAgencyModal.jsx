@@ -4,14 +4,14 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-const ZONES = ['Zone Centre', 'Zone Ouest', 'Support Groupe'];
+import { useCompany } from '@/lib/CompanyContext';
 
 export default function AddAgencyModal({ agency, onClose, onSaved }) {
   const isEdit = !!agency;
+  const { zones: ZONES, selectedCompanyId } = useCompany();
   const [form, setForm] = useState({
     name: agency?.name || '',
-    zone: agency?.zone || 'Zone Centre',
+    zone: agency?.zone || ZONES[0] || '',
     city: agency?.city || '',
     department_code: agency?.department_code || '',
     email: agency?.email || '',
@@ -30,7 +30,7 @@ export default function AddAgencyModal({ agency, onClose, onSaved }) {
       if (isEdit) {
         await base44.entities.Agency.update(agency.id, form);
       } else {
-        await base44.entities.Agency.create(form);
+        await base44.entities.Agency.create({ ...form, company_id: selectedCompanyId });
       }
       onSaved();
       onClose();

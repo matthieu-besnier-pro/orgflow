@@ -42,24 +42,26 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/organigramme" element={<OrgChart />} />
-          <Route path="/annuaire" element={<Directory />} />
-          <Route path="/agences" element={<Agencies />} />
-          <Route path="/mouvements" element={<Movements />} />
-          <Route path="/societes" element={<Companies />} />
-          <Route path="/chatbot" element={<Chatbot />} />
+    <CompanyProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/organigramme" element={<OrgChart />} />
+            <Route path="/annuaire" element={<Directory />} />
+            <Route path="/agences" element={<Agencies />} />
+            <Route path="/mouvements" element={<Movements />} />
+            <Route path="/societes" element={<Companies />} />
+            <Route path="/chatbot" element={<Chatbot />} />
+          </Route>
         </Route>
-      </Route>
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </CompanyProvider>
   );
 };
 
@@ -69,9 +71,7 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <ScrollToTop />
-          <CompanyProvider>
-            <AuthenticatedApp />
-          </CompanyProvider>
+          <AuthenticatedApp />
         </Router>
         <Toaster />
       </QueryClientProvider>

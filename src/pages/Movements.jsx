@@ -4,6 +4,7 @@ import { ArrowLeftRight, Plus, X, Check, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCompany } from '@/lib/CompanyContext';
 
 const MOVEMENT_TYPES = ["Arrivée","Départ","Mutation","Changement de poste","Promotion"];
 const STATUSES = ["En attente","Validé","Annulé"];
@@ -29,11 +30,15 @@ export default function Movements() {
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
 
+  const { selectedCompanyId } = useCompany();
+
   useEffect(() => {
+    if (!selectedCompanyId) return;
+    setLoading(true);
     Promise.all([
-      base44.entities.HRMovement.list('-created_date'),
-      base44.entities.Employee.list(),
-      base44.entities.Agency.list(),
+      base44.entities.HRMovement.filter({ company_id: selectedCompanyId }, '-created_date'),
+      base44.entities.Employee.filter({ company_id: selectedCompanyId }),
+      base44.entities.Agency.filter({ company_id: selectedCompanyId }),
       base44.auth.me()
     ]).then(([movs, emps, ags, u]) => {
       setMovements(movs);
@@ -42,7 +47,7 @@ export default function Movements() {
       setUser(u);
       setLoading(false);
     });
-  }, []);
+  }, [selectedCompanyId]);
 
   const isHR = user?.role === 'admin';
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
@@ -83,7 +88,7 @@ export default function Movements() {
         const updated = await base44.entities.HRMovement.update(editingId, form);
         setMovements(prev => prev.map(m => m.id === editingId ? updated : m));
       } else {
-        const created = await base44.entities.HRMovement.create(form);
+        const created = await base44.entities.HRMovement.create({ ...form, company_id: selectedCompanyId });
         setMovements(prev => [created, ...prev]);
       }
       closeForm();

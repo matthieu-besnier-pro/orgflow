@@ -1,3 +1,5 @@
+import { useCompany } from '@/lib/CompanyContext';
+
 const STATUS_COLORS = {
   'Actif': '#16a34a',
   'En recrutement': '#eab308',
@@ -144,7 +146,11 @@ function PrintNode({ employee, childrenMap, depth = 0 }) {
 
 // ── En-tête de page (marque) ────────────────────────────────────────────────
 function PageHeader({ rootEmployee, index, total }) {
+  const { selectedCompany } = useCompany();
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const brandColor = selectedCompany?.brand_color || '#003D7A';
+  const companyName = selectedCompany?.name || 'Organigramme';
+  const initials = companyName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div
@@ -152,33 +158,36 @@ function PageHeader({ rootEmployee, index, total }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: '2.5px solid #003D7A',
+        borderBottom: `2.5px solid ${brandColor}`,
         paddingBottom: '10px',
         marginBottom: '20px',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* Logo bloc */}
-        <div
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #003D7A 0%, #0070D0 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 800,
-            fontSize: '16px',
-            letterSpacing: '-1px',
-          }}
-        >
-          GD
-        </div>
+        {selectedCompany?.logo_url ? (
+          <img src={selectedCompany.logo_url} alt="" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} />
+        ) : (
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 800,
+              fontSize: '16px',
+              letterSpacing: '-1px',
+            }}
+          >
+            {initials}
+          </div>
+        )}
         <div>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: '#003D7A', fontFamily: 'Sora, Arial, sans-serif' }}>
-            GONNIN DURIS
+          <div style={{ fontSize: '16px', fontWeight: 700, color: brandColor, fontFamily: 'Sora, Arial, sans-serif' }}>
+            {companyName}
           </div>
           <div style={{ fontSize: '9px', color: '#888', marginTop: '1px' }}>
             Organigramme — {rootEmployee.first_name} {rootEmployee.last_name}
@@ -201,6 +210,8 @@ function PageHeader({ rootEmployee, index, total }) {
 
 // ── Pied de page ───────────────────────────────────────────────────────────
 function PageFooter() {
+  const { selectedCompany } = useCompany();
+  const companyName = selectedCompany?.name || '';
   return (
     <div
       style={{
@@ -213,7 +224,7 @@ function PageFooter() {
         color: '#aaa',
       }}
     >
-      <span>Document confidentiel — GONNIN DURIS</span>
+      <span>Document confidentiel — {companyName}</span>
       <span>Ressources Humaines</span>
     </div>
   );
