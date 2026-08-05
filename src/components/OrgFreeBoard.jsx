@@ -76,7 +76,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
   const handleMouseMove = (e) => {
     if (!drag.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(PAGE_W - 230, e.clientX - rect.left - drag.current.offsetX));
+    const x = Math.max(0, Math.min(PAGE_W - BLOCK_W, e.clientX - rect.left - drag.current.offsetX));
     const y = Math.max(0, e.clientY - rect.top - drag.current.offsetY);
     setPositions(prev => ({ ...prev, [drag.current.service]: { x, y } }));
     setDirty(true);
