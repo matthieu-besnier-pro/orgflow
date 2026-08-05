@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Users, Building2, ArrowLeftRight, UserPlus, TrendingUp, Network } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import OnboardingModal from '@/components/OnboardingModal';
+import CompanySwitcher from '@/components/CompanySwitcher';
 import { useCompany } from '@/lib/CompanyContext';
 
 export default function Dashboard() {
@@ -101,13 +102,16 @@ export default function Dashboard() {
               : `${employees.length} collaborateurs dans le groupe`}
           </p>
         </div>
-        <Link
-          to="/organigramme"
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Network className="w-4 h-4" />
-          Voir l'organigramme
-        </Link>
+        <div className="flex items-center gap-3">
+          <CompanySwitcher />
+          <Link
+            to="/organigramme"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Network className="w-4 h-4" />
+            Voir l'organigramme
+          </Link>
+        </div>
       </div>
 
       {/* KPI Cards */}

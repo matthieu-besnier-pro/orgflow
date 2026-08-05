@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2 } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
+import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import OrgServiceView from '@/components/OrgServiceView';
 import OrgGroupedView from '@/components/OrgGroupedView';
@@ -305,6 +306,9 @@ export default function OrgChart() {
     <div className="flex flex-col h-full bg-white">
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-border flex-wrap">
+
+        {/* Company switcher */}
+        <CompanySwitcher />
 
         {/* Title */}
         <h1 className="font-heading font-semibold text-foreground text-base hidden sm:block mr-2">Organigramme</h1>
