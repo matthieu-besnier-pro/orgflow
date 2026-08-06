@@ -19,7 +19,8 @@ import { useCompany } from '@/lib/CompanyContext';
 import readDroppedFiles from '@/lib/readDroppedFiles';
 import ChartAppearancePanel from '@/components/ChartAppearancePanel';
 import ServiceManagerPanel from '@/components/ServiceManagerPanel';
-import { Tags } from 'lucide-react';
+import ShareChartPanel from '@/components/ShareChartPanel';
+import { Tags, Share2 } from 'lucide-react';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
@@ -129,6 +130,7 @@ export default function OrgChart() {
   const [appearanceId, setAppearanceId] = useState(null);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -648,6 +650,15 @@ export default function OrgChart() {
           </div>
         )}
 
+        {/* Share button */}
+        <button
+          onClick={() => setShareOpen(true)}
+          title="Partager la vue hiérarchique (lecture seule)"
+          className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
+
         {/* Print button */}
         <button
           onClick={() => setPrintMode(!printMode)}
@@ -796,6 +807,14 @@ export default function OrgChart() {
           containerRef={pan.ref}
           contentRef={contentRef}
           deps={`${zoom}-${expandAll}-${template}-${filteredPool.length}-${selectedManagerId}`}
+        />
+      )}
+
+      {shareOpen && (
+        <ShareChartPanel
+          companyId={selectedCompanyId}
+          companyName={selectedCompany?.name || 'cette société'}
+          onClose={() => setShareOpen(false)}
         />
       )}
 

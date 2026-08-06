@@ -1,0 +1,23 @@
+{
+  "name": "ChartShare",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "title": "Soci\u00e9t\u00e9"
+    },
+    "token": {
+      "type": "string",
+      "title": "Jeton de partage"
+    },
+    "is_active": {
+      "type": "boolean",
+      "title": "Actif",
+      "default": true
+    }
+  },
+  "required": [
+    "company_id",
+    "token"
+  ]
+}

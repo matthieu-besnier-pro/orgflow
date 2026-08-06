@@ -17,6 +17,7 @@ import Companies from '@/pages/Companies';
 import Chatbot from '@/pages/Chatbot';
 import DataQuality from '@/pages/DataQuality';
 import { CompanyProvider } from '@/lib/CompanyContext';
+import PublicChart from '@/pages/PublicChart';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
   return (
     <CompanyProvider>
       <Routes>
+        <Route path="/partage" element={<PublicChart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
