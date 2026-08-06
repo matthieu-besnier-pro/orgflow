@@ -239,13 +239,14 @@ export default function OrgChart() {
 
   // Auto-ajuster quand on déplie tout
   useEffect(() => {
+    if (loading) return;
     if (expandAll) {
-      const timer = setTimeout(fitToScreen, 200);
+      const timer = setTimeout(fitToScreen, 300);
       return () => clearTimeout(timer);
     } else {
       setZoom(0.85);
     }
-  }, [expandAll]);
+  }, [expandAll, loading, viewMode, template]);
 
   // Build pool from zone/agency/ancienne entité filters
   // baseFiltered = only the directly matching employees (for service view)
