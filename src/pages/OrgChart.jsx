@@ -4,7 +4,7 @@ import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
-import OrgChartPrintView from '@/components/OrgChartPrintView';
+import OrgChartExactPrint from '@/components/OrgChartExactPrint';
 import OrgWhiteboardView from '@/components/OrgWhiteboardView';
 import OrgPresentationFrame from '@/components/OrgPresentationFrame';
 import OrgFreeBoard from '@/components/OrgFreeBoard';
@@ -718,11 +718,15 @@ export default function OrgChart() {
 
         {printMode ? (
           <div style={{ paddingTop: printMode ? '70px' : '0' }}>
-            <OrgChartPrintView
-              employees={filteredBase}
+            <OrgChartExactPrint
               roots={roots}
               childrenMap={finalChildrenMap}
               pageFormat={printFormat}
+              template={template}
+              colorMode={colorMode}
+              depthColors={depthColors}
+              showAnomalies={showAnomalies}
+              company={selectedCompany}
             />
           </div>
         ) : (
