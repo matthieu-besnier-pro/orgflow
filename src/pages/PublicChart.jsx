@@ -20,6 +20,7 @@ export default function PublicChart() {
   const [error, setError] = useState(null);
   const [zoom, setZoom] = useState(0.85);
   const [search, setSearch] = useState('');
+  const [size, setSize] = useState(null);
   const contentRef = useRef(null);
   const pan = usePanDrag();
 
@@ -33,7 +34,7 @@ export default function PublicChart() {
   const fitToScreen = () => {
     const el = contentRef.current;
     if (!el) return;
-    const avail = el.parentElement.clientWidth - 48;
+    const avail = (pan.ref.current?.clientWidth || 0) - 48;
     const w = el.offsetWidth;
     setZoom(w > avail ? Math.max(0.15, Math.min(1, avail / w)) : 0.85);
   };
@@ -41,6 +42,17 @@ export default function PublicChart() {
   useEffect(() => {
     if (data) setTimeout(fitToScreen, 250);
   }, [data]);
+
+  // Dimensions réelles après mise à l'échelle → pas de marge blanche parasite
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const measure = () => setSize({ w: el.offsetWidth * zoom, h: el.offsetHeight * zoom });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [zoom, data]);
 
   if (error) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{error}</div>;
   if (!data) return (
@@ -96,24 +108,26 @@ export default function PublicChart() {
       <div
         ref={pan.ref}
         {...pan.handlers}
-        className={`flex-1 overflow-auto p-6 ${pan.panning ? 'cursor-grabbing' : 'cursor-grab'}`}
+        className={`flex-1 overflow-auto p-6 flex justify-center items-start ${pan.panning ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
-        <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
-          <div className="flex gap-12 items-start justify-center flex-nowrap w-max mx-auto">
-            {roots.map(root => (
-              <OrgTreeNode
-                key={root.id}
-                employee={root}
-                childrenMap={childrenMap}
-                onSelect={noop}
-                defaultExpanded
-                depth={0}
-                onDragStart={noop}
-                onDrop={noop}
-                template="classique"
-                searchTerm={searchTerm}
-              />
-            ))}
+        <div style={{ width: size?.w, height: size?.h, flex: '0 0 auto' }}>
+          <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
+            <div className="flex gap-12 items-start justify-center flex-nowrap w-max">
+              {roots.map(root => (
+                <OrgTreeNode
+                  key={root.id}
+                  employee={root}
+                  childrenMap={childrenMap}
+                  onSelect={noop}
+                  defaultExpanded
+                  depth={0}
+                  onDragStart={noop}
+                  onDrop={noop}
+                  template="classique"
+                  searchTerm={searchTerm}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
