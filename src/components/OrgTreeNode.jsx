@@ -208,7 +208,7 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
@@ -244,7 +244,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
 
   return (
     <div className={`flex flex-col items-center transition-opacity duration-150 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
-      {children.length > 0 && employee.service && !isCompact && (
+      {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
         <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white truncate max-w-56"
           style={{ backgroundColor: getServiceColor(employee.service).bg }}>
           {employee.service}
@@ -320,6 +320,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       searchTerm={searchTerm}
                       getAnomalies={showAnomalies ? getAnomalies : null}
                       depth={depth + 1}
+                      parentService={employee.service || null}
                     />
                   </div>
                 )}
@@ -351,6 +352,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       colorMode={colorMode}
                       showAnomalies={showAnomalies}
                       depthColors={depthColors}
+                      parentService={employee.service || null}
                     />
                   </div>
                 ))}

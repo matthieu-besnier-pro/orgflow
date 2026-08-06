@@ -53,7 +53,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
   );
 }
 
-export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth }) {
+export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null }) {
   // Une colonne par service, avec l'étiquette du service en tête de colonne
   const groups = {};
   employees.forEach(e => {
@@ -68,10 +68,12 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
         const svc = getServiceColor(s);
         return (
           <div key={s} className="flex flex-col gap-2">
-            <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white truncate w-56"
-              style={{ backgroundColor: svc.bg }}>
-              {s}
-            </div>
+            {s !== parentService && (
+              <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white truncate w-56"
+                style={{ backgroundColor: svc.bg }}>
+                {s}
+              </div>
+            )}
             {groups[s].map(e => (
               <LeafCard
                 key={e.id}
