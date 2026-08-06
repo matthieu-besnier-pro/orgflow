@@ -83,7 +83,8 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
       const rect = areaRef.current.getBoundingClientRect();
       const x = Math.max(0, Math.min(PAGE_W - BLOCK_W, e.clientX - rect.left - drag.current.offsetX));
       const y = Math.max(0, e.clientY - rect.top - drag.current.offsetY);
-      setPositions(prev => ({ ...prev, [drag.current.service]: { x, y } }));
+      const service = drag.current.service;
+      setPositions(prev => ({ ...prev, [service]: { x, y } }));
       setDirty(true);
     };
     const up = () => { drag.current = null; };
