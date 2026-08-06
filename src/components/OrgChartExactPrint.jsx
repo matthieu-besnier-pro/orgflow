@@ -21,11 +21,13 @@ export default function OrgChartExactPrint({ roots, childrenMap, pageFormat = 'A
       const w = el.scrollWidth;
       const h = el.scrollHeight;
       if (!w || !h) return;
-      setScale(Math.min(1, (fmt.w - 20) / w, (fmt.h - 70) / h));
+      setScale(Math.min(1, (fmt.w - 24) / w, (fmt.h - 80) / h));
     };
     measure();
-    const t = setTimeout(measure, 150);
-    return () => clearTimeout(t);
+    const timers = [80, 300, 900].map(ms => setTimeout(measure, ms));
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => { timers.forEach(clearTimeout); ro.disconnect(); };
   }, [fmt.w, fmt.h, roots, childrenMap, template]);
 
   const noop = () => {};
@@ -60,7 +62,7 @@ export default function OrgChartExactPrint({ roots, childrenMap, pageFormat = 'A
 
         <div className="flex-1 flex items-start justify-center overflow-hidden p-2">
           <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
-            <div ref={innerRef} className="flex gap-12 items-start justify-center flex-wrap">
+            <div ref={innerRef} className="flex gap-12 items-start justify-center flex-nowrap w-max">
               {roots.map(root => (
                 <OrgTreeNode
                   key={root.id}
