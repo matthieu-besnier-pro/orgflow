@@ -134,6 +134,12 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
           <p className="text-xs font-bold text-white leading-tight truncate">{employee.first_name}</p>
           <p className="text-xs font-bold text-white leading-tight truncate">{employee.last_name}</p>
           <p className="text-white/70 truncate" style={{ fontSize: '9px' }}>{employee.position}</p>
+          {employee.service && (() => { const svc = getServiceColor(employee.service); return (
+            <span className="inline-block mt-1 px-1.5 py-0.5 rounded-full font-semibold truncate max-w-full"
+              style={{ fontSize: '8px', backgroundColor: svc.light, color: svc.bg }}>
+              {employee.service}
+            </span>
+          ); })()}
         </div>
         {hasChildren && (
           <button
