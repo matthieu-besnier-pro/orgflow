@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import AddCompanyModal from '@/components/AddCompanyModal';
 import UserAccessManager from '@/components/UserAccessManager';
+import AccessRequestList from '@/components/AccessRequestList';
 
 export default function Companies() {
   const [companies, setCompanies] = useState([]);
@@ -138,7 +139,8 @@ export default function Companies() {
         ))}
       </div>
 
-      {/* User access management */}
+      {/* Access requests + user access management */}
+      <AccessRequestList />
       <UserAccessManager />
 
       {modalOpen && (

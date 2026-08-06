@@ -20,6 +20,7 @@ import readDroppedFiles from '@/lib/readDroppedFiles';
 import ChartAppearancePanel from '@/components/ChartAppearancePanel';
 import ServiceManagerPanel from '@/components/ServiceManagerPanel';
 import ShareChartPanel from '@/components/ShareChartPanel';
+import AccessRequestButton from '@/components/AccessRequestButton';
 import { Tags, Share2 } from 'lucide-react';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
@@ -395,7 +396,8 @@ export default function OrgChart() {
     <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
       <Users className="w-10 h-10 text-muted-foreground/40" />
       <p className="text-muted-foreground font-medium">Aucune société accessible avec ce compte</p>
-      <p className="text-sm text-muted-foreground">Contactez un administrateur pour obtenir l'accès.</p>
+      <p className="text-sm text-muted-foreground">Demandez l'accès à un administrateur.</p>
+      <AccessRequestButton />
     </div>
   );
 
