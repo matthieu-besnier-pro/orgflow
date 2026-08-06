@@ -6,6 +6,17 @@
       "type": "string",
       "title": "Soci\u00e9t\u00e9"
     },
+    "page_format": {
+      "type": "string",
+      "title": "Format de page",
+      "enum": [
+        "A4-portrait",
+        "A4-paysage",
+        "A3-portrait",
+        "A3-paysage"
+      ],
+      "default": "A3-paysage"
+    },
     "positions": {
       "type": "array",
       "title": "Positions des blocs",

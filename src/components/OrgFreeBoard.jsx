@@ -116,7 +116,9 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
       const rec = recs[0];
       const saved = {};
       (rec?.positions || []).forEach(p => { saved[p.service] = { x: p.x, y: p.y }; });
-      const auto = autoLayout(services, links, groups, PAGE_W);
+      const savedFormat = rec?.page_format && FORMATS[rec.page_format] ? rec.page_format : 'A3-paysage';
+      setFormat(savedFormat);
+      const auto = autoLayout(services, links, groups, FORMATS[savedFormat].w);
       setPositions({ ...auto, ...saved });
       setRecordId(rec?.id || null);
       setDirty(false);
@@ -173,9 +175,9 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
   const save = async () => {
     const payload = Object.entries(positions).map(([service, p]) => ({ service, x: Math.round(p.x), y: Math.round(p.y) }));
     if (recordId) {
-      await base44.entities.ServiceLayout.update(recordId, { positions: payload });
+      await base44.entities.ServiceLayout.update(recordId, { positions: payload, page_format: format });
     } else {
-      const rec = await base44.entities.ServiceLayout.create({ company_id: companyId, positions: payload });
+      const rec = await base44.entities.ServiceLayout.create({ company_id: companyId, positions: payload, page_format: format });
       setRecordId(rec.id);
     }
     setDirty(false);
@@ -216,7 +218,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
         <span className="text-xs text-muted-foreground mr-2">Glissez l'en-tête d'un bloc pour l'aérer</span>
         <select
           value={format}
-          onChange={e => setFormat(e.target.value)}
+          onChange={e => { setFormat(e.target.value); setDirty(true); }}
           className="h-8 px-2 rounded-lg text-sm border border-border bg-white text-foreground"
         >
           {Object.entries(FORMATS).map(([key, f]) => (
