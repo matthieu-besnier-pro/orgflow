@@ -201,7 +201,12 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
         @media print {
           @page { size: ${FORMATS[format].css}; margin: 6mm; }
           body * { visibility: hidden; }
-          .freeboard-page, .freeboard-page * { visibility: visible; }
+          .freeboard-page, .freeboard-page * {
+            visibility: visible;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
           .freeboard-page { position: absolute; left: 0; top: 0; box-shadow: none !important; border: none !important; }
           .freeboard-toolbar { display: none !important; }
         }
