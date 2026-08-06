@@ -10,11 +10,57 @@ const PAGE_W = 1587;
 const PAGE_H = 1123;
 const BLOCK_W = 250;
 
-function autoLayout(services) {
-  const perRow = Math.floor((PAGE_W - 20) / BLOCK_W);
+const GAP_X = 24;
+const GAP_Y = 50;
+
+// Hauteur estimée d'un bloc selon son effectif (en-tête + lignes)
+function blockHeight(count) {
+  return 34 + Math.max(1, count) * 34 + 12;
+}
+
+// Disposition automatique en pyramide hiérarchique :
+// les services sans manager extérieur en haut, leurs services rattachés en dessous.
+function autoLayout(services, links = [], groups = {}) {
+  const parents = {};
+  links.forEach(({ from, to }) => { if (!parents[to]) parents[to] = from; });
+
+  // Niveau de chaque service = profondeur dans la chaîne de rattachement
+  const levelOf = (s, seen = new Set()) => {
+    if (!parents[s] || seen.has(s) || !services.includes(parents[s])) return 0;
+    seen.add(s);
+    return 1 + levelOf(parents[s], seen);
+  };
+
+  const rows = {};
+  services.forEach(s => {
+    const lvl = levelOf(s);
+    (rows[lvl] ||= []).push(s);
+  });
+
   const map = {};
-  services.forEach((s, i) => {
-    map[s] = { x: 20 + (i % perRow) * BLOCK_W, y: 20 + Math.floor(i / perRow) * 300 };
+  let y = 20;
+  Object.keys(rows).map(Number).sort((a, b) => a - b).forEach(lvl => {
+    // Regrouper les enfants sous leur parent pour un rendu pyramidal lisible
+    const row = rows[lvl].sort((a, b) => {
+      const pa = parents[a] || '';
+      const pb = parents[b] || '';
+      return pa.localeCompare(pb, 'fr') || (groups[b]?.length || 0) - (groups[a]?.length || 0);
+    });
+    const perRow = Math.max(1, Math.floor((PAGE_W - 40) / (BLOCK_W + GAP_X)));
+    let maxH = 0;
+    for (let i = 0; i < row.length; i += perRow) {
+      const chunk = row.slice(i, i + perRow);
+      const totalW = chunk.length * BLOCK_W + (chunk.length - 1) * GAP_X;
+      const startX = Math.max(20, (PAGE_W - totalW) / 2);
+      let chunkH = 0;
+      chunk.forEach((s, j) => {
+        map[s] = { x: Math.round(startX + j * (BLOCK_W + GAP_X)), y: Math.round(y) };
+        chunkH = Math.max(chunkH, blockHeight(groups[s]?.length || 0));
+      });
+      if (i + perRow < row.length) y += chunkH + GAP_Y;
+      maxH = chunkH;
+    }
+    y += maxH + GAP_Y;
   });
   return map;
 }
@@ -63,7 +109,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
       const rec = recs[0];
       const saved = {};
       (rec?.positions || []).forEach(p => { saved[p.service] = { x: p.x, y: p.y }; });
-      const auto = autoLayout(services);
+      const auto = autoLayout(services, links, groups);
       setPositions({ ...auto, ...saved });
       setRecordId(rec?.id || null);
       setDirty(false);
@@ -76,7 +122,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
     if (!positions) return;
     const missing = services.filter(s => !positions[s]);
     if (missing.length === 0) return;
-    const auto = autoLayout(services);
+    const auto = autoLayout(services, links, groups);
     setPositions(prev => {
       const next = { ...prev };
       missing.forEach(s => { next[s] = auto[s]; });
@@ -130,7 +176,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
   };
 
   const reset = () => {
-    setPositions(autoLayout(services));
+    setPositions(autoLayout(services, links, groups));
     setDirty(true);
   };
 
@@ -162,7 +208,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
           {dirty ? 'Enregistrer' : 'Enregistré'}
         </button>
         <button onClick={reset} className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm font-medium bg-secondary text-foreground hover:bg-secondary/70">
-          <RotateCcw className="w-3.5 h-3.5" /> Réorganiser
+          <RotateCcw className="w-3.5 h-3.5" /> Pyramide auto
         </button>
         <button onClick={() => window.print()} className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm font-medium bg-secondary text-foreground hover:bg-secondary/70">
           <Printer className="w-3.5 h-3.5" /> Imprimer / PDF
@@ -179,7 +225,13 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
           <p className="text-xs text-muted-foreground">{employees.length} collaborateurs</p>
         </div>
         <div ref={areaRef} className="absolute inset-x-0 bottom-0" style={{ top: 56 }}>
-          <FreeBoardLinks links={links} positions={positions} width={PAGE_W} height={maxY - 56} />
+          <FreeBoardLinks
+            links={links}
+            positions={positions}
+            width={PAGE_W}
+            height={maxY - 56}
+            heights={Object.fromEntries(services.map(s => [s, blockHeight(groups[s].length)]))}
+          />
           {services.map(s => (
             <FreeServiceBlock
               key={s}
