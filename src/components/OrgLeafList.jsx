@@ -25,7 +25,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
       onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); onDrop(e, employee); }}
       onClick={() => onSelect(employee)}
       style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
-      className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 w-44
+      className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 w-52
         ${over ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
         ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
     >
@@ -69,7 +69,7 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
         return (
           <div key={s} className="flex flex-col gap-2">
             {s !== parentService && (
-              <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white truncate w-44"
+              <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white truncate w-52"
                 style={{ backgroundColor: svc.bg }}>
                 {s}
               </div>
