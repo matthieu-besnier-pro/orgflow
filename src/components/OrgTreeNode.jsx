@@ -110,7 +110,7 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(employee); }}
         title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
         style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
-        className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-3 px-4 py-3 w-56
+        className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 w-44
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
           ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}
         `}
@@ -122,9 +122,9 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         )}
         <div className="relative pointer-events-none flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-14 h-14 rounded-full object-cover border-2 border-white shadow" />
+            <img src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow" />
           ) : (
-            <div className="w-14 h-14 rounded-full flex items-center justify-center border-2 border-white shadow" style={{ backgroundColor: svc.light }}>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-white shadow" style={{ backgroundColor: svc.light }}>
               <span className="text-base font-bold" style={{ color: svc.bg }}>{initials}</span>
             </div>
           )}
@@ -245,7 +245,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   return (
     <div className={`flex flex-col items-center transition-opacity duration-150 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
       {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
-        <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white truncate max-w-56"
+        <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white truncate max-w-44"
           style={{ backgroundColor: getServiceColor(employee.service).bg }}>
           {employee.service}
         </div>
