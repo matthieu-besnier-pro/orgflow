@@ -5,9 +5,13 @@ import FreeServiceBlock from '@/components/FreeServiceBlock';
 import FreeBoardLinks from '@/components/FreeBoardLinks';
 import { useToast } from '@/components/ui/use-toast';
 
-// A3 paysage à 96 dpi
-const PAGE_W = 1587;
-const PAGE_H = 1123;
+// Formats de page à 96 dpi
+const FORMATS = {
+  'A4-portrait': { w: 794, h: 1123, label: 'A4 portrait', css: 'A4 portrait' },
+  'A4-paysage': { w: 1123, h: 794, label: 'A4 paysage', css: 'A4 landscape' },
+  'A3-portrait': { w: 1123, h: 1587, label: 'A3 portrait', css: 'A3 portrait' },
+  'A3-paysage': { w: 1587, h: 1123, label: 'A3 paysage', css: 'A3 landscape' },
+};
 const BLOCK_W = 250;
 
 const GAP_X = 24;
@@ -20,7 +24,7 @@ function blockHeight(count) {
 
 // Disposition automatique en pyramide hiérarchique :
 // les services sans manager extérieur en haut, leurs services rattachés en dessous.
-function autoLayout(services, links = [], groups = {}) {
+function autoLayout(services, links = [], groups = {}, pageW = 1587) {
   const parents = {};
   links.forEach(({ from, to }) => { if (!parents[to]) parents[to] = from; });
 
@@ -46,12 +50,12 @@ function autoLayout(services, links = [], groups = {}) {
       const pb = parents[b] || '';
       return pa.localeCompare(pb, 'fr') || (groups[b]?.length || 0) - (groups[a]?.length || 0);
     });
-    const perRow = Math.max(1, Math.floor((PAGE_W - 40) / (BLOCK_W + GAP_X)));
+    const perRow = Math.max(1, Math.floor((pageW - 40) / (BLOCK_W + GAP_X)));
     let maxH = 0;
     for (let i = 0; i < row.length; i += perRow) {
       const chunk = row.slice(i, i + perRow);
       const totalW = chunk.length * BLOCK_W + (chunk.length - 1) * GAP_X;
-      const startX = Math.max(20, (PAGE_W - totalW) / 2);
+      const startX = Math.max(20, (pageW - totalW) / 2);
       let chunkH = 0;
       chunk.forEach((s, j) => {
         map[s] = { x: Math.round(startX + j * (BLOCK_W + GAP_X)), y: Math.round(y) };
@@ -69,6 +73,9 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
   const [positions, setPositions] = useState(null);
   const [recordId, setRecordId] = useState(null);
   const [dirty, setDirty] = useState(false);
+  const [format, setFormat] = useState('A3-paysage');
+  const PAGE_W = FORMATS[format].w;
+  const PAGE_H = FORMATS[format].h;
   const drag = useRef(null);
   const canvasRef = useRef(null);
   const areaRef = useRef(null);
@@ -109,7 +116,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
       const rec = recs[0];
       const saved = {};
       (rec?.positions || []).forEach(p => { saved[p.service] = { x: p.x, y: p.y }; });
-      const auto = autoLayout(services, links, groups);
+      const auto = autoLayout(services, links, groups, PAGE_W);
       setPositions({ ...auto, ...saved });
       setRecordId(rec?.id || null);
       setDirty(false);
@@ -122,7 +129,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
     if (!positions) return;
     const missing = services.filter(s => !positions[s]);
     if (missing.length === 0) return;
-    const auto = autoLayout(services, links, groups);
+    const auto = autoLayout(services, links, groups, PAGE_W);
     setPositions(prev => {
       const next = { ...prev };
       missing.forEach(s => { next[s] = auto[s]; });
@@ -161,7 +168,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseup', up);
     };
-  }, []);
+  }, [PAGE_W]);
 
   const save = async () => {
     const payload = Object.entries(positions).map(([service, p]) => ({ service, x: Math.round(p.x), y: Math.round(p.y) }));
@@ -176,7 +183,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
   };
 
   const reset = () => {
-    setPositions(autoLayout(services, links, groups));
+    setPositions(autoLayout(services, links, groups, PAGE_W));
     setDirty(true);
   };
 
@@ -192,7 +199,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
     <div className="flex flex-col items-center gap-3">
       <style>{`
         @media print {
-          @page { size: A3 landscape; margin: 6mm; }
+          @page { size: ${FORMATS[format].css}; margin: 6mm; }
           body * { visibility: hidden; }
           .freeboard-page, .freeboard-page * { visibility: visible; }
           .freeboard-page { position: absolute; left: 0; top: 0; box-shadow: none !important; border: none !important; }
@@ -201,7 +208,16 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
       `}</style>
 
       <div className="freeboard-toolbar flex items-center gap-2 print:hidden">
-        <span className="text-xs text-muted-foreground mr-2">Glissez l'en-tête d'un bloc pour l'aérer — A3 paysage</span>
+        <span className="text-xs text-muted-foreground mr-2">Glissez l'en-tête d'un bloc pour l'aérer</span>
+        <select
+          value={format}
+          onChange={e => setFormat(e.target.value)}
+          className="h-8 px-2 rounded-lg text-sm border border-border bg-white text-foreground"
+        >
+          {Object.entries(FORMATS).map(([key, f]) => (
+            <option key={key} value={key}>{f.label}</option>
+          ))}
+        </select>
         <button onClick={save} disabled={!dirty}
           className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm font-medium ${dirty ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground'}`}>
           {dirty ? <Save className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
