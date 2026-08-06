@@ -168,6 +168,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
               onDragStart={handleDragStart}
               onSelect={onSelect}
               searchTerm={searchTerm}
+              allEmployees={employees}
             />
           ))}
         </div>
