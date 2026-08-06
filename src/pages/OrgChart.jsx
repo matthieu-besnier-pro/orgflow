@@ -215,8 +215,8 @@ export default function OrgChart() {
   // Ajuster le zoom pour que tout l'organigramme tienne dans l'écran
   const fitToScreen = () => {
     const el = contentRef.current;
-    if (!el) return;
-    const container = el.parentElement;
+    const container = pan.ref.current;
+    if (!el || !container) return;
     const contentWidth = el.offsetWidth;
     const availWidth = container.clientWidth - 64; // p-8 = 32px de chaque côté
     if (contentWidth > availWidth) {
