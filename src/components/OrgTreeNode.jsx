@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { getServiceColor } from '@/lib/serviceColors';
 import OrgCardPresentation from '@/components/OrgCardPresentation';
+import OrgLeafList from '@/components/OrgLeafList';
 
 // Détection d'anomalies de données sur une fiche collaborateur
 export function getAnomalies(employee, depth) {
@@ -225,6 +226,12 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
 
   const anomalies = showAnomalies ? getAnomalies(employee, depth) : [];
 
+  // Les collaborateurs sans équipe sont regroupés en liste horizontale ; les managers restent en cartes verticales
+  const leafChildren = children.filter(c => !(childrenMap[c.id]?.length > 0));
+  const managerChildren = children.filter(c => childrenMap[c.id]?.length > 0);
+  const hasLeafColumn = !isCompact && children.length > 1 && leafChildren.length > 0;
+  const displayChildren = hasLeafColumn ? managerChildren : children;
+
   const lineColor = isModernStyle ? '#94A3B8' : 'hsl(var(--border))';
   // border color of the team group box — slightly darker than line
   const { border: groupBorderColor } = getDepthColor(depth + 1, depthColors);
@@ -289,18 +296,37 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
               }}
             >
               <div className="flex items-start gap-4 justify-center">
-                {children.map((child, i) => (
+                {leafChildren.length > 0 && children.length > 1 && (
+                  <div className="flex flex-col items-center">
+                    <div className="flex w-full h-4">
+                      <div className="flex-1" />
+                      <div className="w-px" style={{ backgroundColor: lineColor }} />
+                      <div className="flex-1" style={{ borderTop: `1px solid ${lineColor}` }} />
+                    </div>
+                    <OrgLeafList
+                      employees={leafChildren}
+                      color={getDepthColor(depth + 1, depthColors)}
+                      onSelect={onSelect}
+                      onDragStart={onDragStart}
+                      onDrop={onDrop}
+                      searchTerm={searchTerm}
+                      getAnomalies={showAnomalies ? getAnomalies : null}
+                      depth={depth + 1}
+                    />
+                  </div>
+                )}
+                {displayChildren.map((child, i) => (
                   <div key={child.id} className="flex flex-col items-center">
                     {/* connecteur orthogonal : demi-barres horizontales + descente verticale */}
                     <div className="flex w-full h-4">
                       <div
                         className="flex-1"
-                        style={{ borderTop: children.length > 1 && i > 0 ? `1px solid ${lineColor}` : 'none' }}
+                        style={{ borderTop: (displayChildren.length > 1 || hasLeafColumn) && (i > 0 || hasLeafColumn) ? `1px solid ${lineColor}` : 'none' }}
                       />
                       <div className="w-px" style={{ backgroundColor: lineColor }} />
                       <div
                         className="flex-1"
-                        style={{ borderTop: children.length > 1 && i < children.length - 1 ? `1px solid ${lineColor}` : 'none' }}
+                        style={{ borderTop: displayChildren.length > 1 && i < displayChildren.length - 1 ? `1px solid ${lineColor}` : 'none' }}
                       />
                     </div>
                     <OrgTreeNode
