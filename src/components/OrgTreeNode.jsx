@@ -96,9 +96,9 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
   );
 }
 
-function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, color, anomalies = [] }) {
+function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
-  const { bg, shadow } = color;
+  const svc = getServiceColor(employee.service);
   const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
 
   return (
@@ -109,8 +109,8 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         onClick={() => onSelect(employee)}
         onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(employee); }}
         title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
-        style={{ backgroundColor: bg, boxShadow: `0 8px 24px ${shadow}` }}
-        className={`relative rounded-xl cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-3 px-4 py-3 w-56
+        style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
+        className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-3 px-4 py-3 w-56
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
           ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}
         `}
@@ -122,31 +122,26 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         )}
         <div className="relative pointer-events-none flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-10 h-10 rounded-full object-cover border-2 border-white/80" />
+            <img src={employee.photo_url} alt={initials} className="w-14 h-14 rounded-full object-cover border-2 border-white shadow" />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-white/25 flex items-center justify-center border-2 border-white/60">
-              <span className="text-sm font-bold text-white">{initials}</span>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center border-2 border-white shadow" style={{ backgroundColor: svc.light }}>
+              <span className="text-base font-bold" style={{ color: svc.bg }}>{initials}</span>
             </div>
           )}
-          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${dot}`} />
+          <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
         </div>
         <div className="flex-1 min-w-0 pointer-events-none">
-          <p className="text-xs font-bold text-white leading-tight truncate">{employee.first_name}</p>
-          <p className="text-xs font-bold text-white leading-tight truncate">{employee.last_name}</p>
-          <p className="text-white/70 truncate" style={{ fontSize: '9px' }}>{employee.position}</p>
-          {employee.service && (() => { const svc = getServiceColor(employee.service); return (
-            <span className="inline-block mt-1 px-1.5 py-0.5 rounded-full font-semibold truncate max-w-full"
-              style={{ fontSize: '8px', backgroundColor: svc.light, color: svc.bg }}>
-              {employee.service}
-            </span>
-          ); })()}
+          <p className="text-xs font-bold text-foreground leading-tight truncate">{employee.first_name}</p>
+          <p className="text-xs font-bold text-foreground leading-tight truncate">{employee.last_name}</p>
+          <p className="text-muted-foreground truncate" style={{ fontSize: '9px' }}>{employee.position}</p>
         </div>
         {hasChildren && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggle(); }}
-            className="flex-shrink-0 w-5 h-5 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors pointer-events-auto"
+            className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors pointer-events-auto"
+            style={{ backgroundColor: svc.light }}
           >
-            {expanded ? <ChevronDown className="w-3 h-3 text-white" /> : <ChevronRight className="w-3 h-3 text-white" />}
+            {expanded ? <ChevronDown className="w-3 h-3" style={{ color: svc.bg }} /> : <ChevronRight className="w-3 h-3" style={{ color: svc.bg }} />}
           </button>
         )}
       </div>
