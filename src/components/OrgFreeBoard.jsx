@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Printer, Save, RotateCcw, Check } from 'lucide-react';
 import FreeServiceBlock from '@/components/FreeServiceBlock';
+import FreeBoardLinks from '@/components/FreeBoardLinks';
 import { useToast } from '@/components/ui/use-toast';
 
 // A3 paysage à 96 dpi
@@ -35,6 +36,26 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
     groups[key].push(e);
   });
   const services = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
+
+  // Liens de rattachement entre services (un collaborateur dont le manager est dans un autre bloc)
+  const empById = {};
+  employees.forEach(e => { empById[e.id] = e; });
+  const links = (() => {
+    const seen = new Set();
+    const list = [];
+    employees.forEach(e => {
+      const m = e.manager_id && empById[e.manager_id];
+      if (!m) return;
+      const from = m.service || 'Sans service';
+      const to = e.service || 'Sans service';
+      if (from === to) return;
+      const key = `${from}->${to}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      list.push({ from, to });
+    });
+    return list;
+  })();
 
   useEffect(() => {
     if (!companyId) return;
@@ -158,6 +179,7 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
           <p className="text-xs text-muted-foreground">{employees.length} collaborateurs</p>
         </div>
         <div ref={areaRef} className="absolute inset-x-0 bottom-0" style={{ top: 56 }}>
+          <FreeBoardLinks links={links} positions={positions} width={PAGE_W} height={maxY - 56} />
           {services.map(s => (
             <FreeServiceBlock
               key={s}
@@ -168,7 +190,6 @@ export default function OrgFreeBoard({ employees, onSelect, searchTerm, companyI
               onDragStart={handleDragStart}
               onSelect={onSelect}
               searchTerm={searchTerm}
-              allEmployees={employees}
             />
           ))}
         </div>
