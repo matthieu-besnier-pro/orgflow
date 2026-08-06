@@ -148,7 +148,7 @@ export default function OrgChart() {
   const contentRef = useRef(null);
   const { toast } = useToast();
 
-  const { selectedCompanyId, selectedCompany, zones: companyZones } = useCompany();
+  const { selectedCompanyId, selectedCompany, zones: companyZones, loading: companyLoading } = useCompany();
   const pan = usePanDrag();
 
   useEffect(() => {
@@ -390,6 +390,14 @@ export default function OrgChart() {
     setSelectedManagerId('all');
     setSearch('');
   };
+
+  if (!companyLoading && !selectedCompanyId) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+      <Users className="w-10 h-10 text-muted-foreground/40" />
+      <p className="text-muted-foreground font-medium">Aucune société accessible avec ce compte</p>
+      <p className="text-sm text-muted-foreground">Contactez un administrateur pour obtenir l'accès.</p>
+    </div>
+  );
 
   if (loading) return (
     <div className="flex items-center justify-center h-full">
