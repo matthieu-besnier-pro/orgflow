@@ -244,6 +244,12 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
 
   return (
     <div className={`flex flex-col items-center transition-opacity duration-150 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
+      {children.length > 0 && employee.service && !isCompact && (
+        <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white truncate max-w-56"
+          style={{ backgroundColor: getServiceColor(employee.service).bg }}>
+          {employee.service}
+        </div>
+      )}
       <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         <CardComponent
           employee={employee}

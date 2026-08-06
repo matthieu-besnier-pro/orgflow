@@ -18,6 +18,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { useCompany } from '@/lib/CompanyContext';
 import readDroppedFiles from '@/lib/readDroppedFiles';
 import ChartAppearancePanel from '@/components/ChartAppearancePanel';
+import ServiceManagerPanel from '@/components/ServiceManagerPanel';
+import { Tags } from 'lucide-react';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
@@ -126,6 +128,7 @@ export default function OrgChart() {
   const [depthColors, setDepthColors] = useState(null);
   const [appearanceId, setAppearanceId] = useState(null);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -593,6 +596,12 @@ export default function OrgChart() {
               <Brush className="w-3.5 h-3.5" />
             </button>
             <button
+              onClick={() => setServicesOpen(true)}
+              title="Gérer les libellés de service"
+              className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground hover:bg-white">
+              <Tags className="w-3.5 h-3.5" />
+            </button>
+            <button
               onClick={() => setColorMode(m => m === 'service' ? 'depth' : 'service')}
               title={colorMode === 'service' ? 'Couleurs par niveau hiérarchique' : 'Couleurs par service'}
               className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${colorMode === 'service' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -787,6 +796,14 @@ export default function OrgChart() {
           containerRef={pan.ref}
           contentRef={contentRef}
           deps={`${zoom}-${expandAll}-${template}-${filteredPool.length}-${selectedManagerId}`}
+        />
+      )}
+
+      {servicesOpen && (
+        <ServiceManagerPanel
+          employees={employees}
+          onClose={() => setServicesOpen(false)}
+          onChanged={() => base44.entities.Employee.filter({ company_id: selectedCompanyId }).then(setEmployees)}
         />
       )}
 
