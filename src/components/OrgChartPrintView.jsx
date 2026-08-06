@@ -1,4 +1,30 @@
+import { useRef, useState, useLayoutEffect } from 'react';
 import { useCompany } from '@/lib/CompanyContext';
+
+const MM = 96 / 25.4;
+
+// Réduit automatiquement l'arbre pour qu'il tienne dans la page
+function AutoFit({ availW, availH, children }) {
+  const ref = useRef(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const w = el.scrollWidth;
+    const h = el.scrollHeight;
+    if (!w || !h) return;
+    setScale(Math.min(1, availW / w, availH / h));
+  }, [availW, availH, children]);
+
+  return (
+    <div style={{ width: availW, height: availH, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' }}>
+      <div ref={ref} style={{ transform: `scale(${scale})`, transformOrigin: 'top center', display: 'inline-block' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 const STATUS_COLORS = {
   'Actif': '#16a34a',
@@ -265,9 +291,20 @@ function StatusLegend() {
 }
 
 // ── Composant principal ─────────────────────────────────────────────────────
+const PAGE_SIZES = {
+  'A4': { w: 210, h: 297, css: 'A4 portrait' },
+  'A4-paysage': { w: 297, h: 210, css: 'A4 landscape' },
+  'A3': { w: 297, h: 420, css: 'A3 portrait' },
+  'A3-paysage': { w: 420, h: 297, css: 'A3 landscape' },
+};
+
 export default function OrgChartPrintView({ employees, roots, childrenMap, pageFormat = 'A4' }) {
-  const pageWidth = pageFormat === 'A3' ? '297mm' : '210mm';
-  const pageHeight = pageFormat === 'A3' ? '420mm' : '297mm';
+  const size = PAGE_SIZES[pageFormat] || PAGE_SIZES['A4'];
+  const pageWidth = `${size.w}mm`;
+  const pageHeight = `${size.h}mm`;
+  // Zone utile (page - marges 18/15mm - en-tête, légende, pied)
+  const availW = (size.w - 30) * MM;
+  const availH = (size.h - 36) * MM - 150;
 
   const styles = `
     @media print {
@@ -301,8 +338,18 @@ export default function OrgChartPrintView({ employees, roots, childrenMap, pageF
       }
     }
     @page {
-      size: ${pageFormat};
+      size: ${size.css};
       margin: 0;
+    }
+    .print-page {
+      width: ${pageWidth};
+      min-height: ${pageHeight};
+      padding: 18mm 15mm;
+      margin: 0 auto 16px;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
     }
   `;
 
@@ -326,15 +373,9 @@ export default function OrgChartPrintView({ employees, roots, childrenMap, pageF
             <PageHeader rootEmployee={root} index={i} total={roots.length} />
             <StatusLegend />
             <div className="print-body">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  overflow: 'auto',
-                }}
-              >
+              <AutoFit availW={availW} availH={availH}>
                 <PrintNode employee={root} childrenMap={childrenMap} depth={0} />
-              </div>
+              </AutoFit>
             </div>
             <PageFooter />
           </div>

@@ -1,15 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2, Clipboard, Presentation, Palette, AlertTriangle, Move, Brush } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
-import OrgServiceView from '@/components/OrgServiceView';
-import OrgGroupedView from '@/components/OrgGroupedView';
 import OrgChartPrintView from '@/components/OrgChartPrintView';
 import OrgWhiteboardView from '@/components/OrgWhiteboardView';
 import OrgPresentationFrame from '@/components/OrgPresentationFrame';
-import OrgFreeBoard from '@/components/OrgFreeBoard';
 import ServiceLegend from '@/components/ServiceLegend';
 import OrgBreadcrumb from '@/components/OrgBreadcrumb';
 import usePanDrag from '@/hooks/usePanDrag';
@@ -122,7 +119,7 @@ export default function OrgChart() {
   const [template, setTemplate] = useState('classique');
   const [viewMode, setViewMode] = useState('hierarchical');
   const [printMode, setPrintMode] = useState(false);
-  const [printFormat, setPrintFormat] = useState('A4');
+  const [printFormat, setPrintFormat] = useState('A3-paysage');
   const [colorMode, setColorMode] = useState('depth');
   const [showAnomalies, setShowAnomalies] = useState(false);
   const [depthColors, setDepthColors] = useState(null);
@@ -558,12 +555,7 @@ export default function OrgChart() {
         <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
           {[
             { key: 'hierarchical', icon: <LayoutGrid className="w-3.5 h-3.5" />, label: 'Vue hiérarchique' },
-            { key: 'services', icon: <Columns className="w-3.5 h-3.5" />, label: 'Par services' },
-            { key: 'zone', icon: <MapPin className="w-3.5 h-3.5" />, label: 'Par zone géographique' },
-            { key: 'entite', icon: <Layers className="w-3.5 h-3.5" />, label: 'Par ancienne entité' },
-            { key: 'base', icon: <Building2 className="w-3.5 h-3.5" />, label: 'Par base / agence' },
             { key: 'tableau', icon: <Clipboard className="w-3.5 h-3.5" />, label: 'Tableau blanc (A3 paysage)' },
-            { key: 'libre', icon: <Move className="w-3.5 h-3.5" />, label: 'Disposition libre (A3 paysage, blocs déplaçables)' },
           ].map(t => (
             <button key={t.key} onClick={() => setViewMode(t.key)} title={t.label}
               className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${viewMode === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -663,7 +655,7 @@ export default function OrgChart() {
       )}
 
       {/* Légende des couleurs de services */}
-      {!printMode && (colorMode === 'service' || viewMode === 'libre') && (
+      {!printMode && colorMode === 'service' && (
         <ServiceLegend services={[...new Set(filteredBase.map(e => e.service || 'Sans service'))].sort((a, b) => a.localeCompare(b, 'fr'))} />
       )}
 
@@ -681,8 +673,10 @@ export default function OrgChart() {
                 onChange={(e) => setPrintFormat(e.target.value)}
                 className="px-3 py-1 text-sm border border-border rounded-lg"
               >
-                <option value="A4">A4 (210×297 mm)</option>
-                <option value="A3">A3 (297×420 mm)</option>
+                <option value="A3-paysage">A3 paysage (420×297 mm)</option>
+                <option value="A3">A3 portrait (297×420 mm)</option>
+                <option value="A4-paysage">A4 paysage (297×210 mm)</option>
+                <option value="A4">A4 portrait (210×297 mm)</option>
               </select>
             </div>
             <button
@@ -711,36 +705,13 @@ export default function OrgChart() {
           </div>
         ) : (
           <>
-            {viewMode === 'services' ? (
-              <OrgServiceView
-                employees={filteredBase}
-                agencies={agencies}
-                onSelect={setSelectedEmployee}
-                searchTerm={searchTerm}
-              />
-            ) : viewMode === 'libre' ? (
-              <OrgFreeBoard
-                employees={filteredBase}
-                onSelect={setSelectedEmployee}
-                searchTerm={searchTerm}
-                companyId={selectedCompanyId}
-                company={selectedCompany}
-              />
-            ) : viewMode === 'tableau' ? (
+            {viewMode === 'tableau' ? (
               <OrgWhiteboardView
                 employees={filteredBase}
                 agencies={agencies}
                 onSelect={setSelectedEmployee}
                 searchTerm={searchTerm}
                 company={selectedCompany}
-              />
-            ) : (viewMode === 'zone' || viewMode === 'entite' || viewMode === 'base') ? (
-              <OrgGroupedView
-                employees={filteredBase}
-                agencies={agencies}
-                groupBy={viewMode}
-                onSelect={setSelectedEmployee}
-                searchTerm={searchTerm}
               />
             ) : (
               <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
