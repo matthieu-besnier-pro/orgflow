@@ -213,7 +213,8 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const children = childrenMap[employee.id] || [];
   const isHighlighted = matchesSearch(employee, searchTerm);
 
-  const CardComponent = CARD_COMPONENTS[template] || CardClassique;
+  // Tout le monde à l'horizontal : les managers utilisent la carte horizontale
+  const CardComponent = template === 'classique' ? CardModerne : (CARD_COMPONENTS[template] || CardClassique);
   const isCompact = template === 'compact';
   const isPresentation = template === 'presentation';
   const isModernStyle = !isCompact;
