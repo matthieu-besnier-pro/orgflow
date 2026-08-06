@@ -119,7 +119,7 @@ export default function OrgChart() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [zoom, setZoom] = useState(0.85);
   const [loading, setLoading] = useState(true);
-  const [expandAll, setExpandAll] = useState(false);
+  const [expandAll, setExpandAll] = useState(true);
   const [template, setTemplate] = useState('classique');
   const [viewMode, setViewMode] = useState('hierarchical');
   const [printMode, setPrintMode] = useState(false);
