@@ -131,6 +131,7 @@ export default function OrgChart() {
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [scaledSize, setScaledSize] = useState(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -224,6 +225,17 @@ export default function OrgChart() {
       setZoom(0.85);
     }
   };
+
+  // Taille réelle après mise à l'échelle → évite les grandes zones blanches
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const measure = () => setScaledSize({ w: el.offsetWidth * zoom, h: el.offsetHeight * zoom });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [zoom, viewMode, printMode, template, loading]);
 
   // Auto-ajuster quand on déplie tout
   useEffect(() => {
@@ -748,7 +760,8 @@ export default function OrgChart() {
                 company={selectedCompany}
               />
             ) : (
-              <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minWidth: 'max-content' }}>
+              <div className="mx-auto" style={{ width: scaledSize?.w, height: scaledSize?.h }}>
+              <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
                 <OrgPresentationFrame active={template === 'presentation'} company={selectedCompany}>
                 {roots.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
@@ -800,6 +813,7 @@ export default function OrgChart() {
                   </div>
                 )}
                 </OrgPresentationFrame>
+              </div>
               </div>
             )}
           </>
