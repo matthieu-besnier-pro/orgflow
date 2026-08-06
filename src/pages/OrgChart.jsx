@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import OrgChartPrintView from '@/components/OrgChartPrintView';
 import OrgWhiteboardView from '@/components/OrgWhiteboardView';
 import OrgPresentationFrame from '@/components/OrgPresentationFrame';
+import OrgFreeBoard from '@/components/OrgFreeBoard';
 import ServiceLegend from '@/components/ServiceLegend';
 import OrgBreadcrumb from '@/components/OrgBreadcrumb';
 import usePanDrag from '@/hooks/usePanDrag';
@@ -556,6 +557,7 @@ export default function OrgChart() {
           {[
             { key: 'hierarchical', icon: <LayoutGrid className="w-3.5 h-3.5" />, label: 'Vue hiérarchique' },
             { key: 'tableau', icon: <Clipboard className="w-3.5 h-3.5" />, label: 'Tableau blanc (A3 paysage)' },
+            { key: 'libre', icon: <Move className="w-3.5 h-3.5" />, label: 'Disposition libre (blocs déplaçables)' },
           ].map(t => (
             <button key={t.key} onClick={() => setViewMode(t.key)} title={t.label}
               className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${viewMode === t.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -655,7 +657,7 @@ export default function OrgChart() {
       )}
 
       {/* Légende des couleurs de services */}
-      {!printMode && colorMode === 'service' && (
+      {!printMode && (colorMode === 'service' || viewMode === 'libre') && (
         <ServiceLegend services={[...new Set(filteredBase.map(e => e.service || 'Sans service'))].sort((a, b) => a.localeCompare(b, 'fr'))} />
       )}
 
@@ -705,7 +707,15 @@ export default function OrgChart() {
           </div>
         ) : (
           <>
-            {viewMode === 'tableau' ? (
+            {viewMode === 'libre' ? (
+              <OrgFreeBoard
+                employees={filteredBase}
+                onSelect={setSelectedEmployee}
+                searchTerm={searchTerm}
+                companyId={selectedCompanyId}
+                company={selectedCompany}
+              />
+            ) : viewMode === 'tableau' ? (
               <OrgWhiteboardView
                 employees={filteredBase}
                 agencies={agencies}
