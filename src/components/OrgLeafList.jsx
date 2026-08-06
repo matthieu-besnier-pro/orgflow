@@ -44,10 +44,10 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
         )}
         <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
       </div>
-      <div className="flex-1 pointer-events-none whitespace-nowrap">
-        <p className="text-xs font-bold text-foreground leading-tight">{employee.first_name}</p>
-        <p className="text-xs font-bold text-foreground leading-tight">{employee.last_name}</p>
-        <p className="text-muted-foreground" style={{ fontSize: '9px' }}>{employee.position}</p>
+      <div className="flex-1 pointer-events-none">
+        <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.first_name}</p>
+        <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.last_name}</p>
+        <p className="text-muted-foreground leading-snug max-w-[9rem] break-words" style={{ fontSize: '9px' }}>{employee.position}</p>
       </div>
     </div>
   );
