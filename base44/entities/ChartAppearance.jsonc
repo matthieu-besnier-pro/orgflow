@@ -1,0 +1,40 @@
+{
+  "name": "ChartAppearance",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "title": "Soci\u00e9t\u00e9"
+    },
+    "template": {
+      "type": "string",
+      "title": "Mod\u00e8le de carte",
+      "enum": [
+        "classique",
+        "moderne",
+        "compact",
+        "presentation"
+      ],
+      "default": "classique"
+    },
+    "color_mode": {
+      "type": "string",
+      "title": "Mode de couleur",
+      "enum": [
+        "depth",
+        "service"
+      ],
+      "default": "depth"
+    },
+    "depth_colors": {
+      "type": "array",
+      "title": "Couleurs par niveau",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "company_id"
+  ]
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2, Clipboard, Presentation, Palette, AlertTriangle, Move } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Columns, Printer, MapPin, Layers, Building2, Clipboard, Presentation, Palette, AlertTriangle, Move, Brush } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { useCompany } from '@/lib/CompanyContext';
 import readDroppedFiles from '@/lib/readDroppedFiles';
+import ChartAppearancePanel from '@/components/ChartAppearancePanel';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
@@ -124,6 +125,9 @@ export default function OrgChart() {
   const [printFormat, setPrintFormat] = useState('A4');
   const [colorMode, setColorMode] = useState('depth');
   const [showAnomalies, setShowAnomalies] = useState(false);
+  const [depthColors, setDepthColors] = useState(null);
+  const [appearanceId, setAppearanceId] = useState(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -155,6 +159,32 @@ export default function OrgChart() {
       setLoading(false);
     });
   }, [selectedCompanyId]);
+
+  // Apparence des cartes personnalisée par société
+  useEffect(() => {
+    if (!selectedCompanyId) return;
+    base44.entities.ChartAppearance.filter({ company_id: selectedCompanyId }).then(list => {
+      const a = list[0];
+      setAppearanceId(a?.id || null);
+      setTemplate(a?.template || 'classique');
+      setColorMode(a?.color_mode || 'depth');
+      setDepthColors(a?.depth_colors?.length ? a.depth_colors : null);
+    });
+  }, [selectedCompanyId]);
+
+  const handleSaveAppearance = async (settings) => {
+    setTemplate(settings.template);
+    setColorMode(settings.color_mode);
+    setDepthColors(settings.depth_colors);
+    if (appearanceId) {
+      await base44.entities.ChartAppearance.update(appearanceId, settings);
+    } else {
+      const created = await base44.entities.ChartAppearance.create({ company_id: selectedCompanyId, ...settings });
+      setAppearanceId(created.id);
+    }
+    setAppearanceOpen(false);
+    toast({ title: 'Apparence enregistrée', description: `Réglages propres à ${selectedCompany?.name || 'cette société'}`, duration: 3000 });
+  };
 
   // Recharger les employés en temps réel quand le chat en ajoute
   useEffect(() => {
@@ -563,6 +593,12 @@ export default function OrgChart() {
         {viewMode === 'hierarchical' && (
           <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
             <button
+              onClick={() => setAppearanceOpen(true)}
+              title={`Personnaliser l'apparence pour ${selectedCompany?.name || 'cette société'}`}
+              className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground hover:bg-white">
+              <Brush className="w-3.5 h-3.5" />
+            </button>
+            <button
               onClick={() => setColorMode(m => m === 'service' ? 'depth' : 'service')}
               title={colorMode === 'service' ? 'Couleurs par niveau hiérarchique' : 'Couleurs par service'}
               className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${colorMode === 'service' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -733,6 +769,7 @@ export default function OrgChart() {
                       onFocus={handleFocus}
                       colorMode={colorMode}
                       showAnomalies={showAnomalies}
+                      depthColors={depthColors}
                     />
                   </div>
                 ) : (
@@ -752,6 +789,7 @@ export default function OrgChart() {
                         onFocus={handleFocus}
                         colorMode={colorMode}
                         showAnomalies={showAnomalies}
+                        depthColors={depthColors}
                       />
                     ))}
                   </div>
@@ -768,6 +806,15 @@ export default function OrgChart() {
           containerRef={pan.ref}
           contentRef={contentRef}
           deps={`${zoom}-${expandAll}-${template}-${filteredPool.length}-${selectedManagerId}`}
+        />
+      )}
+
+      {appearanceOpen && (
+        <ChartAppearancePanel
+          companyName={selectedCompany?.name || 'cette société'}
+          initial={{ template, colorMode, depthColors }}
+          onSave={handleSaveAppearance}
+          onClose={() => setAppearanceOpen(false)}
         />
       )}
 

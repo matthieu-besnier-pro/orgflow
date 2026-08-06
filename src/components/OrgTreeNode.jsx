@@ -27,16 +27,13 @@ function matchesSearch(employee, searchTerm) {
   return haystack.includes(searchTerm);
 }
 
-// Depth-based colors — Charte GONNIN DURIS (solides, design moderne)
-const DEPTH_COLORS = [
-  { bg: '#003D7A', shadow: 'rgba(0, 61, 122, 0.12)', border: '#003D7A' },
-  { bg: '#0056B3', shadow: 'rgba(0, 86, 179, 0.12)', border: '#0056B3' },
-  { bg: '#0070D0', shadow: 'rgba(0, 112, 208, 0.12)', border: '#0070D0' },
-  { bg: '#FDB913', shadow: 'rgba(253, 185, 19, 0.12)', border: '#FDB913' },
-];
+// Depth-based colors — palette par défaut (personnalisable par société)
+const DEFAULT_DEPTH_HEX = ['#003D7A', '#0056B3', '#0070D0', '#FDB913'];
 
-function getDepthColor(depth) {
-  return DEPTH_COLORS[Math.min(depth, DEPTH_COLORS.length - 1)];
+function getDepthColor(depth, palette) {
+  const hexes = palette && palette.length ? palette : DEFAULT_DEPTH_HEX;
+  const hex = hexes[Math.min(depth, hexes.length - 1)];
+  return { bg: hex, shadow: `${hex}1f`, border: hex };
 }
 
 // ── Carte verticale : photo / nom / fonction ──────────────────────────────
@@ -209,7 +206,7 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
@@ -224,13 +221,13 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   // Couleur de la carte : par profondeur hiérarchique ou par service
   const cardColor = colorMode === 'service'
     ? (() => { const c = getServiceColor(employee.service); return { bg: c.bg, shadow: `${c.bg}22`, border: c.bg }; })()
-    : getDepthColor(depth || 0);
+    : getDepthColor(depth || 0, depthColors);
 
   const anomalies = showAnomalies ? getAnomalies(employee, depth) : [];
 
   const lineColor = isModernStyle ? '#94A3B8' : 'hsl(var(--border))';
   // border color of the team group box — slightly darker than line
-  const { border: groupBorderColor } = getDepthColor(Math.min(depth + 1, DEPTH_COLORS.length - 1));
+  const { border: groupBorderColor } = getDepthColor(depth + 1, depthColors);
 
   const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); };
   const handleDragLeave = (e) => { e.stopPropagation(); setIsDragOver(false); };
@@ -274,6 +271,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                   searchTerm={searchTerm}
                   colorMode={colorMode}
                   showAnomalies={showAnomalies}
+                  depthColors={depthColors}
                 />
               ))}
             </div>
@@ -318,6 +316,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       searchTerm={searchTerm}
                       colorMode={colorMode}
                       showAnomalies={showAnomalies}
+                      depthColors={depthColors}
                     />
                   </div>
                 ))}
