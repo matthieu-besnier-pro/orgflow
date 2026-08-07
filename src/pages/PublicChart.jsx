@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { ZoomIn, ZoomOut, Maximize, Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import OrgTreeNode from '@/components/OrgTreeNode';
+import PublicEmployeeModal from '@/components/PublicEmployeeModal';
 import usePanDrag from '@/hooks/usePanDrag';
 
 function buildChildrenMap(pool) {
@@ -21,6 +22,7 @@ export default function PublicChart() {
   const [zoom, setZoom] = useState(0.85);
   const [search, setSearch] = useState('');
   const [matchIndex, setMatchIndex] = useState(0);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [size, setSize] = useState(null);
   const contentRef = useRef(null);
   const pan = usePanDrag();
@@ -161,7 +163,7 @@ export default function PublicChart() {
                   key={root.id}
                   employee={root}
                   childrenMap={childrenMap}
-                  onSelect={noop}
+                  onSelect={setSelectedEmployee}
                   defaultExpanded
                   depth={0}
                   onDragStart={noop}
@@ -174,6 +176,14 @@ export default function PublicChart() {
           </div>
         </div>
       </div>
+
+      {selectedEmployee && (
+        <PublicEmployeeModal
+          employee={selectedEmployee}
+          employees={data.employees}
+          onClose={() => setSelectedEmployee(null)}
+        />
+      )}
     </div>
   );
 }

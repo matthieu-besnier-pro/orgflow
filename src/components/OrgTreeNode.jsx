@@ -54,7 +54,7 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
         style={{ backgroundColor: bg, boxShadow: `0 8px 24px ${shadow}` }}
         className={`relative rounded-xl cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col items-center pt-5 pb-4 px-4 w-28
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
-          ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}
+          ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}
         `}
       >
         {anomalies.length > 0 && (
@@ -63,9 +63,9 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
           </span>
         )}
         {/* Avatar */}
-        <div className="relative pointer-events-none mb-2">
+        <div className="relative mb-2">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-12 h-12 rounded-full object-cover border-2 border-white/80 shadow" />
+            <img src={employee.photo_url} alt={initials} className="w-12 h-12 rounded-full object-cover border-2 border-white/80 shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
           ) : (
             <div className="w-12 h-12 rounded-full bg-white/25 flex items-center justify-center border-2 border-white/60 shadow">
               <span className="text-base font-bold text-white">{initials}</span>
@@ -112,7 +112,7 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
         className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-max
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
-          ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}
+          ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}
         `}
       >
         {anomalies.length > 0 && (
@@ -120,9 +120,9 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
             <AlertTriangle className="w-2.5 h-2.5 text-amber-900" />
           </span>
         )}
-        <div className="relative pointer-events-none flex-shrink-0">
+        <div className="relative flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow" />
+            <img src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
           ) : (
             <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-white shadow" style={{ backgroundColor: svc.light }}>
               <span className="text-base font-bold" style={{ color: svc.bg }}>{initials}</span>
@@ -164,7 +164,7 @@ function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
         className={`relative bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-grab active:cursor-grabbing active:opacity-60 px-3 py-2 flex items-center gap-2 w-48 border border-border
           ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-105' : ''}
-          ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1 bg-amber-50' : ''}
+          ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 bg-amber-50 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}
         `}
       >
         {anomalies.length > 0 && (
@@ -172,9 +172,9 @@ function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onTog
             <AlertTriangle className="w-2 h-2 text-amber-900" />
           </span>
         )}
-        <div className="relative flex-shrink-0 pointer-events-none">
+        <div className="relative flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-8 h-8 rounded-full object-cover" />
+            <img src={employee.photo_url} alt={initials} className="w-8 h-8 rounded-full object-cover pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.5] hover:z-50" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-lavender flex items-center justify-center">
               <span className="text-xs font-bold text-primary">{initials}</span>

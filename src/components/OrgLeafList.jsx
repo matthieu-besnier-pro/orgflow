@@ -27,16 +27,16 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
       style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
       className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-full
         ${over ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
-        ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
+        ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}`}
     >
       {anomalies.length > 0 && (
         <span title={anomalies.join(' · ')} className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center shadow">
           <AlertTriangle className="w-2.5 h-2.5 text-amber-900" />
         </span>
       )}
-      <div className="relative pointer-events-none flex-shrink-0">
+      <div className="relative flex-shrink-0">
         {employee.photo_url ? (
-          <img src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow" />
+          <img src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
         ) : (
           <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-white shadow" style={{ backgroundColor: svc.light }}>
             <span className="text-base font-bold" style={{ color: svc.bg }}>{initials}</span>

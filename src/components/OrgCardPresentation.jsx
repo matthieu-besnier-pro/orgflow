@@ -28,7 +28,7 @@ export default function OrgCardPresentation({
       }}
       className={`relative rounded-lg cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 flex flex-col items-center pt-4 pb-3 px-3 w-32 border border-white/25
         ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
-        ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''}
+        ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}
       `}
     >
       {anomalies.length > 0 && (
@@ -40,9 +40,9 @@ export default function OrgCardPresentation({
         </span>
       )}
 
-      <div className="relative pointer-events-none mb-2">
+      <div className="relative mb-2">
         {employee.photo_url ? (
-          <img src={employee.photo_url} alt={initials} className="w-14 h-14 rounded-md object-cover border-2 border-white/70 shadow-md" />
+          <img src={employee.photo_url} alt={initials} className="w-14 h-14 rounded-md object-cover border-2 border-white/70 shadow-md pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
         ) : (
           <div className="w-14 h-14 rounded-md bg-white/20 flex items-center justify-center border-2 border-white/50 shadow-md">
             <span className="text-lg font-bold text-white">{initials}</span>
