@@ -24,9 +24,9 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingPublicSettings, authError } = useAuth();
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoadingPublicSettings) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-canvas">
         <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin"></div>
@@ -34,17 +34,11 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
+  if (authError && authError.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
   }
 
   return (
-    <CompanyProvider>
       <Routes>
         <Route path="/partage" element={<PublicChart />} />
         <Route path="/login" element={<Login />} />
@@ -52,7 +46,7 @@ const AuthenticatedApp = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-          <Route element={<Layout />}>
+          <Route element={<CompanyProvider><Layout /></CompanyProvider>}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/organigramme" element={<OrgChart />} />
             <Route path="/annuaire" element={<Directory />} />
@@ -65,7 +59,6 @@ const AuthenticatedApp = () => {
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
-    </CompanyProvider>
   );
 };
 
