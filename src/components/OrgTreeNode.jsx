@@ -52,7 +52,7 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
         onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(employee); }}
         title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
         style={{ backgroundColor: bg, boxShadow: `0 8px 24px ${shadow}` }}
-        className={`relative rounded-xl cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col items-center pt-5 pb-4 px-4 w-28
+        className={`relative rounded-xl cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 hover:z-50 transition-all duration-200 flex flex-col items-center pt-5 pb-4 px-4 w-28
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
           ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}
         `}
@@ -110,7 +110,7 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(employee); }}
         title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
         style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
-        className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-max
+        className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 hover:z-50 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-max
           ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
           ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}
         `}
@@ -162,7 +162,7 @@ function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         onClick={() => onSelect(employee)}
         onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(employee); }}
         title="Clic : détails — Double-clic : centrer l'organigramme sur ce manager"
-        className={`relative bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-grab active:cursor-grabbing active:opacity-60 px-3 py-2 flex items-center gap-2 w-48 border border-border
+        className={`relative bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:z-50 transition-all duration-150 cursor-grab active:cursor-grabbing active:opacity-60 px-3 py-2 flex items-center gap-2 w-48 border border-border
           ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-105' : ''}
           ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 bg-amber-50 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}
         `}

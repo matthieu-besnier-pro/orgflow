@@ -26,7 +26,7 @@ export default function OrgCardPresentation({
         background: `linear-gradient(160deg, ${color.bg} 0%, ${color.bg}cc 100%)`,
         boxShadow: `0 6px 18px ${color.bg}33`,
       }}
-      className={`relative rounded-lg cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 flex flex-col items-center pt-4 pb-3 px-3 w-32 border border-white/25
+      className={`relative rounded-lg cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-2xl hover:-translate-y-1 hover:z-50 transition-all duration-200 flex flex-col items-center pt-4 pb-3 px-3 w-32 border border-white/25
         ${isDragOver ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
         ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}
       `}

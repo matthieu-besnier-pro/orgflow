@@ -25,7 +25,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
       onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); onDrop(e, employee); }}
       onClick={() => onSelect(employee)}
       style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
-      className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-full
+      className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 hover:z-50 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-full
         ${over ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
         ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}`}
     >
