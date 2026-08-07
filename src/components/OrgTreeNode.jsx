@@ -308,9 +308,8 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
             >
               <div className="flex items-start gap-4 justify-center">
                 {leafChildren.length > 0 && children.length > 1 && (
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-start">
                     <div className="flex w-full h-4">
-                      <div className="flex-1" />
                       <div className="w-px" style={{ backgroundColor: lineColor }} />
                       <div className="flex-1" style={{ borderTop: `1px solid ${lineColor}` }} />
                     </div>
