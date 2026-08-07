@@ -219,7 +219,7 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
@@ -233,7 +233,9 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const isCompact = template === 'compact';
   const isPresentation = template === 'presentation';
   const isModernStyle = !isCompact;
-  const hasMatchInSubtree = isHighlighted || hasMatchingDescendant(employee.id, childrenMap, searchTerm) || (sideCards || []).some(e => matchesSearch(e, searchTerm));
+  const hasMatchInSubtree = visibleIds
+    ? visibleIds.has(employee.id)
+    : (isHighlighted || hasMatchingDescendant(employee.id, childrenMap, searchTerm) || (sideCards || []).some(e => matchesSearch(e, searchTerm)));
   const isDimmed = searchTerm && !hasMatchInSubtree;
 
   // Couleur de la carte : par profondeur hiérarchique ou par service
@@ -268,7 +270,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); onDrop(e, employee); };
 
   return (
-    <div className={`flex flex-col items-center transition-opacity duration-150 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
+    <div className={`flex flex-col items-center transition-opacity duration-150 ${isDimmed ? 'opacity-20' : 'opacity-100'}`}>
       {sideCards.length > 0 ? (
         <div className="relative flex flex-col items-center">
           {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
@@ -297,7 +299,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
             {sideCards.map(e => {
               const svc = getServiceColor(e.service);
               return (
-                <div key={e.id} className="flex flex-col items-center" data-match={matchesSearch(e, searchTerm) ? 'true' : undefined}>
+                <div key={e.id} className={`flex flex-col items-center transition-opacity duration-150 ${visibleIds && searchTerm && !visibleIds.has(e.id) ? 'opacity-20' : 'opacity-100'}`} data-match={matchesSearch(e, searchTerm) ? 'true' : undefined}>
                   {e.service && (
                     <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
                       style={{ backgroundColor: svc.bg }}>

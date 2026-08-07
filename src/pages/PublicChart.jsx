@@ -87,6 +87,26 @@ export default function PublicChart() {
   const orphanLeaves = roots.filter(r => !(childrenMap[r.id]?.length || 0) > 0);
   const searchTerm = search.trim().toLowerCase();
 
+  // Précalcul des IDs visibles : correspondances + leurs ancêtres (+ racine si une carte latérale correspond)
+  const visibleIds = (() => {
+    if (!searchTerm) return null;
+    const empById = {};
+    data.employees.forEach(e => { empById[e.id] = e; });
+    const matches = data.employees.filter(e => `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm));
+    const result = new Set(matches.map(e => e.id));
+    result.forEach(id => {
+      let e = empById[id];
+      while (e?.manager_id && empById[e.manager_id]) {
+        result.add(e.manager_id);
+        e = empById[e.manager_id];
+      }
+    });
+    if (orphanLeaves.some(e => `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm))) {
+      rootsWithChildren.forEach(r => result.add(r.id));
+    }
+    return result;
+  })();
+
   // Ordre des services : utilise le mode figé sur le lien de partage (défaut: alphabétique)
   const serviceOrder = (() => {
     const counts = {};
@@ -196,6 +216,7 @@ export default function PublicChart() {
                   searchTerm={searchTerm}
                   serviceOrder={serviceOrder}
                   sideCards={orphanLeaves}
+                  visibleIds={visibleIds}
                 />
               </div>
             ) : rootsWithChildren.length > 1 ? (
@@ -214,6 +235,7 @@ export default function PublicChart() {
                     searchTerm={searchTerm}
                     serviceOrder={serviceOrder}
                     sideCards={i === 0 ? orphanLeaves : []}
+                    visibleIds={visibleIds}
                   />
                 ))}
               </div>
@@ -231,6 +253,7 @@ export default function PublicChart() {
                     onDrop={noop}
                     template="classique"
                     searchTerm={searchTerm}
+                    visibleIds={visibleIds}
                   />
                 ))}
               </div>
