@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { getServiceColor } from '@/lib/serviceColors';
 
 const STATUS_DOT = {
@@ -53,7 +54,33 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
   );
 }
 
-export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color }) {
+function ServiceGroup({ s, groups, parentService, onSelect, onDragStart, onDrop, isMatch, getAnomalies, depth, draggable = false }) {
+  const svc = getServiceColor(s);
+  return (
+    <div className="flex flex-col gap-2 w-max items-stretch">
+      {s !== parentService && (
+        <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-full flex items-center justify-center gap-1"
+          style={{ backgroundColor: svc.bg }}>
+          {draggable && <GripVertical className="w-2.5 h-2.5 opacity-60" />}
+          {s}
+        </div>
+      )}
+      {groups[s].map(e => (
+        <LeafCard
+          key={e.id}
+          employee={e}
+          onSelect={onSelect}
+          onDragStart={onDragStart}
+          onDrop={onDrop}
+          isHighlighted={isMatch(e)}
+          anomalies={getAnomalies ? getAnomalies(e, depth) : []}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color, serviceSortMode = 'count', customServiceOrder = [], onServiceReorder = null }) {
   const lineColor = color?.border || '#94A3B8';
   // Grouper par service
   const groups = {};
@@ -62,7 +89,19 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
     (groups[key] ||= []).push(e);
   });
 
-  const services = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
+  // Tri des services selon le mode choisi
+  let services;
+  if (serviceSortMode === 'alpha') {
+    services = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'fr'));
+  } else if (serviceSortMode === 'custom') {
+    services = Object.keys(groups).sort((a, b) => {
+      const ia = customServiceOrder.indexOf(a);
+      const ib = customServiceOrder.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+  } else {
+    services = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
+  }
 
   // Services de plusieurs personnes → colonne dédiée avec en-tête
   // Services d'une seule personne → empilés dans une colonne unique, étiquette conservée
@@ -71,32 +110,48 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
 
   const isMatch = (e) => !!searchTerm && `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm);
 
+  const isDraggable = serviceSortMode === 'custom' && onServiceReorder && multiServices.length > 1;
+
+  const handleDragEnd = (result) => {
+    if (!result.destination || result.destination.index === result.source.index) return;
+    const newOrder = [...multiServices];
+    const [moved] = newOrder.splice(result.source.index, 1);
+    newOrder.splice(result.destination.index, 0, moved);
+    onServiceReorder([...newOrder, ...singleServices]);
+  };
+
   return (
     <div className="flex items-start gap-4">
-      {multiServices.map(s => {
-        const svc = getServiceColor(s);
-        return (
-          <div key={s} className="flex flex-col gap-2 w-max items-stretch">
-            {s !== parentService && (
-              <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-full"
-                style={{ backgroundColor: svc.bg }}>
-                {s}
+      {isDraggable ? (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="services" direction="horizontal">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps} className="flex items-start gap-4">
+                {multiServices.map((s, index) => (
+                  <Draggable key={s} draggableId={s} index={index}>
+                    {(prov, snapshot) => (
+                      <div
+                        ref={prov.innerRef}
+                        {...prov.draggableProps}
+                        {...prov.dragHandleProps}
+                        style={prov.draggableProps.style}
+                        className={`flex flex-col gap-2 w-max items-stretch ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary opacity-90' : ''}`}
+                      >
+                        <ServiceGroup s={s} groups={groups} parentService={parentService} onSelect={onSelect} onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies} depth={depth} draggable />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
               </div>
             )}
-            {groups[s].map(e => (
-              <LeafCard
-                key={e.id}
-                employee={e}
-                onSelect={onSelect}
-                onDragStart={onDragStart}
-                onDrop={onDrop}
-                isHighlighted={isMatch(e)}
-                anomalies={getAnomalies ? getAnomalies(e, depth) : []}
-              />
-            ))}
-          </div>
-        );
-      })}
+          </Droppable>
+        </DragDropContext>
+      ) : (
+        multiServices.map(s => (
+          <ServiceGroup key={s} s={s} groups={groups} parentService={parentService} onSelect={onSelect} onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies} depth={depth} />
+        ))
+      )}
       {singleServices.length > 0 && (
         <div className="relative flex flex-col w-max">
           {/* Tronc vertical continu reliant les services à la direction */}

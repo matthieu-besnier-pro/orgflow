@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move, ListOrdered } from 'lucide-react';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
@@ -133,6 +133,7 @@ export default function OrgChart() {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [scaledSize, setScaledSize] = useState(null);
+  const [serviceSortMode, setServiceSortMode] = useState('count');
 
   // Filters
   const [search, setSearch] = useState('');
@@ -377,6 +378,14 @@ export default function OrgChart() {
     }
   };
 
+  const handleServiceReorder = async (newOrder) => {
+    try {
+      await base44.entities.Company.update(selectedCompanyId, { services: newOrder });
+    } catch {
+      toast({ title: 'Erreur', description: 'Impossible de sauvegarder l\'ordre des services.', variant: 'destructive' });
+    }
+  };
+
   const handleSave = (updated) => {
     setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
     setSelectedEmployee(null);
@@ -613,6 +622,21 @@ export default function OrgChart() {
           </div>
         )}
 
+        {/* Tri des services (tree only) */}
+        {viewMode === 'hierarchical' && (
+          <Select value={serviceSortMode} onValueChange={setServiceSortMode}>
+            <SelectTrigger className="h-8 w-[185px] text-xs gap-1.5">
+              <ListOrdered className="w-3.5 h-3.5 flex-shrink-0" />
+              <SelectValue placeholder="Tri des services" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="count">Par nombre de collaborateurs</SelectItem>
+              <SelectItem value="alpha">Par ordre alphabétique</SelectItem>
+              <SelectItem value="custom">Ordre libre (glisser)</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+
         {/* Couleur par service + anomalies (tree only) */}
         {viewMode === 'hierarchical' && (
           <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
@@ -801,6 +825,9 @@ export default function OrgChart() {
                       colorMode={colorMode}
                       showAnomalies={showAnomalies}
                       depthColors={depthColors}
+                      serviceSortMode={serviceSortMode}
+                      customServiceOrder={selectedCompany?.services || []}
+                      onServiceReorder={handleServiceReorder}
                       sideCards={orphanLeaves}
                     />
                   </div>
@@ -822,6 +849,9 @@ export default function OrgChart() {
                         colorMode={colorMode}
                         showAnomalies={showAnomalies}
                         depthColors={depthColors}
+                        serviceSortMode={serviceSortMode}
+                        customServiceOrder={selectedCompany?.services || []}
+                        onServiceReorder={handleServiceReorder}
                         sideCards={i === 0 ? orphanLeaves : []}
                       />
                     ))}

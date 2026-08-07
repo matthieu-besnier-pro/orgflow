@@ -208,7 +208,7 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [] }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', customServiceOrder = [], onServiceReorder = null }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
@@ -351,6 +351,9 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                   colorMode={colorMode}
                   showAnomalies={showAnomalies}
                   depthColors={depthColors}
+                  serviceSortMode={serviceSortMode}
+                  customServiceOrder={customServiceOrder}
+                  onServiceReorder={onServiceReorder}
                 />
               ))}
             </div>
@@ -386,6 +389,9 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       getAnomalies={showAnomalies ? getAnomalies : null}
                       depth={depth + 1}
                       parentService={employee.service || null}
+                      serviceSortMode={serviceSortMode}
+                      customServiceOrder={customServiceOrder}
+                      onServiceReorder={onServiceReorder}
                     />
                   </div>
                 )}
@@ -418,6 +424,9 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       showAnomalies={showAnomalies}
                       depthColors={depthColors}
                       parentService={employee.service || null}
+                      serviceSortMode={serviceSortMode}
+                      customServiceOrder={customServiceOrder}
+                      onServiceReorder={onServiceReorder}
                     />
                   </div>
                 ))}
