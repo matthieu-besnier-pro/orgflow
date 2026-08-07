@@ -112,9 +112,9 @@ export default function PublicChart() {
       <div
         ref={pan.ref}
         {...pan.handlers}
-        className={`flex-1 overflow-auto p-6 flex justify-center items-start ${pan.panning ? 'cursor-grabbing' : 'cursor-grab'}`}
+        className={`flex-1 overflow-auto p-6 ${pan.panning ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
-        <div style={{ width: size?.w, height: size?.h, flex: '0 0 auto' }}>
+        <div style={{ width: size?.w, height: size?.h, margin: 'auto' }}>
           <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
             <div className="flex gap-12 items-start justify-center flex-nowrap w-max">
               {roots.map(root => (
