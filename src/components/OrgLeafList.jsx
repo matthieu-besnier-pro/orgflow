@@ -53,7 +53,8 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
   );
 }
 
-export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null }) {
+export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color }) {
+  const lineColor = color?.border || '#94A3B8';
   // Grouper par service
   const groups = {};
   employees.forEach(e => {
@@ -97,28 +98,34 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
         );
       })}
       {singleServices.length > 0 && (
-        <div className="flex flex-col gap-5 w-max items-stretch">
-          {singleServices.map(s => {
+        <div className="relative flex flex-col w-max">
+          {/* Tronc vertical continu reliant les services à la direction */}
+          <div className="absolute left-0 top-0 bottom-0 w-px" style={{ backgroundColor: lineColor }} />
+          {singleServices.map((s, idx) => {
             const svc = getServiceColor(s);
             return (
-              <div key={s} className="flex flex-col gap-1.5 w-max items-stretch">
-                {s !== parentService && (
-                  <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-full"
-                    style={{ backgroundColor: svc.bg }}>
-                    {s}
-                  </div>
-                )}
-                {groups[s].map(e => (
-                  <LeafCard
-                    key={e.id}
-                    employee={e}
-                    onSelect={onSelect}
-                    onDragStart={onDragStart}
-                    onDrop={onDrop}
-                    isHighlighted={isMatch(e)}
-                    anomalies={getAnomalies ? getAnomalies(e, depth) : []}
-                  />
-                ))}
+              <div key={s} className={`relative pl-7 ${idx > 0 ? 'mt-10' : ''}`}>
+                {/* Branche horizontale depuis le tronc vers le service */}
+                <div className="absolute left-0 top-3 w-7 h-px" style={{ backgroundColor: lineColor }} />
+                <div className="flex flex-col gap-1.5 w-max items-stretch">
+                  {s !== parentService && (
+                    <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-max"
+                      style={{ backgroundColor: svc.bg }}>
+                      {s}
+                    </div>
+                  )}
+                  {groups[s].map(e => (
+                    <LeafCard
+                      key={e.id}
+                      employee={e}
+                      onSelect={onSelect}
+                      onDragStart={onDragStart}
+                      onDrop={onDrop}
+                      isHighlighted={isMatch(e)}
+                      anomalies={getAnomalies ? getAnomalies(e, depth) : []}
+                    />
+                  ))}
+                </div>
               </div>
             );
           })}
