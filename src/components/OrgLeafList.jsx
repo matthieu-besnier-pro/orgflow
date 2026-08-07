@@ -10,7 +10,7 @@ const STATUS_DOT = {
   'Départ': 'bg-red-400',
 };
 
-function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies }) {
+function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies, serviceLabel }) {
   const [over, setOver] = useState(false);
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
@@ -44,27 +44,40 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
         )}
         <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
       </div>
-      <div className="flex-1 pointer-events-none">
+      <div className="flex-1">
         <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.first_name}</p>
         <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.last_name}</p>
         <p className="text-muted-foreground leading-snug max-w-[9rem] break-words" style={{ fontSize: '9px' }}>{employee.position}</p>
+        {serviceLabel && (
+          <span className="inline-block mt-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: svc.bg }}>
+            {serviceLabel}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
 export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null }) {
-  // Une colonne par service, avec l'étiquette du service en tête de colonne
+  // Grouper par service
   const groups = {};
   employees.forEach(e => {
     const key = e.service || 'Sans service';
     (groups[key] ||= []).push(e);
   });
+
   const services = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
+
+  // Services de plusieurs personnes → colonne dédiée avec en-tête
+  // Services d'une seule personne → regroupés dans une colonne unique
+  const multiServices = services.filter(s => groups[s].length >= 2);
+  const singleEmployees = services.filter(s => groups[s].length === 1).flatMap(s => groups[s]);
+
+  const isMatch = (e) => !!searchTerm && `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm);
 
   return (
     <div className="flex items-start gap-4">
-      {services.map(s => {
+      {multiServices.map(s => {
         const svc = getServiceColor(s);
         return (
           <div key={s} className="flex flex-col gap-2 w-max items-stretch">
@@ -81,13 +94,34 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
                 onSelect={onSelect}
                 onDragStart={onDragStart}
                 onDrop={onDrop}
-                isHighlighted={!!searchTerm && `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm)}
+                isHighlighted={isMatch(e)}
                 anomalies={getAnomalies ? getAnomalies(e, depth) : []}
               />
             ))}
           </div>
         );
       })}
+      {singleEmployees.length > 0 && (
+        <div className="flex flex-col gap-2 w-max items-stretch">
+          {singleEmployees.length > 1 && (
+            <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-muted-foreground whitespace-nowrap w-full bg-secondary">
+              Autres services
+            </div>
+          )}
+          {singleEmployees.map(e => (
+            <LeafCard
+              key={e.id}
+              employee={e}
+              onSelect={onSelect}
+              onDragStart={onDragStart}
+              onDrop={onDrop}
+              isHighlighted={isMatch(e)}
+              anomalies={getAnomalies ? getAnomalies(e, depth) : []}
+              serviceLabel={e.service || 'Sans service'}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
