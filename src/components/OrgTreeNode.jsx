@@ -258,7 +258,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
         </div>
       )}
       {sideCards.length > 0 ? (
-        <div className="flex gap-12 items-start">
+        <div className="relative">
           <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
             <CardComponent
               employee={employee}
@@ -274,7 +274,8 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
               anomalies={anomalies}
             />
           </div>
-          <div className="flex gap-4 items-start">
+          {/* Cartes latérales : positionnées à droite du directeur, sans lien avec la hiérarchie */}
+          <div className="absolute top-0 left-full ml-12 flex gap-4 items-start">
             {sideCards.map(e => {
               const svc = getServiceColor(e.service);
               return (
