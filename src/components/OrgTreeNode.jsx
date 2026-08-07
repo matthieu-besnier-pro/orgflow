@@ -236,6 +236,10 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const managerChildren = children.filter(c => childrenMap[c.id]?.length > 0);
   const hasLeafColumn = !isCompact && children.length > 1 && leafChildren.length > 0;
   const displayChildren = hasLeafColumn ? managerChildren : children;
+  // Le connecteur gris n'est dessiné que pour les services d'une seule personne (tronc + branches)
+  const leafSvcGroups = {};
+  leafChildren.forEach(e => { const s = e.service || 'Sans service'; (leafSvcGroups[s] ||= []).push(e); });
+  const hasLeafConnector = hasLeafColumn && Object.values(leafSvcGroups).some(g => g.length === 1);
 
   const lineColor = isModernStyle ? '#94A3B8' : 'hsl(var(--border))';
   // border color of the team group box — slightly darker than line
@@ -309,10 +313,12 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
               <div className="flex items-start gap-4 justify-center">
                 {leafChildren.length > 0 && children.length > 1 && (
                   <div className="flex flex-col items-start">
-                    <div className="flex w-full h-4">
-                      <div className="w-px" style={{ backgroundColor: lineColor }} />
-                      <div className="flex-1" style={{ borderTop: `1px solid ${lineColor}` }} />
-                    </div>
+                    {hasLeafConnector && (
+                      <div className="flex w-full h-4">
+                        <div className="w-px" style={{ backgroundColor: lineColor }} />
+                        <div className="flex-1" style={{ borderTop: `1px solid ${lineColor}` }} />
+                      </div>
+                    )}
                     <OrgLeafList
                       employees={leafChildren}
                       color={getDepthColor(depth + 1, depthColors)}
@@ -332,7 +338,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                     <div className="flex w-full h-4">
                       <div
                         className="flex-1"
-                        style={{ borderTop: (displayChildren.length > 1 || hasLeafColumn) && (i > 0 || hasLeafColumn) ? `1px solid ${lineColor}` : 'none' }}
+                        style={{ borderTop: (displayChildren.length > 1 || hasLeafConnector) && (i > 0 || hasLeafConnector) ? `1px solid ${lineColor}` : 'none' }}
                       />
                       <div className="w-px" style={{ backgroundColor: lineColor }} />
                       <div
