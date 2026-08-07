@@ -83,6 +83,8 @@ export default function PublicChart() {
   const childrenMap = buildChildrenMap(data.employees);
   const ids = new Set(data.employees.map(e => e.id));
   const roots = data.employees.filter(e => !e.manager_id || !ids.has(e.manager_id));
+  const rootsWithChildren = roots.filter(r => (childrenMap[r.id]?.length || 0) > 0);
+  const orphanLeaves = roots.filter(r => !(childrenMap[r.id]?.length || 0) > 0);
   const searchTerm = search.trim().toLowerCase();
 
   const matchCount = searchTerm
@@ -157,11 +159,11 @@ export default function PublicChart() {
       >
         <div style={{ width: size?.w, height: size?.h, margin: 'auto' }}>
           <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
-            <div className="flex gap-12 items-start justify-center flex-nowrap w-max">
-              {roots.map(root => (
+            {rootsWithChildren.length === 1 ? (
+              <div className="flex justify-center">
                 <OrgTreeNode
-                  key={root.id}
-                  employee={root}
+                  key={rootsWithChildren[0].id}
+                  employee={rootsWithChildren[0]}
                   childrenMap={childrenMap}
                   onSelect={setSelectedEmployee}
                   defaultExpanded
@@ -170,9 +172,45 @@ export default function PublicChart() {
                   onDrop={noop}
                   template="classique"
                   searchTerm={searchTerm}
+                  sideCards={orphanLeaves}
                 />
-              ))}
-            </div>
+              </div>
+            ) : rootsWithChildren.length > 1 ? (
+              <div className="flex gap-12 items-start justify-center flex-nowrap w-max">
+                {rootsWithChildren.map((root, i) => (
+                  <OrgTreeNode
+                    key={root.id}
+                    employee={root}
+                    childrenMap={childrenMap}
+                    onSelect={setSelectedEmployee}
+                    defaultExpanded
+                    depth={0}
+                    onDragStart={noop}
+                    onDrop={noop}
+                    template="classique"
+                    searchTerm={searchTerm}
+                    sideCards={i === 0 ? orphanLeaves : []}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-4 items-start justify-center flex-wrap">
+                {orphanLeaves.map(e => (
+                  <OrgTreeNode
+                    key={e.id}
+                    employee={e}
+                    childrenMap={{}}
+                    onSelect={setSelectedEmployee}
+                    defaultExpanded
+                    depth={0}
+                    onDragStart={noop}
+                    onDrop={noop}
+                    template="classique"
+                    searchTerm={searchTerm}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
