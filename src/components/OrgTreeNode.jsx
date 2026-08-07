@@ -28,6 +28,17 @@ function matchesSearch(employee, searchTerm) {
   return haystack.includes(searchTerm);
 }
 
+function hasMatchingDescendant(employeeId, childrenMap, searchTerm) {
+  if (!searchTerm) return false;
+  const children = childrenMap[employeeId] || [];
+  for (const child of children) {
+    if (matchesSearch(child, searchTerm) || hasMatchingDescendant(child.id, childrenMap, searchTerm)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Depth-based colors — palette par défaut (personnalisable par société)
 const DEFAULT_DEPTH_HEX = ['#003D7A', '#0056B3', '#0070D0', '#FDB913'];
 
@@ -222,7 +233,8 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const isCompact = template === 'compact';
   const isPresentation = template === 'presentation';
   const isModernStyle = !isCompact;
-  const isDimmed = searchTerm && !isHighlighted;
+  const hasMatchInSubtree = isHighlighted || hasMatchingDescendant(employee.id, childrenMap, searchTerm) || (sideCards || []).some(e => matchesSearch(e, searchTerm));
+  const isDimmed = searchTerm && !hasMatchInSubtree;
 
   // Couleur de la carte : par profondeur hiérarchique ou par service
   const cardColor = colorMode === 'service'
