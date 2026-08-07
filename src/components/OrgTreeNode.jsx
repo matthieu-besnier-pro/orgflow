@@ -258,7 +258,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
         </div>
       )}
       {sideCards.length > 0 ? (
-        <div className="flex gap-4 items-start">
+        <div className="flex gap-12 items-start">
           <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
             <CardComponent
               employee={employee}
@@ -275,23 +275,32 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
             />
           </div>
           <div className="flex gap-4 items-start">
-            {sideCards.map(e => (
-              <div key={e.id} data-match={matchesSearch(e, searchTerm) ? 'true' : undefined}>
-                <CardComponent
-                  employee={e}
-                  onSelect={onSelect}
-                  onFocus={onFocus}
-                  hasChildren={false}
-                  expanded={false}
-                  onToggle={() => {}}
-                  onDragStart={onDragStart}
-                  isDragOver={false}
-                  isHighlighted={matchesSearch(e, searchTerm)}
-                  color={cardColor}
-                  anomalies={showAnomalies ? getAnomalies(e, depth) : []}
-                />
-              </div>
-            ))}
+            {sideCards.map(e => {
+              const svc = getServiceColor(e.service);
+              return (
+                <div key={e.id} className="flex flex-col items-center" data-match={matchesSearch(e, searchTerm) ? 'true' : undefined}>
+                  {e.service && (
+                    <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
+                      style={{ backgroundColor: svc.bg }}>
+                      {e.service}
+                    </div>
+                  )}
+                  <CardComponent
+                    employee={e}
+                    onSelect={onSelect}
+                    onFocus={onFocus}
+                    hasChildren={false}
+                    expanded={false}
+                    onToggle={() => {}}
+                    onDragStart={onDragStart}
+                    isDragOver={false}
+                    isHighlighted={matchesSearch(e, searchTerm)}
+                    color={cardColor}
+                    anomalies={showAnomalies ? getAnomalies(e, depth) : []}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (
