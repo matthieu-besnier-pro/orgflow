@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { getServiceColor } from '@/lib/serviceColors';
 import OrgCardPresentation from '@/components/OrgCardPresentation';
@@ -208,14 +208,21 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [] }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
+  const sideCardsRef = useRef(null);
+  const [sideCardsWidth, setSideCardsWidth] = useState(0);
   const children = childrenMap[employee.id] || [];
   const isHighlighted = matchesSearch(employee, searchTerm);
 
   // Auto-déplier quand une recherche est active pour révéler les correspondances
   useEffect(() => { if (searchTerm) setExpanded(true); }, [searchTerm]);
+
+  // Mesurer la largeur des cartes latérales pour centrer les enfants sous la carte principale
+  useEffect(() => {
+    if (sideCardsRef.current) setSideCardsWidth(sideCardsRef.current.offsetWidth);
+  }, [sideCards]);
 
   // Tout le monde à l'horizontal : les managers utilisent la carte horizontale
   const CardComponent = template === 'classique' ? CardModerne : (CARD_COMPONENTS[template] || CardClassique);
@@ -257,25 +264,64 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
           {employee.service}
         </div>
       )}
-      <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
-        <CardComponent
-          employee={employee}
-          onSelect={onSelect}
-          onFocus={onFocus}
-          hasChildren={children.length > 0}
-          expanded={expanded}
-          onToggle={() => setExpanded(v => !v)}
-          onDragStart={onDragStart}
-          isDragOver={isDragOver}
-          isHighlighted={isHighlighted}
-          color={cardColor}
-          anomalies={anomalies}
-        />
-      </div>
+      {sideCards.length > 0 ? (
+        <div className="flex gap-4 items-start">
+          <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
+            <CardComponent
+              employee={employee}
+              onSelect={onSelect}
+              onFocus={onFocus}
+              hasChildren={children.length > 0}
+              expanded={expanded}
+              onToggle={() => setExpanded(v => !v)}
+              onDragStart={onDragStart}
+              isDragOver={isDragOver}
+              isHighlighted={isHighlighted}
+              color={cardColor}
+              anomalies={anomalies}
+            />
+          </div>
+          <div ref={sideCardsRef} className="flex gap-4 items-start">
+            {sideCards.map(e => (
+              <div key={e.id} data-match={matchesSearch(e, searchTerm) ? 'true' : undefined}>
+                <CardComponent
+                  employee={e}
+                  onSelect={onSelect}
+                  onFocus={onFocus}
+                  hasChildren={false}
+                  expanded={false}
+                  onToggle={() => {}}
+                  onDragStart={onDragStart}
+                  isDragOver={false}
+                  isHighlighted={matchesSearch(e, searchTerm)}
+                  color={cardColor}
+                  anomalies={showAnomalies ? getAnomalies(e, depth) : []}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
+          <CardComponent
+            employee={employee}
+            onSelect={onSelect}
+            onFocus={onFocus}
+            hasChildren={children.length > 0}
+            expanded={expanded}
+            onToggle={() => setExpanded(v => !v)}
+            onDragStart={onDragStart}
+            isDragOver={isDragOver}
+            isHighlighted={isHighlighted}
+            color={cardColor}
+            anomalies={anomalies}
+          />
+        </div>
+      )}
 
       {expanded && children.length > 0 && (
         isCompact ? (
-          <div className="flex mt-2 ml-4">
+          <div className="flex mt-2 ml-4" style={{ marginRight: sideCards.length > 0 ? sideCardsWidth + 16 : 0 }}>
             <div className="w-px mr-4 self-stretch" style={{ backgroundColor: lineColor }} />
             <div className="flex flex-col gap-2">
               {children.map((child) => (
@@ -299,7 +345,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center mt-1">
+          <div className="flex flex-col items-center mt-1" style={{ marginRight: sideCards.length > 0 ? sideCardsWidth + 16 : 0 }}>
             {/* tronc vertical sortant du parent */}
             <div className="w-px h-5" style={{ backgroundColor: lineColor }} />
             {/* Groupe d'équipe */}

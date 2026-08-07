@@ -296,6 +296,8 @@ export default function OrgChart() {
   const finalChildrenMap = buildChildrenMap(filteredPool);
   const finalPoolIds = new Set(filteredPool.map(e => e.id));
   const roots = filteredPool.filter(e => !e.manager_id || !finalPoolIds.has(e.manager_id));
+  const rootsWithChildren = roots.filter(r => (finalChildrenMap[r.id]?.length || 0) > 0);
+  const orphanLeaves = roots.filter(r => !(finalChildrenMap[r.id]?.length || 0) > 0);
 
   // Search: highlight matching nodes (passed as prop)
   const searchTerm = search.trim().toLowerCase();
@@ -782,11 +784,11 @@ export default function OrgChart() {
                       <button onClick={resetFilters} className="text-sm text-primary hover:underline">Réinitialiser les filtres</button>
                     )}
                   </div>
-                ) : roots.length === 1 ? (
+                ) : rootsWithChildren.length === 1 ? (
                   <div className="flex justify-center">
                     <OrgTreeNode
-                      key={`${roots[0].id}-${expandAll}`}
-                      employee={roots[0]}
+                      key={`${rootsWithChildren[0].id}-${expandAll}`}
+                      employee={rootsWithChildren[0]}
                       childrenMap={finalChildrenMap}
                       onSelect={setSelectedEmployee}
                       defaultExpanded={expandAll}
@@ -799,15 +801,38 @@ export default function OrgChart() {
                       colorMode={colorMode}
                       showAnomalies={showAnomalies}
                       depthColors={depthColors}
+                      sideCards={orphanLeaves}
                     />
                   </div>
-                ) : (
+                ) : rootsWithChildren.length > 1 ? (
                   <div className="flex gap-12 items-start justify-center flex-wrap">
-                    {roots.map(root => (
+                    {rootsWithChildren.map((root, i) => (
                       <OrgTreeNode
                         key={`${root.id}-${expandAll}`}
                         employee={root}
                         childrenMap={finalChildrenMap}
+                        onSelect={setSelectedEmployee}
+                        defaultExpanded={expandAll}
+                        depth={0}
+                        onDragStart={handleDragStart}
+                        onDrop={handleDrop}
+                        template={template}
+                        searchTerm={searchTerm}
+                        onFocus={handleFocus}
+                        colorMode={colorMode}
+                        showAnomalies={showAnomalies}
+                        depthColors={depthColors}
+                        sideCards={i === 0 ? orphanLeaves : []}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex gap-4 items-start justify-center flex-wrap">
+                    {orphanLeaves.map(e => (
+                      <OrgTreeNode
+                        key={`${e.id}-${expandAll}`}
+                        employee={e}
+                        childrenMap={{}}
                         onSelect={setSelectedEmployee}
                         defaultExpanded={expandAll}
                         depth={0}
