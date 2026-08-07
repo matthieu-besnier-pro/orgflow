@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { getServiceColor } from '@/lib/serviceColors';
 import OrgCardPresentation from '@/components/OrgCardPresentation';
@@ -214,6 +214,9 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const children = childrenMap[employee.id] || [];
   const isHighlighted = matchesSearch(employee, searchTerm);
 
+  // Auto-déplier quand une recherche est active pour révéler les correspondances
+  useEffect(() => { if (searchTerm) setExpanded(true); }, [searchTerm]);
+
   // Tout le monde à l'horizontal : les managers utilisent la carte horizontale
   const CardComponent = template === 'classique' ? CardModerne : (CARD_COMPONENTS[template] || CardClassique);
   const isCompact = template === 'compact';
@@ -250,7 +253,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
           {employee.service}
         </div>
       )}
-      <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+      <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
         <CardComponent
           employee={employee}
           onSelect={onSelect}

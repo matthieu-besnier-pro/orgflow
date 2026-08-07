@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, Maximize, Search, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import usePanDrag from '@/hooks/usePanDrag';
 
@@ -20,6 +20,7 @@ export default function PublicChart() {
   const [error, setError] = useState(null);
   const [zoom, setZoom] = useState(0.85);
   const [search, setSearch] = useState('');
+  const [matchIndex, setMatchIndex] = useState(0);
   const [size, setSize] = useState(null);
   const contentRef = useRef(null);
   const pan = usePanDrag();
@@ -58,6 +59,18 @@ export default function PublicChart() {
     return () => ro.disconnect();
   }, [zoom, data]);
 
+  const scrollToMatch = (idx) => {
+    const nodes = document.querySelectorAll('[data-match="true"]');
+    if (!nodes.length) return;
+    const node = nodes[Math.min(idx, nodes.length - 1)];
+    node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  };
+
+  useEffect(() => {
+    setMatchIndex(0);
+    if (search.trim()) setTimeout(() => scrollToMatch(0), 200);
+  }, [search]);
+
   if (error) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">{error}</div>;
   if (!data) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -69,6 +82,10 @@ export default function PublicChart() {
   const ids = new Set(data.employees.map(e => e.id));
   const roots = data.employees.filter(e => !e.manager_id || !ids.has(e.manager_id));
   const searchTerm = search.trim().toLowerCase();
+
+  const matchCount = searchTerm
+    ? data.employees.filter(e => `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm)).length
+    : 0;
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -91,6 +108,28 @@ export default function PublicChart() {
             </button>
           )}
         </div>
+
+        {searchTerm && (
+          <div className="flex items-center gap-1 bg-secondary rounded-lg px-2 h-8">
+            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+              {matchCount > 0 ? `${matchIndex + 1}/${matchCount}` : '0'}
+            </span>
+            <button
+              onClick={() => { const i = Math.max(0, matchIndex - 1); setMatchIndex(i); scrollToMatch(i); }}
+              disabled={matchCount === 0}
+              className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30"
+            >
+              <ChevronUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => { const i = Math.min(matchCount - 1, matchIndex + 1); setMatchIndex(i); scrollToMatch(i); }}
+              disabled={matchCount === 0}
+              className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         <div className="ml-auto flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
           <button onClick={() => setZoom(z => Math.max(0.1, +(z - 0.1).toFixed(2)))}
