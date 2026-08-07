@@ -251,14 +251,14 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
 
   return (
     <div className={`flex flex-col items-center transition-opacity duration-150 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
-      {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
-        <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
-          style={{ backgroundColor: getServiceColor(employee.service).bg }}>
-          {employee.service}
-        </div>
-      )}
       {sideCards.length > 0 ? (
-        <div className="relative">
+        <div className="relative flex flex-col items-center">
+          {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
+            <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
+              style={{ backgroundColor: getServiceColor(employee.service).bg }}>
+              {employee.service}
+            </div>
+          )}
           <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
             <CardComponent
               employee={employee}
@@ -275,7 +275,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
             />
           </div>
           {/* Cartes latérales : positionnées à droite du directeur, sans lien avec la hiérarchie */}
-          <div className="absolute top-0 left-full ml-12 flex gap-4 items-start">
+          <div className="absolute top-0 left-full ml-20 flex gap-4 items-start">
             {sideCards.map(e => {
               const svc = getServiceColor(e.service);
               return (
@@ -305,21 +305,29 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
           </div>
         </div>
       ) : (
-        <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
-          <CardComponent
-            employee={employee}
-            onSelect={onSelect}
-            onFocus={onFocus}
-            hasChildren={children.length > 0}
-            expanded={expanded}
-            onToggle={() => setExpanded(v => !v)}
-            onDragStart={onDragStart}
-            isDragOver={isDragOver}
-            isHighlighted={isHighlighted}
-            color={cardColor}
-            anomalies={anomalies}
-          />
-        </div>
+        <>
+          {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
+            <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
+              style={{ backgroundColor: getServiceColor(employee.service).bg }}>
+              {employee.service}
+            </div>
+          )}
+          <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
+            <CardComponent
+              employee={employee}
+              onSelect={onSelect}
+              onFocus={onFocus}
+              hasChildren={children.length > 0}
+              expanded={expanded}
+              onToggle={() => setExpanded(v => !v)}
+              onDragStart={onDragStart}
+              isDragOver={isDragOver}
+              isHighlighted={isHighlighted}
+              color={cardColor}
+              anomalies={anomalies}
+            />
+          </div>
+        </>
       )}
 
       {expanded && children.length > 0 && (
