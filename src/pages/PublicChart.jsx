@@ -27,7 +27,11 @@ export default function PublicChart() {
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('token');
     base44.functions.invoke('publicChart', { token })
-      .then(res => setData(res.data))
+      .then(res => {
+        setData(res.data);
+        const name = res.data?.company?.name;
+        if (name) document.title = `Organigramme ${name} — consultation publique`;
+      })
       .catch(() => setError('Ce lien de partage est invalide ou désactivé.'));
   }, []);
 

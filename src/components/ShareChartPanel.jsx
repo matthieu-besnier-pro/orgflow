@@ -39,11 +39,11 @@ export default function ShareChartPanel({ companyId, companyName, onClose }) {
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading font-semibold text-foreground">Partager l'organigramme</h2>
+          <h2 className="font-heading font-semibold text-foreground">Partager l'organigramme — {companyName}</h2>
           <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Lien public en lecture seule de la vue hiérarchique de {companyName}.
+          Génère un lien public en lecture seule. Toute personne disposant du lien pourra consulter la vue hiérarchique complète de {companyName}, sans connexion et sans possibilité de modifier les données.
         </p>
 
         {loading ? (
@@ -52,7 +52,7 @@ export default function ShareChartPanel({ companyId, companyName, onClose }) {
           </div>
         ) : !share ? (
           <button onClick={createLink} className="w-full h-10 rounded-lg bg-primary text-white text-sm font-medium flex items-center justify-center gap-2">
-            <Link2 className="w-4 h-4" /> Créer un lien de partage
+            <Link2 className="w-4 h-4" /> Générer le lien de partage public
           </button>
         ) : (
           <div className="space-y-3">
@@ -64,7 +64,7 @@ export default function ShareChartPanel({ companyId, companyName, onClose }) {
             </div>
             <button onClick={toggle} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               <Power className="w-3.5 h-3.5" />
-              {share.is_active !== false ? 'Désactiver le lien' : 'Réactiver le lien'}
+              {share.is_active !== false ? 'Désactiver le lien (plus accessible)' : 'Réactiver le lien (accessible à nouveau)'}
             </button>
           </div>
         )}
