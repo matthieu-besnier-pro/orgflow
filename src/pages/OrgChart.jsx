@@ -309,6 +309,27 @@ export default function OrgChart() {
   // Managers list for filter dropdown (people with at least one direct report in pool)
   const managersInPool = pool.filter(e => baseChildrenMap[e.id]?.length > 0);
 
+  // Ordre global des services selon le mode de tri choisi (appliqué à tout l'organigramme)
+  const serviceOrder = (() => {
+    const counts = {};
+    filteredBase.forEach(e => {
+      const s = e.service || 'Sans service';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    const all = Object.keys(counts);
+    if (serviceSortMode === 'alpha') {
+      return all.sort((a, b) => a.localeCompare(b, 'fr'));
+    } else if (serviceSortMode === 'custom') {
+      const custom = selectedCompany?.services || [];
+      return all.sort((a, b) => {
+        const ia = custom.indexOf(a);
+        const ib = custom.indexOf(b);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      });
+    }
+    return all.sort((a, b) => counts[b] - counts[a]);
+  })();
+
   const handleDragStart = (e, employee) => {
     draggedId.current = employee.id;
     e.dataTransfer.effectAllowed = 'move';
@@ -826,7 +847,7 @@ export default function OrgChart() {
                       showAnomalies={showAnomalies}
                       depthColors={depthColors}
                       serviceSortMode={serviceSortMode}
-                      customServiceOrder={selectedCompany?.services || []}
+                      serviceOrder={serviceOrder}
                       onServiceReorder={handleServiceReorder}
                       sideCards={orphanLeaves}
                     />
@@ -850,7 +871,7 @@ export default function OrgChart() {
                         showAnomalies={showAnomalies}
                         depthColors={depthColors}
                         serviceSortMode={serviceSortMode}
-                        customServiceOrder={selectedCompany?.services || []}
+                        serviceOrder={serviceOrder}
                         onServiceReorder={handleServiceReorder}
                         sideCards={i === 0 ? orphanLeaves : []}
                       />

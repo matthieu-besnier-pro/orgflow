@@ -208,7 +208,7 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', customServiceOrder = [], onServiceReorder = null }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
@@ -235,7 +235,13 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const leafChildren = children.filter(c => !(childrenMap[c.id]?.length > 0));
   const managerChildren = children.filter(c => childrenMap[c.id]?.length > 0);
   const hasLeafColumn = !isCompact && children.length > 1 && leafChildren.length > 0;
-  const displayChildren = hasLeafColumn ? managerChildren : children;
+  const displayChildren = (hasLeafColumn ? managerChildren : children).slice().sort((a, b) => {
+    const sa = a.service || 'Sans service';
+    const sb = b.service || 'Sans service';
+    const ia = serviceOrder.indexOf(sa);
+    const ib = serviceOrder.indexOf(sb);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
   // Le connecteur gris n'est dessiné que pour les services d'une seule personne (tronc + branches)
   const leafSvcGroups = {};
   leafChildren.forEach(e => { const s = e.service || 'Sans service'; (leafSvcGroups[s] ||= []).push(e); });
@@ -352,7 +358,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                   showAnomalies={showAnomalies}
                   depthColors={depthColors}
                   serviceSortMode={serviceSortMode}
-                  customServiceOrder={customServiceOrder}
+                  serviceOrder={serviceOrder}
                   onServiceReorder={onServiceReorder}
                 />
               ))}
@@ -390,7 +396,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       depth={depth + 1}
                       parentService={employee.service || null}
                       serviceSortMode={serviceSortMode}
-                      customServiceOrder={customServiceOrder}
+                      serviceOrder={serviceOrder}
                       onServiceReorder={onServiceReorder}
                     />
                   </div>
@@ -425,7 +431,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       depthColors={depthColors}
                       parentService={employee.service || null}
                       serviceSortMode={serviceSortMode}
-                      customServiceOrder={customServiceOrder}
+                      serviceOrder={serviceOrder}
                       onServiceReorder={onServiceReorder}
                     />
                   </div>

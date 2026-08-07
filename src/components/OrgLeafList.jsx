@@ -80,7 +80,7 @@ function ServiceGroup({ s, groups, parentService, onSelect, onDragStart, onDrop,
   );
 }
 
-export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color, serviceSortMode = 'count', customServiceOrder = [], onServiceReorder = null }) {
+export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color, serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null }) {
   const lineColor = color?.border || '#94A3B8';
   // Grouper par service
   const groups = {};
@@ -89,19 +89,12 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
     (groups[key] ||= []).push(e);
   });
 
-  // Tri des services selon le mode choisi
-  let services;
-  if (serviceSortMode === 'alpha') {
-    services = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'fr'));
-  } else if (serviceSortMode === 'custom') {
-    services = Object.keys(groups).sort((a, b) => {
-      const ia = customServiceOrder.indexOf(a);
-      const ib = customServiceOrder.indexOf(b);
-      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-    });
-  } else {
-    services = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
-  }
+  // Tri des services selon l'ordre global calculé dans OrgChart
+  const services = Object.keys(groups).sort((a, b) => {
+    const ia = serviceOrder.indexOf(a);
+    const ib = serviceOrder.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
 
   // Services de plusieurs personnes → colonne dédiée avec en-tête
   // Services d'une seule personne → empilés dans une colonne unique, étiquette conservée
