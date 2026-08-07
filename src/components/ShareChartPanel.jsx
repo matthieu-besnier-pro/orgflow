@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { X, Copy, Check, Link2, Power } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ShareChartPanel({ companyId, companyName, onClose }) {
   const [share, setShare] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [sortMode, setSortMode] = useState('alpha');
 
   useEffect(() => {
     base44.entities.ChartShare.filter({ company_id: companyId }).then(list => {
       setShare(list[0] || null);
+      setSortMode(list[0]?.service_sort_mode || 'alpha');
       setLoading(false);
     });
   }, [companyId]);
@@ -19,14 +22,23 @@ export default function ShareChartPanel({ companyId, companyName, onClose }) {
   const createLink = async () => {
     setLoading(true);
     const token = crypto.randomUUID().replace(/-/g, '');
-    const rec = await base44.entities.ChartShare.create({ company_id: companyId, token, is_active: true });
+    const rec = await base44.entities.ChartShare.create({ company_id: companyId, token, is_active: true, service_sort_mode: 'alpha' });
     setShare(rec);
+    setSortMode('alpha');
     setLoading(false);
   };
 
   const toggle = async () => {
     const updated = await base44.entities.ChartShare.update(share.id, { is_active: !(share.is_active !== false) });
     setShare(updated);
+  };
+
+  const updateSortMode = async (mode) => {
+    setSortMode(mode);
+    if (share) {
+      const updated = await base44.entities.ChartShare.update(share.id, { service_sort_mode: mode });
+      setShare(updated);
+    }
   };
 
   const copy = () => {
@@ -66,6 +78,17 @@ export default function ShareChartPanel({ companyId, companyName, onClose }) {
               <Power className="w-3.5 h-3.5" />
               {share.is_active !== false ? 'Désactiver le lien (plus accessible)' : 'Réactiver le lien (accessible à nouveau)'}
             </button>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Tri des services affiché sur le lien de partage</label>
+              <Select value={sortMode} onValueChange={updateSortMode}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alpha">Par ordre alphabétique</SelectItem>
+                  <SelectItem value="count">Par nombre de collaborateurs</SelectItem>
+                  <SelectItem value="custom">Ordre libre (personnalisé)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
       </div>

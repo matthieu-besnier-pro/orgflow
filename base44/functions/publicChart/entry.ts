@@ -15,7 +15,8 @@ export default async function (req) {
     const employees = await base44.asServiceRole.entities.Employee.filter({ company_id: share.company_id });
 
     return Response.json({
-      company: company ? { name: company.name, logo_url: company.logo_url, brand_color: company.brand_color } : null,
+      company: company ? { name: company.name, logo_url: company.logo_url, brand_color: company.brand_color, services: company.services || [] } : null,
+      service_sort_mode: share.service_sort_mode || 'alpha',
       employees: employees.map((e) => ({
         id: e.id,
         first_name: e.first_name,

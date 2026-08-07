@@ -87,7 +87,7 @@ export default function PublicChart() {
   const orphanLeaves = roots.filter(r => !(childrenMap[r.id]?.length || 0) > 0);
   const searchTerm = search.trim().toLowerCase();
 
-  // Ordre des services : utilise l'ordre personnalisé de la société (Company.services)
+  // Ordre des services : utilise le mode figé sur le lien de partage (défaut: alphabétique)
   const serviceOrder = (() => {
     const counts = {};
     data.employees.forEach(e => {
@@ -95,8 +95,11 @@ export default function PublicChart() {
       counts[s] = (counts[s] || 0) + 1;
     });
     const all = Object.keys(counts);
-    const custom = data.company?.services || [];
-    if (custom.length > 0) {
+    const mode = data.service_sort_mode || 'alpha';
+    if (mode === 'alpha') {
+      return all.sort((a, b) => a.localeCompare(b, 'fr'));
+    } else if (mode === 'custom') {
+      const custom = data.company?.services || [];
       return all.sort((a, b) => {
         const ia = custom.indexOf(a);
         const ib = custom.indexOf(b);

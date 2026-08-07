@@ -14,6 +14,16 @@
       "type": "boolean",
       "title": "Actif",
       "default": true
+    },
+    "service_sort_mode": {
+      "type": "string",
+      "title": "Tri des services",
+      "enum": [
+        "count",
+        "alpha",
+        "custom"
+      ],
+      "default": "alpha"
     }
   },
   "required": [
