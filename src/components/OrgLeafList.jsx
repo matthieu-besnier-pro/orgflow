@@ -10,7 +10,7 @@ const STATUS_DOT = {
   'Départ': 'bg-red-400',
 };
 
-function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies, serviceLabel }) {
+function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies }) {
   const [over, setOver] = useState(false);
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
@@ -48,11 +48,6 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
         <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.first_name}</p>
         <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.last_name}</p>
         <p className="text-muted-foreground leading-snug max-w-[9rem] break-words" style={{ fontSize: '9px' }}>{employee.position}</p>
-        {serviceLabel && (
-          <span className="inline-block mt-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: svc.bg }}>
-            {serviceLabel}
-          </span>
-        )}
       </div>
     </div>
   );
@@ -69,9 +64,9 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
   const services = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
 
   // Services de plusieurs personnes → colonne dédiée avec en-tête
-  // Services d'une seule personne → regroupés dans une colonne unique
+  // Services d'une seule personne → empilés dans une colonne unique, étiquette conservée
   const multiServices = services.filter(s => groups[s].length >= 2);
-  const singleEmployees = services.filter(s => groups[s].length === 1).flatMap(s => groups[s]);
+  const singleServices = services.filter(s => groups[s].length === 1);
 
   const isMatch = (e) => !!searchTerm && `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm);
 
@@ -101,25 +96,32 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
           </div>
         );
       })}
-      {singleEmployees.length > 0 && (
-        <div className="flex flex-col gap-2 w-max items-stretch">
-          {singleEmployees.length > 1 && (
-            <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-muted-foreground whitespace-nowrap w-full bg-secondary">
-              Autres services
-            </div>
-          )}
-          {singleEmployees.map(e => (
-            <LeafCard
-              key={e.id}
-              employee={e}
-              onSelect={onSelect}
-              onDragStart={onDragStart}
-              onDrop={onDrop}
-              isHighlighted={isMatch(e)}
-              anomalies={getAnomalies ? getAnomalies(e, depth) : []}
-              serviceLabel={e.service || 'Sans service'}
-            />
-          ))}
+      {singleServices.length > 0 && (
+        <div className="flex flex-col gap-5 w-max items-stretch">
+          {singleServices.map(s => {
+            const svc = getServiceColor(s);
+            return (
+              <div key={s} className="flex flex-col gap-1.5 w-max items-stretch">
+                {s !== parentService && (
+                  <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-full"
+                    style={{ backgroundColor: svc.bg }}>
+                    {s}
+                  </div>
+                )}
+                {groups[s].map(e => (
+                  <LeafCard
+                    key={e.id}
+                    employee={e}
+                    onSelect={onSelect}
+                    onDragStart={onDragStart}
+                    onDrop={onDrop}
+                    isHighlighted={isMatch(e)}
+                    anomalies={getAnomalies ? getAnomalies(e, depth) : []}
+                  />
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
