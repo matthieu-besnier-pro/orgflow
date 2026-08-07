@@ -87,6 +87,25 @@ export default function PublicChart() {
   const orphanLeaves = roots.filter(r => !(childrenMap[r.id]?.length || 0) > 0);
   const searchTerm = search.trim().toLowerCase();
 
+  // Ordre des services : utilise l'ordre personnalisé de la société (Company.services)
+  const serviceOrder = (() => {
+    const counts = {};
+    data.employees.forEach(e => {
+      const s = e.service || 'Sans service';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    const all = Object.keys(counts);
+    const custom = data.company?.services || [];
+    if (custom.length > 0) {
+      return all.sort((a, b) => {
+        const ia = custom.indexOf(a);
+        const ib = custom.indexOf(b);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      });
+    }
+    return all.sort((a, b) => counts[b] - counts[a]);
+  })();
+
   const matchCount = searchTerm
     ? data.employees.filter(e => `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm)).length
     : 0;
@@ -172,6 +191,7 @@ export default function PublicChart() {
                   onDrop={noop}
                   template="classique"
                   searchTerm={searchTerm}
+                  serviceOrder={serviceOrder}
                   sideCards={orphanLeaves}
                 />
               </div>
@@ -189,6 +209,7 @@ export default function PublicChart() {
                     onDrop={noop}
                     template="classique"
                     searchTerm={searchTerm}
+                    serviceOrder={serviceOrder}
                     sideCards={i === 0 ? orphanLeaves : []}
                   />
                 ))}
