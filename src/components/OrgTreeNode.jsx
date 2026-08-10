@@ -254,8 +254,9 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   // Co-managers : un collaborateur sans équipe qui partage un service avec un manager est affiché à ses côtés
   const leafChildrenRaw = children.filter(c => !(childrenMap[c.id]?.length > 0));
   const managerChildrenRaw = children.filter(c => childrenMap[c.id]?.length > 0);
-  const leafChildren = leafChildrenRaw.filter(c => !c.is_co_manager);
-  const coManagerLeaves = leafChildrenRaw.filter(c => c.is_co_manager);
+  const managerServices = new Set(managerChildrenRaw.map(c => c.service || 'Sans service'));
+  const leafChildren = leafChildrenRaw.filter(c => !managerServices.has(c.service || 'Sans service') && !c.is_co_manager);
+  const coManagerLeaves = leafChildrenRaw.filter(c => managerServices.has(c.service || 'Sans service') || c.is_co_manager);
   const managerChildren = [...managerChildrenRaw, ...coManagerLeaves];
   const hasLeafColumn = !isCompact && children.length > 1 && leafChildren.length > 0;
   const displayChildren = (hasLeafColumn ? managerChildren : children).slice().sort((a, b) => {
@@ -482,7 +483,8 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                   }
                   const svcColor = getServiceColor(group.service);
                   const showSharedLabel = group.service !== 'Sans service' && group.service !== (employee.service || null);
-                  const mergedChildren = group.children.flatMap(c => childrenMap[c.id] || []);
+                  const hasCoManagers = group.children.some(c => c.is_co_manager);
+                  const mergedChildren = hasCoManagers ? group.children.flatMap(c => childrenMap[c.id] || []) : [];
                   const virtualParentId = `co-manager-group-${gi}`;
                   const virtualChildrenMap = { ...childrenMap, [virtualParentId]: mergedChildren };
                   const virtualParent = {
@@ -510,63 +512,99 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                           <div className="w-px h-3" style={{ backgroundColor: lineColor }} />
                         </>
                       )}
-                      <div className="flex items-start gap-4">
-                        {group.children.map((child, ci) => {
-                          const childColor = colorMode === 'service'
-                            ? (() => { const c = getServiceColor(child.service); return { bg: c.bg, shadow: `${c.bg}22`, border: c.bg }; })()
-                            : getDepthColor(depth + 1, depthColors);
-                          return (
+                      {hasCoManagers ? (
+                        <>
+                          <div className="flex items-start gap-4">
+                            {group.children.map((child, ci) => {
+                              const childColor = colorMode === 'service'
+                                ? (() => { const c = getServiceColor(child.service); return { bg: c.bg, shadow: `${c.bg}22`, border: c.bg }; })()
+                                : getDepthColor(depth + 1, depthColors);
+                              return (
+                                <div key={child.id} className="flex flex-col items-center">
+                                  <div className="flex w-full h-4">
+                                    <div className="flex-1" style={{ borderTop: ci > 0 ? `1px solid ${lineColor}` : 'none' }} />
+                                    <div className="w-px" style={{ backgroundColor: lineColor }} />
+                                    <div className="flex-1" style={{ borderTop: ci < group.children.length - 1 ? `1px solid ${lineColor}` : 'none' }} />
+                                  </div>
+                                  <div
+                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDrop(e, child); }}
+                                  >
+                                    <CardComponent
+                                      employee={child}
+                                      onSelect={onSelect}
+                                      onFocus={onFocus}
+                                      hasChildren={mergedChildren.length > 0}
+                                      expanded={true}
+                                      onToggle={() => {}}
+                                      onDragStart={onDragStart}
+                                      isDragOver={false}
+                                      isHighlighted={matchesSearch(child, searchTerm)}
+                                      color={childColor}
+                                      anomalies={showAnomalies ? getAnomalies(child, depth + 1) : []}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {mergedChildren.length > 0 && (
+                            <OrgTreeNode
+                              employee={virtualParent}
+                              childrenMap={virtualChildrenMap}
+                              hideCard={true}
+                              onSelect={onSelect}
+                              onFocus={onFocus}
+                              defaultExpanded={true}
+                              depth={depth + 1}
+                              onDragStart={onDragStart}
+                              onDrop={onDrop}
+                              template={template}
+                              searchTerm={searchTerm}
+                              colorMode={colorMode}
+                              showAnomalies={showAnomalies}
+                              depthColors={depthColors}
+                              parentService={group.service}
+                              serviceSortMode={serviceSortMode}
+                              serviceOrder={serviceOrder}
+                              onServiceReorder={onServiceReorder}
+                              visibleIds={visibleIds}
+                              filterMatchIds={filterMatchIds}
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-start gap-4">
+                          {group.children.map((child, ci) => (
                             <div key={child.id} className="flex flex-col items-center">
                               <div className="flex w-full h-4">
                                 <div className="flex-1" style={{ borderTop: ci > 0 ? `1px solid ${lineColor}` : 'none' }} />
                                 <div className="w-px" style={{ backgroundColor: lineColor }} />
                                 <div className="flex-1" style={{ borderTop: ci < group.children.length - 1 ? `1px solid ${lineColor}` : 'none' }} />
                               </div>
-                              <div
-                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDrop(e, child); }}
-                              >
-                                <CardComponent
-                                  employee={child}
-                                  onSelect={onSelect}
-                                  onFocus={onFocus}
-                                  hasChildren={mergedChildren.length > 0}
-                                  expanded={true}
-                                  onToggle={() => {}}
-                                  onDragStart={onDragStart}
-                                  isDragOver={false}
-                                  isHighlighted={matchesSearch(child, searchTerm)}
-                                  color={childColor}
-                                  anomalies={showAnomalies ? getAnomalies(child, depth + 1) : []}
-                                />
-                              </div>
+                              <OrgTreeNode
+                                employee={child}
+                                childrenMap={childrenMap}
+                                onSelect={onSelect}
+                                onFocus={onFocus}
+                                defaultExpanded={defaultExpanded}
+                                depth={depth + 1}
+                                onDragStart={onDragStart}
+                                onDrop={onDrop}
+                                template={template}
+                                searchTerm={searchTerm}
+                                colorMode={colorMode}
+                                showAnomalies={showAnomalies}
+                                depthColors={depthColors}
+                                parentService={group.service}
+                                serviceSortMode={serviceSortMode}
+                                serviceOrder={serviceOrder}
+                                onServiceReorder={onServiceReorder}
+                                filterMatchIds={filterMatchIds}
+                              />
                             </div>
-                          );
-                        })}
-                      </div>
-                      {mergedChildren.length > 0 && (
-                        <OrgTreeNode
-                          employee={virtualParent}
-                          childrenMap={virtualChildrenMap}
-                          hideCard={true}
-                          onSelect={onSelect}
-                          onFocus={onFocus}
-                          defaultExpanded={true}
-                          depth={depth + 1}
-                          onDragStart={onDragStart}
-                          onDrop={onDrop}
-                          template={template}
-                          searchTerm={searchTerm}
-                          colorMode={colorMode}
-                          showAnomalies={showAnomalies}
-                          depthColors={depthColors}
-                          parentService={group.service}
-                          serviceSortMode={serviceSortMode}
-                          serviceOrder={serviceOrder}
-                          onServiceReorder={onServiceReorder}
-                          visibleIds={visibleIds}
-                          filterMatchIds={filterMatchIds}
-                        />
+                          ))}
+                        </div>
                       )}
                     </div>
                   );
