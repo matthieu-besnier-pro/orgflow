@@ -11,10 +11,11 @@ const STATUS_DOT = {
   'Départ': 'bg-red-400',
 };
 
-function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies }) {
+function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies, opacityClass = 'opacity-100' }) {
   const [over, setOver] = useState(false);
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
-  const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
+  const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
+  const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
   const svc = getServiceColor(employee.service);
 
   return (
@@ -26,7 +27,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
       onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); onDrop(e, employee); }}
       onClick={() => onSelect(employee)}
       style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
-      className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 hover:z-50 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-full
+      className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 hover:z-50 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-full ${opacityClass}
         ${over ? 'ring-2 ring-white ring-offset-2 scale-105' : ''}
         ${isHighlighted ? 'ring-4 ring-amber-400 ring-offset-2 scale-105 shadow-[0_0_24px_rgba(251,191,36,0.55)] z-10' : ''}`}
     >
@@ -43,7 +44,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
             <span className="text-base font-bold" style={{ color: svc.bg }}>{initials}</span>
           </div>
         )}
-        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
+        {isApprenti && <span className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-white ${apprentiDot}`} />}
       </div>
       <div className="flex-1">
         <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.first_name}</p>
@@ -54,7 +55,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
   );
 }
 
-function ServiceGroup({ s, groups, parentService, onSelect, onDragStart, onDrop, isMatch, getAnomalies, depth, draggable = false }) {
+function ServiceGroup({ s, groups, parentService, onSelect, onDragStart, onDrop, isMatch, getAnomalies, depth, draggable = false, getOpacityClass }) {
   const svc = getServiceColor(s);
   return (
     <div className="flex flex-col gap-2 w-max items-stretch">
@@ -74,13 +75,14 @@ function ServiceGroup({ s, groups, parentService, onSelect, onDragStart, onDrop,
           onDrop={onDrop}
           isHighlighted={isMatch(e)}
           anomalies={getAnomalies ? getAnomalies(e, depth) : []}
+          opacityClass={getOpacityClass ? getOpacityClass(e) : 'opacity-100'}
         />
       ))}
     </div>
   );
 }
 
-export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color, serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null }) {
+export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color, serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null }) {
   const lineColor = color?.border || '#94A3B8';
   // Grouper par service
   const groups = {};
@@ -102,6 +104,11 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
   const singleServices = services.filter(s => groups[s].length === 1);
 
   const isMatch = (e) => !!searchTerm && `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm);
+  const getOpacityClass = (e) => {
+    if (visibleIds && !visibleIds.has(e.id)) return 'opacity-20';
+    if (filterMatchIds && !filterMatchIds.has(e.id)) return 'opacity-40';
+    return 'opacity-100';
+  };
 
   const isDraggable = serviceSortMode === 'custom' && onServiceReorder && multiServices.length > 1;
 
@@ -130,7 +137,7 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
                         style={prov.draggableProps.style}
                         className={`flex flex-col gap-2 w-max items-stretch ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary opacity-90' : ''}`}
                       >
-                        <ServiceGroup s={s} groups={groups} parentService={parentService} onSelect={onSelect} onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies} depth={depth} draggable />
+                        <ServiceGroup s={s} groups={groups} parentService={parentService} onSelect={onSelect} onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies} depth={depth} draggable getOpacityClass={getOpacityClass} />
                       </div>
                     )}
                   </Draggable>
@@ -142,7 +149,7 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
         </DragDropContext>
       ) : (
         multiServices.map(s => (
-          <ServiceGroup key={s} s={s} groups={groups} parentService={parentService} onSelect={onSelect} onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies} depth={depth} />
+          <ServiceGroup key={s} s={s} groups={groups} parentService={parentService} onSelect={onSelect} onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies} depth={depth} getOpacityClass={getOpacityClass} />
         ))
       )}
       {singleServices.length > 0 && (
@@ -171,6 +178,7 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
                       onDrop={onDrop}
                       isHighlighted={isMatch(e)}
                       anomalies={getAnomalies ? getAnomalies(e, depth) : []}
+                      opacityClass={getOpacityClass(e)}
                     />
                   ))}
                 </div>

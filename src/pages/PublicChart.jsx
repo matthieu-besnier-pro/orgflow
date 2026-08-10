@@ -85,11 +85,22 @@ export default function PublicChart() {
 
   // Options de filtre
   const zones = [...new Set(data.employees.map(e => e.zone).filter(Boolean))].sort();
-  const anciennesEntites = [...new Set(data.employees.map(e => e.ancienne_entite).filter(Boolean))].sort();
+  const anciennesEntites = (() => {
+    const companyList = data.company?.anciennes_entites || [];
+    if (!companyList.length) return [];
+    const employeeValues = new Set(data.employees.map(e => e.ancienne_entite).filter(Boolean));
+    return companyList.filter(v => employeeValues.has(v));
+  })();
   const agencies = data.agencies || [];
 
   // Filtrage par zone / agence / ancienne entité (+ ancêtres pour préserver l'arbre)
   const hasFilters = filterZone || filterAgency || filterAncienneEntite;
+  const filterMatchIds = hasFilters ? new Set(data.employees.filter(e => {
+    if (filterZone && e.zone !== filterZone) return false;
+    if (filterAgency && e.agency_id !== filterAgency) return false;
+    if (filterAncienneEntite && e.ancienne_entite !== filterAncienneEntite) return false;
+    return true;
+  }).map(e => e.id)) : null;
   const filteredEmployees = (() => {
     if (!hasFilters) return data.employees;
     const empById = {};
@@ -243,14 +254,16 @@ export default function PublicChart() {
           <option value="">Toutes agences</option>
           {agencies.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
-        <select
-          value={filterAncienneEntite}
-          onChange={e => setFilterAncienneEntite(e.target.value)}
-          className="h-8 text-sm rounded-md border border-input bg-white px-2 pr-7"
-        >
-          <option value="">Toutes entités</option>
-          {anciennesEntites.map(ae => <option key={ae} value={ae}>{ae}</option>)}
-        </select>
+        {anciennesEntites.length > 0 && (
+          <select
+            value={filterAncienneEntite}
+            onChange={e => setFilterAncienneEntite(e.target.value)}
+            className="h-8 text-sm rounded-md border border-input bg-white px-2 pr-7"
+          >
+            <option value="">Toutes entités</option>
+            {anciennesEntites.map(ae => <option key={ae} value={ae}>{ae}</option>)}
+          </select>
+        )}
         {hasFilters && (
           <button
             onClick={() => { setFilterZone(''); setFilterAgency(''); setFilterAncienneEntite(''); }}
@@ -287,6 +300,7 @@ export default function PublicChart() {
                   serviceOrder={serviceOrder}
                   sideCards={orphanLeaves}
                   visibleIds={visibleIds}
+                  filterMatchIds={filterMatchIds}
                 />
               </div>
             ) : rootsWithChildren.length > 1 ? (
@@ -306,6 +320,7 @@ export default function PublicChart() {
                     serviceOrder={serviceOrder}
                     sideCards={i === 0 ? orphanLeaves : []}
                     visibleIds={visibleIds}
+                    filterMatchIds={filterMatchIds}
                   />
                 ))}
               </div>
@@ -324,6 +339,7 @@ export default function PublicChart() {
                     template="classique"
                     searchTerm={searchTerm}
                     visibleIds={visibleIds}
+                    filterMatchIds={filterMatchIds}
                   />
                 ))}
               </div>

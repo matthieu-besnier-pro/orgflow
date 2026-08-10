@@ -37,6 +37,13 @@
         "type": "string"
       }
     },
+    "anciennes_entites": {
+      "type": "array",
+      "title": "Anciennes entit\u00e9s",
+      "items": {
+        "type": "string"
+      }
+    },
     "is_active": {
       "type": "boolean",
       "title": "Active",

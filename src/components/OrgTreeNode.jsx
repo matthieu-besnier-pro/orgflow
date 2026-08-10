@@ -52,7 +52,8 @@ function getDepthColor(depth, palette) {
 function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, color, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const { bg, shadow } = color;
-  const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
+  const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
+  const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
 
   return (
     <div className="flex flex-col items-center">
@@ -82,7 +83,7 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
               <span className="text-base font-bold text-white">{initials}</span>
             </div>
           )}
-          <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
+          {isApprenti && <span className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-white ${apprentiDot}`} />}
         </div>
         {/* Nom */}
         <div className="text-center pointer-events-none w-full">
@@ -110,7 +111,8 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
 function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const svc = getServiceColor(employee.service);
-  const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
+  const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
+  const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
 
   return (
     <div className="flex flex-col items-center">
@@ -139,7 +141,7 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
               <span className="text-base font-bold" style={{ color: svc.bg }}>{initials}</span>
             </div>
           )}
-          <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
+          {isApprenti && <span className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-white ${apprentiDot}`} />}
         </div>
         <div className="flex-1 pointer-events-none">
           <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.first_name}</p>
@@ -163,7 +165,8 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
 // ── Template: Compact ──────────────────────────────────────────────────────
 function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
-  const dot = STATUS_DOT[employee.status] || 'bg-gray-300';
+  const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
+  const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
 
   return (
     <div className="flex flex-col items-center">
@@ -191,7 +194,7 @@ function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onTog
               <span className="text-xs font-bold text-primary">{initials}</span>
             </div>
           )}
-          <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${dot}`} />
+          {isApprenti && <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${apprentiDot}`} />}
         </div>
         <div className="flex-1 min-w-0 pointer-events-none">
           <p className="text-xs font-semibold text-foreground leading-tight truncate">{employee.first_name}</p>
@@ -219,7 +222,7 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
@@ -236,7 +239,9 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const hasMatchInSubtree = visibleIds
     ? visibleIds.has(employee.id)
     : (isHighlighted || hasMatchingDescendant(employee.id, childrenMap, searchTerm) || (sideCards || []).some(e => matchesSearch(e, searchTerm)));
-  const isDimmed = searchTerm && !hasMatchInSubtree;
+  const isSearchDimmed = searchTerm && !hasMatchInSubtree;
+  const isFilterAncestor = filterMatchIds && !filterMatchIds.has(employee.id);
+  const opacityClass = isSearchDimmed ? 'opacity-20' : (isFilterAncestor ? 'opacity-40' : 'opacity-100');
 
   // Couleur de la carte : par profondeur hiérarchique ou par service
   const cardColor = colorMode === 'service'
@@ -270,29 +275,31 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); onDrop(e, employee); };
 
   return (
-    <div className={`flex flex-col items-center transition-opacity duration-150 ${isDimmed ? 'opacity-20' : 'opacity-100'}`}>
+    <div className="flex flex-col items-center">
       {sideCards.length > 0 ? (
         <div className="relative flex flex-col items-center">
-          {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
-            <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
-              style={{ backgroundColor: getServiceColor(employee.service).bg }}>
-              {employee.service}
+          <div className={`transition-opacity duration-150 ${opacityClass}`}>
+            {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
+              <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
+                style={{ backgroundColor: getServiceColor(employee.service).bg }}>
+                {employee.service}
+              </div>
+            )}
+            <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
+              <CardComponent
+                employee={employee}
+                onSelect={onSelect}
+                onFocus={onFocus}
+                hasChildren={children.length > 0}
+                expanded={expanded}
+                onToggle={() => setExpanded(v => !v)}
+                onDragStart={onDragStart}
+                isDragOver={isDragOver}
+                isHighlighted={isHighlighted}
+                color={cardColor}
+                anomalies={anomalies}
+              />
             </div>
-          )}
-          <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
-            <CardComponent
-              employee={employee}
-              onSelect={onSelect}
-              onFocus={onFocus}
-              hasChildren={children.length > 0}
-              expanded={expanded}
-              onToggle={() => setExpanded(v => !v)}
-              onDragStart={onDragStart}
-              isDragOver={isDragOver}
-              isHighlighted={isHighlighted}
-              color={cardColor}
-              anomalies={anomalies}
-            />
           </div>
           {/* Cartes latérales : positionnées à droite du directeur, sans lien avec la hiérarchie */}
           <div className="absolute top-0 left-full ml-20 flex gap-4 items-start">
@@ -325,7 +332,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
           </div>
         </div>
       ) : (
-        <>
+        <div className={`transition-opacity duration-150 ${opacityClass}`}>
           {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
             <div className="rounded-full px-3 py-1 mb-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
               style={{ backgroundColor: getServiceColor(employee.service).bg }}>
@@ -347,7 +354,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
               anomalies={anomalies}
             />
           </div>
-        </>
+        </div>
       )}
 
       {expanded && children.length > 0 && (
@@ -374,6 +381,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                   serviceSortMode={serviceSortMode}
                   serviceOrder={serviceOrder}
                   onServiceReorder={onServiceReorder}
+                  filterMatchIds={filterMatchIds}
                 />
               ))}
             </div>
@@ -412,6 +420,8 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       serviceSortMode={serviceSortMode}
                       serviceOrder={serviceOrder}
                       onServiceReorder={onServiceReorder}
+                      visibleIds={visibleIds}
+                      filterMatchIds={filterMatchIds}
                     />
                   </div>
                 )}
@@ -447,6 +457,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                       serviceSortMode={serviceSortMode}
                       serviceOrder={serviceOrder}
                       onServiceReorder={onServiceReorder}
+                      filterMatchIds={filterMatchIds}
                     />
                   </div>
                 ))}

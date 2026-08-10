@@ -13,7 +13,8 @@ export default function OrgCardPresentation({
   onDragStart, isDragOver, isHighlighted, color, anomalies = [],
 }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
-  const dot = STATUS_DOT[employee.status] || 'bg-emerald-400';
+  const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
+  const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
 
   return (
     <div
@@ -48,7 +49,7 @@ export default function OrgCardPresentation({
             <span className="text-lg font-bold text-white">{initials}</span>
           </div>
         )}
-        <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
+        {isApprenti && <span className={`absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white ${apprentiDot}`} />}
       </div>
 
       <div className="text-center pointer-events-none w-full">

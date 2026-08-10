@@ -16,7 +16,7 @@ export default async function (req) {
     const agencies = await base44.asServiceRole.entities.Agency.filter({ company_id: share.company_id });
 
     return Response.json({
-      company: company ? { name: company.name, logo_url: company.logo_url, brand_color: company.brand_color, services: company.services || [], zones: company.zones || [] } : null,
+      company: company ? { name: company.name, logo_url: company.logo_url, brand_color: company.brand_color, services: company.services || [], zones: company.zones || [], anciennes_entites: company.anciennes_entites || [] } : null,
       service_sort_mode: share.service_sort_mode || 'alpha',
       agencies: agencies.map((a) => ({ id: a.id, name: a.name, zone: a.zone, city: a.city })),
       employees: employees.map((e) => ({
