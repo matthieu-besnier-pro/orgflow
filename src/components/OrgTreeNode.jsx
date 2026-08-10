@@ -254,9 +254,8 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   // Co-managers : un collaborateur sans équipe qui partage un service avec un manager est affiché à ses côtés
   const leafChildrenRaw = children.filter(c => !(childrenMap[c.id]?.length > 0));
   const managerChildrenRaw = children.filter(c => childrenMap[c.id]?.length > 0);
-  const managerServices = new Set(managerChildrenRaw.map(c => c.service || 'Sans service'));
-  const leafChildren = leafChildrenRaw.filter(c => !managerServices.has(c.service || 'Sans service') && !c.is_co_manager);
-  const coManagerLeaves = leafChildrenRaw.filter(c => managerServices.has(c.service || 'Sans service') || c.is_co_manager);
+  const leafChildren = leafChildrenRaw.filter(c => !c.is_co_manager);
+  const coManagerLeaves = leafChildrenRaw.filter(c => c.is_co_manager);
   const managerChildren = [...managerChildrenRaw, ...coManagerLeaves];
   const hasLeafColumn = !isCompact && children.length > 1 && leafChildren.length > 0;
   const displayChildren = (hasLeafColumn ? managerChildren : children).slice().sort((a, b) => {
