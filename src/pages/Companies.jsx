@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Building2, Plus, Pencil, Trash2, Users, MapPin, Layers } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Users, MapPin, Layers, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import AddCompanyModal from '@/components/AddCompanyModal';
@@ -88,7 +88,7 @@ export default function Companies() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
               <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl">
                 <Layers className="w-4 h-4 text-primary" />
                 <div>
@@ -108,6 +108,13 @@ export default function Companies() {
                 <div>
                   <p className="text-xs text-muted-foreground">Zones</p>
                   <p className="text-sm font-semibold text-foreground">{c.zones?.length || 0}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl">
+                <History className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Anc. entités</p>
+                  <p className="text-sm font-semibold text-foreground">{c.anciennes_entites?.length || 0}</p>
                 </div>
               </div>
             </div>
@@ -130,6 +137,16 @@ export default function Companies() {
                   <div className="flex flex-wrap gap-1.5">
                     {c.zones.map((z, i) => (
                       <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">{z}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {c.anciennes_entites?.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Anciennes entités</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.anciennes_entites.map((ae, i) => (
+                      <span key={i} className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">{ae}</span>
                     ))}
                   </div>
                 </div>

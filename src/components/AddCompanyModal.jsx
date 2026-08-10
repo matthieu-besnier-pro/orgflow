@@ -12,12 +12,14 @@ export default function AddCompanyModal({ company, onClose, onSaved }) {
     services: company?.services || [],
     statuses: company?.statuses || [],
     zones: company?.zones || [],
+    anciennes_entites: company?.anciennes_entites || [],
     is_active: company?.is_active ?? true,
   });
   const [saving, setSaving] = useState(false);
   const [newService, setNewService] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [newZone, setNewZone] = useState('');
+  const [newAncienneEntite, setNewAncienneEntite] = useState('');
   const fileRef = useRef();
 
   const set = (field, value) => setForm((f) => ({ ...f, [field]: value }));
@@ -49,6 +51,13 @@ export default function AddCompanyModal({ company, onClose, onSaved }) {
     setNewZone('');
   };
   const removeZone = (idx) => set('zones', form.zones.filter((_, i) => i !== idx));
+
+  const addAncienneEntite = () => {
+    if (!newAncienneEntite.trim()) return;
+    set('anciennes_entites', [...form.anciennes_entites, newAncienneEntite.trim()]);
+    setNewAncienneEntite('');
+  };
+  const removeAncienneEntite = (idx) => set('anciennes_entites', form.anciennes_entites.filter((_, i) => i !== idx));
 
   const handleSave = async () => {
     if (!form.name.trim()) return;
@@ -193,6 +202,33 @@ export default function AddCompanyModal({ company, onClose, onSaved }) {
                 className="h-8 text-sm"
               />
               <Button size="sm" variant="outline" onClick={addZone} className="h-8">
+                <Plus className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Anciennes entités */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Anciennes entités</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {form.anciennes_entites.map((ae, idx) => (
+                <span key={idx} className="flex items-center gap-1 bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                  {ae}
+                  <button onClick={() => removeAncienneEntite(idx)}>
+                    <Trash2 className="w-3 h-3 text-amber-600 hover:text-destructive" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={newAncienneEntite}
+                onChange={(e) => setNewAncienneEntite(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addAncienneEntite())}
+                placeholder="Ajouter une ancienne entité..."
+                className="h-8 text-sm"
+              />
+              <Button size="sm" variant="outline" onClick={addAncienneEntite} className="h-8">
                 <Plus className="w-3.5 h-3.5" />
               </Button>
             </div>
