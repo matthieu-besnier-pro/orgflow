@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Mail, Phone, Building2, User, Camera, Save, Trash2, Search, Trash } from 'lucide-react';
+import { X, Mail, Phone, Building2, User, Camera, Save, Trash2, Search, Trash, Plus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -139,7 +139,18 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
               </div>
               <AssignmentSelector form={form} agencies={agencies} onChange={setForm} />
               <div className="relative">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Manager direct</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="text-xs font-medium text-muted-foreground">Manager direct</label>
+                  <button
+                    type="button"
+                    onClick={() => set('is_co_manager', !form.is_co_manager)}
+                    className={`flex items-center gap-0.5 px-1.5 h-5 rounded text-[10px] font-medium transition-colors ${form.is_co_manager ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground hover:bg-accent'}`}
+                    title="Co-manager : affiché côte à côte avec les autres managers du même service"
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                    Co-manager
+                  </button>
+                </div>
                 <div
                   className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm cursor-pointer hover:bg-secondary/50 transition-colors"
                   onClick={() => { setManagerDropdownOpen(v => !v); setManagerSearch(''); }}

@@ -35,6 +35,7 @@ export default async function (req) {
         ancienne_entite: e.ancienne_entite,
         hire_date: e.hire_date,
         is_group_support: e.is_group_support,
+        is_co_manager: e.is_co_manager,
       })),
     });
   } catch (error) {

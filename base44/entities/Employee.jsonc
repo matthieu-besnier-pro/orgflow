@@ -74,6 +74,11 @@
       "type": "boolean",
       "title": "Support Groupe",
       "default": false
+    },
+    "is_co_manager": {
+      "type": "boolean",
+      "title": "Co-manager",
+      "default": false
     }
   },
   "required": [

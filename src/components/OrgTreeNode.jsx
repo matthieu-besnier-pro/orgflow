@@ -255,8 +255,8 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const leafChildrenRaw = children.filter(c => !(childrenMap[c.id]?.length > 0));
   const managerChildrenRaw = children.filter(c => childrenMap[c.id]?.length > 0);
   const managerServices = new Set(managerChildrenRaw.map(c => c.service || 'Sans service'));
-  const leafChildren = leafChildrenRaw.filter(c => !managerServices.has(c.service || 'Sans service'));
-  const coManagerLeaves = leafChildrenRaw.filter(c => managerServices.has(c.service || 'Sans service'));
+  const leafChildren = leafChildrenRaw.filter(c => !managerServices.has(c.service || 'Sans service') && !c.is_co_manager);
+  const coManagerLeaves = leafChildrenRaw.filter(c => managerServices.has(c.service || 'Sans service') || c.is_co_manager);
   const managerChildren = [...managerChildrenRaw, ...coManagerLeaves];
   const hasLeafColumn = !isCompact && children.length > 1 && leafChildren.length > 0;
   const displayChildren = (hasLeafColumn ? managerChildren : children).slice().sort((a, b) => {
