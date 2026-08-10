@@ -222,7 +222,7 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null }) {
+export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null, hideCard = false }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const children = childrenMap[employee.id] || [];
@@ -295,7 +295,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
 
   return (
     <div className="flex flex-col items-center">
-      {sideCards.length > 0 ? (
+      {!hideCard && (sideCards.length > 0 ? (
         <div className="relative flex flex-col items-center">
           <div className={`transition-opacity duration-150 ${opacityClass}`}>
             {children.length > 0 && employee.service && employee.service !== parentService && !isCompact && (
@@ -374,7 +374,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
             />
           </div>
         </div>
-      )}
+      ))}
 
       {expanded && children.length > 0 && (
         isCompact ? (
@@ -482,6 +482,18 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                   }
                   const svcColor = getServiceColor(group.service);
                   const showSharedLabel = group.service !== 'Sans service' && group.service !== (employee.service || null);
+                  const mergedChildren = group.children.flatMap(c => childrenMap[c.id] || []);
+                  const virtualParentId = `co-manager-group-${gi}`;
+                  const virtualChildrenMap = { ...childrenMap, [virtualParentId]: mergedChildren };
+                  const virtualParent = {
+                    id: virtualParentId,
+                    first_name: '',
+                    last_name: '',
+                    position: '',
+                    service: group.service,
+                    manager_id: employee.id,
+                    is_co_manager: false,
+                  };
                   return (
                     <div key={gi} className="flex flex-col items-center">
                       <div className="flex w-full h-4">
@@ -499,36 +511,63 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                         </>
                       )}
                       <div className="flex items-start gap-4">
-                        {group.children.map((child, ci) => (
-                          <div key={child.id} className="flex flex-col items-center">
-                            <div className="flex w-full h-4">
-                              <div className="flex-1" style={{ borderTop: ci > 0 ? `1px solid ${lineColor}` : 'none' }} />
-                              <div className="w-px" style={{ backgroundColor: lineColor }} />
-                              <div className="flex-1" style={{ borderTop: ci < group.children.length - 1 ? `1px solid ${lineColor}` : 'none' }} />
+                        {group.children.map((child, ci) => {
+                          const childColor = colorMode === 'service'
+                            ? (() => { const c = getServiceColor(child.service); return { bg: c.bg, shadow: `${c.bg}22`, border: c.bg }; })()
+                            : getDepthColor(depth + 1, depthColors);
+                          return (
+                            <div key={child.id} className="flex flex-col items-center">
+                              <div className="flex w-full h-4">
+                                <div className="flex-1" style={{ borderTop: ci > 0 ? `1px solid ${lineColor}` : 'none' }} />
+                                <div className="w-px" style={{ backgroundColor: lineColor }} />
+                                <div className="flex-1" style={{ borderTop: ci < group.children.length - 1 ? `1px solid ${lineColor}` : 'none' }} />
+                              </div>
+                              <div
+                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDrop(e, child); }}
+                              >
+                                <CardComponent
+                                  employee={child}
+                                  onSelect={onSelect}
+                                  onFocus={onFocus}
+                                  hasChildren={mergedChildren.length > 0}
+                                  expanded={true}
+                                  onToggle={() => {}}
+                                  onDragStart={onDragStart}
+                                  isDragOver={false}
+                                  isHighlighted={matchesSearch(child, searchTerm)}
+                                  color={childColor}
+                                  anomalies={showAnomalies ? getAnomalies(child, depth + 1) : []}
+                                />
+                              </div>
                             </div>
-                            <OrgTreeNode
-                              employee={child}
-                              childrenMap={childrenMap}
-                              onSelect={onSelect}
-                              onFocus={onFocus}
-                              defaultExpanded={defaultExpanded}
-                              depth={depth + 1}
-                              onDragStart={onDragStart}
-                              onDrop={onDrop}
-                              template={template}
-                              searchTerm={searchTerm}
-                              colorMode={colorMode}
-                              showAnomalies={showAnomalies}
-                              depthColors={depthColors}
-                              parentService={group.service}
-                              serviceSortMode={serviceSortMode}
-                              serviceOrder={serviceOrder}
-                              onServiceReorder={onServiceReorder}
-                              filterMatchIds={filterMatchIds}
-                            />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
+                      {mergedChildren.length > 0 && (
+                        <OrgTreeNode
+                          employee={virtualParent}
+                          childrenMap={virtualChildrenMap}
+                          hideCard={true}
+                          onSelect={onSelect}
+                          onFocus={onFocus}
+                          defaultExpanded={true}
+                          depth={depth + 1}
+                          onDragStart={onDragStart}
+                          onDrop={onDrop}
+                          template={template}
+                          searchTerm={searchTerm}
+                          colorMode={colorMode}
+                          showAnomalies={showAnomalies}
+                          depthColors={depthColors}
+                          parentService={group.service}
+                          serviceSortMode={serviceSortMode}
+                          serviceOrder={serviceOrder}
+                          onServiceReorder={onServiceReorder}
+                          visibleIds={visibleIds}
+                          filterMatchIds={filterMatchIds}
+                        />
+                      )}
                     </div>
                   );
                 })}
