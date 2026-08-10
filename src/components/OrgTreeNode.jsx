@@ -251,15 +251,24 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   const anomalies = showAnomalies ? getAnomalies(employee, depth) : [];
 
   // Les collaborateurs sans équipe sont regroupés en liste horizontale ; les managers restent en cartes verticales
-  const leafChildren = children.filter(c => !(childrenMap[c.id]?.length > 0));
-  const managerChildren = children.filter(c => childrenMap[c.id]?.length > 0);
+  // Co-managers : un collaborateur sans équipe qui partage un service avec un manager est affiché à ses côtés
+  const leafChildrenRaw = children.filter(c => !(childrenMap[c.id]?.length > 0));
+  const managerChildrenRaw = children.filter(c => childrenMap[c.id]?.length > 0);
+  const managerServices = new Set(managerChildrenRaw.map(c => c.service || 'Sans service'));
+  const leafChildren = leafChildrenRaw.filter(c => !managerServices.has(c.service || 'Sans service'));
+  const coManagerLeaves = leafChildrenRaw.filter(c => managerServices.has(c.service || 'Sans service'));
+  const managerChildren = [...managerChildrenRaw, ...coManagerLeaves];
   const hasLeafColumn = !isCompact && children.length > 1 && leafChildren.length > 0;
   const displayChildren = (hasLeafColumn ? managerChildren : children).slice().sort((a, b) => {
     const sa = a.service || 'Sans service';
     const sb = b.service || 'Sans service';
     const ia = serviceOrder.indexOf(sa);
     const ib = serviceOrder.indexOf(sb);
-    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    if (ia !== ib) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    // Même service : managers (avec équipe) en premier, co-managers ensuite
+    const aHas = childrenMap[a.id]?.length > 0 ? 0 : 1;
+    const bHas = childrenMap[b.id]?.length > 0 ? 0 : 1;
+    return aHas - bHas;
   });
   // Regrouper les managers de même service pour l'étiquette partagée
   const managerGroups = [];
