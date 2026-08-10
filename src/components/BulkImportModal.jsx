@@ -9,7 +9,7 @@ const ENTITIES = ['GONNIN', 'QUITTE', 'DURIS', 'DBS'];
 const ZONES = ['Zone Centre', 'Zone Ouest'];
 
 export default function BulkImportModal({ employees, agencies, onClose, onDone }) {
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, services: existingServices, selectedCompany } = useCompany();
   const [step, setStep] = useState('upload');
   const [rows, setRows] = useState([]);
   const [stats, setStats] = useState({ updates: 0, creates: 0, errors: 0 });
@@ -133,7 +133,16 @@ export default function BulkImportModal({ employees, agencies, onClose, onDone }
         failed++;
       }
     }
-    setResults({ updated, created, failed });
+
+    // Auto-update company services with any new services found in the import
+    const importedServices = new Set(rows.filter(r => r.data?.service).map(r => r.data.service));
+    const currentSet = new Set(existingServices.map(s => s.toLowerCase()));
+    const newServices = [...importedServices].filter(s => !currentSet.has(s.toLowerCase()));
+    if (newServices.length > 0) {
+      await base44.entities.Company.update(selectedCompanyId, { services: [...existingServices, ...newServices] });
+    }
+
+    setResults({ updated, created, failed, newServices: newServices.length });
     setStep('done');
     onDone();
   };
@@ -225,6 +234,9 @@ export default function BulkImportModal({ employees, agencies, onClose, onDone }
                 {results.created > 0 && <span className="text-sm text-emerald-600 font-medium">{results.created} créés</span>}
                 {results.failed > 0 && <span className="text-sm text-red-600 font-medium">{results.failed} échoués</span>}
               </div>
+              {results.newServices > 0 && (
+                <p className="text-sm text-amber-600 font-medium mt-2">{results.newServices} nouveau{results.newServices > 1 ? 'x' : ''} service{results.newServices > 1 ? 's' : ''} ajouté{results.newServices > 1 ? 's' : ''} à la société</p>
+              )}
             </div>
           )}
         </div>

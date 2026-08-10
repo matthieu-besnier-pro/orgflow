@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AssignmentSelector from '@/components/AssignmentSelector';
+import ServiceCombobox from '@/components/ServiceCombobox';
 import { useCompany } from '@/lib/CompanyContext';
 
 export default function AddEmployeeModal({ agencies, allEmployees, onClose, onAdd }) {
@@ -93,12 +94,7 @@ export default function AddEmployeeModal({ agencies, allEmployees, onClose, onAd
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Service</label>
-            <Select value={form.service || ''} onValueChange={v => set('service', v)}>
-              <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-              <SelectContent>
-                {SERVICES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <ServiceCombobox value={form.service || ''} onChange={v => set('service', v)} />
           </div>
           <AssignmentSelector form={form} agencies={agencies} onChange={setForm} />
           <div>
