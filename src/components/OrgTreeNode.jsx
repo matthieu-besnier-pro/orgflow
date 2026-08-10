@@ -261,6 +261,17 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
     const ib = serviceOrder.indexOf(sb);
     return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
   });
+  // Regrouper les managers de même service pour l'étiquette partagée
+  const managerGroups = [];
+  displayChildren.forEach(child => {
+    const svc = child.service || 'Sans service';
+    const lastGroup = managerGroups[managerGroups.length - 1];
+    if (lastGroup && lastGroup.service === svc) {
+      lastGroup.children.push(child);
+    } else {
+      managerGroups.push({ service: svc, children: [child] });
+    }
+  });
   // Le connecteur gris n'est dessiné que pour les services d'une seule personne (tronc + branches)
   const leafSvcGroups = {};
   leafChildren.forEach(e => { const s = e.service || 'Sans service'; (leafSvcGroups[s] ||= []).push(e); });
@@ -425,42 +436,94 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                     />
                   </div>
                 )}
-                {displayChildren.map((child, i) => (
-                  <div key={child.id} className="flex flex-col items-center">
-                    {/* connecteur orthogonal : demi-barres horizontales + descente verticale */}
-                    <div className="flex w-full h-4">
-                      <div
-                        className="flex-1"
-                        style={{ borderTop: (displayChildren.length > 1 || hasLeafConnector) && (i > 0 || hasLeafConnector) ? `1px solid ${lineColor}` : 'none' }}
-                      />
-                      <div className="w-px" style={{ backgroundColor: lineColor }} />
-                      <div
-                        className="flex-1"
-                        style={{ borderTop: displayChildren.length > 1 && i < displayChildren.length - 1 ? `1px solid ${lineColor}` : 'none' }}
-                      />
+                {managerGroups.map((group, gi) => {
+                  const isMulti = group.children.length > 1;
+                  const showLeftBar = (managerGroups.length > 1 || hasLeafConnector) && (gi > 0 || hasLeafConnector);
+                  const showRightBar = managerGroups.length > 1 && gi < managerGroups.length - 1;
+                  if (!isMulti) {
+                    const child = group.children[0];
+                    return (
+                      <div key={child.id} className="flex flex-col items-center">
+                        <div className="flex w-full h-4">
+                          <div className="flex-1" style={{ borderTop: showLeftBar ? `1px solid ${lineColor}` : 'none' }} />
+                          <div className="w-px" style={{ backgroundColor: lineColor }} />
+                          <div className="flex-1" style={{ borderTop: showRightBar ? `1px solid ${lineColor}` : 'none' }} />
+                        </div>
+                        <OrgTreeNode
+                          employee={child}
+                          childrenMap={childrenMap}
+                          onSelect={onSelect}
+                          onFocus={onFocus}
+                          defaultExpanded={defaultExpanded}
+                          depth={depth + 1}
+                          onDragStart={onDragStart}
+                          onDrop={onDrop}
+                          template={template}
+                          searchTerm={searchTerm}
+                          colorMode={colorMode}
+                          showAnomalies={showAnomalies}
+                          depthColors={depthColors}
+                          parentService={employee.service || null}
+                          serviceSortMode={serviceSortMode}
+                          serviceOrder={serviceOrder}
+                          onServiceReorder={onServiceReorder}
+                          filterMatchIds={filterMatchIds}
+                        />
+                      </div>
+                    );
+                  }
+                  const svcColor = getServiceColor(group.service);
+                  const showSharedLabel = group.service !== 'Sans service' && group.service !== (employee.service || null);
+                  return (
+                    <div key={gi} className="flex flex-col items-center">
+                      <div className="flex w-full h-4">
+                        <div className="flex-1" style={{ borderTop: showLeftBar ? `1px solid ${lineColor}` : 'none' }} />
+                        <div className="w-px" style={{ backgroundColor: lineColor }} />
+                        <div className="flex-1" style={{ borderTop: showRightBar ? `1px solid ${lineColor}` : 'none' }} />
+                      </div>
+                      {showSharedLabel && (
+                        <>
+                          <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap"
+                            style={{ backgroundColor: svcColor.bg }}>
+                            {group.service}
+                          </div>
+                          <div className="w-px h-3" style={{ backgroundColor: lineColor }} />
+                        </>
+                      )}
+                      <div className="flex items-start gap-4">
+                        {group.children.map((child, ci) => (
+                          <div key={child.id} className="flex flex-col items-center">
+                            <div className="flex w-full h-4">
+                              <div className="flex-1" style={{ borderTop: ci > 0 ? `1px solid ${lineColor}` : 'none' }} />
+                              <div className="w-px" style={{ backgroundColor: lineColor }} />
+                              <div className="flex-1" style={{ borderTop: ci < group.children.length - 1 ? `1px solid ${lineColor}` : 'none' }} />
+                            </div>
+                            <OrgTreeNode
+                              employee={child}
+                              childrenMap={childrenMap}
+                              onSelect={onSelect}
+                              onFocus={onFocus}
+                              defaultExpanded={defaultExpanded}
+                              depth={depth + 1}
+                              onDragStart={onDragStart}
+                              onDrop={onDrop}
+                              template={template}
+                              searchTerm={searchTerm}
+                              colorMode={colorMode}
+                              showAnomalies={showAnomalies}
+                              depthColors={depthColors}
+                              parentService={group.service}
+                              serviceSortMode={serviceSortMode}
+                              serviceOrder={serviceOrder}
+                              onServiceReorder={onServiceReorder}
+                              filterMatchIds={filterMatchIds}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <OrgTreeNode
-                      employee={child}
-                      childrenMap={childrenMap}
-                      onSelect={onSelect}
-                      onFocus={onFocus}
-                      defaultExpanded={defaultExpanded}
-                      depth={depth + 1}
-                      onDragStart={onDragStart}
-                      onDrop={onDrop}
-                      template={template}
-                      searchTerm={searchTerm}
-                      colorMode={colorMode}
-                      showAnomalies={showAnomalies}
-                      depthColors={depthColors}
-                      parentService={employee.service || null}
-                      serviceSortMode={serviceSortMode}
-                      serviceOrder={serviceOrder}
-                      onServiceReorder={onServiceReorder}
-                      filterMatchIds={filterMatchIds}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
