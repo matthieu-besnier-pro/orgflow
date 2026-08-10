@@ -13,10 +13,12 @@ export default async function (req) {
 
     const company = await base44.asServiceRole.entities.Company.get(share.company_id);
     const employees = await base44.asServiceRole.entities.Employee.filter({ company_id: share.company_id });
+    const agencies = await base44.asServiceRole.entities.Agency.filter({ company_id: share.company_id });
 
     return Response.json({
-      company: company ? { name: company.name, logo_url: company.logo_url, brand_color: company.brand_color, services: company.services || [] } : null,
+      company: company ? { name: company.name, logo_url: company.logo_url, brand_color: company.brand_color, services: company.services || [], zones: company.zones || [] } : null,
       service_sort_mode: share.service_sort_mode || 'alpha',
+      agencies: agencies.map((a) => ({ id: a.id, name: a.name, zone: a.zone, city: a.city })),
       employees: employees.map((e) => ({
         id: e.id,
         first_name: e.first_name,
@@ -26,6 +28,13 @@ export default async function (req) {
         photo_url: e.photo_url,
         status: e.status,
         manager_id: e.manager_id,
+        email: e.email,
+        phone: e.phone,
+        zone: e.zone,
+        agency_id: e.agency_id,
+        ancienne_entite: e.ancienne_entite,
+        hire_date: e.hire_date,
+        is_group_support: e.is_group_support,
       })),
     });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Send, Bot, Sparkles } from 'lucide-react';
+import { Send, Bot, Sparkles, Paperclip, X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ReactMarkdown from 'react-markdown';
 import ChatSuggestionsPanel from '@/components/ChatSuggestionsPanel';
@@ -11,7 +11,10 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef();
+  const fileInputRef = useRef();
 
   useEffect(() => {
     initConversation();
@@ -36,10 +39,13 @@ export default function Chatbot() {
   };
 
   const sendMessage = async (text) => {
-    if (!text.trim() || !conversation || sending) return;
+    if ((!text.trim() && attachedFiles.length === 0) || !conversation || sending) return;
     setSending(true);
+    const file_urls = attachedFiles.map(f => f.url);
+    const content = text.trim() || (file_urls.length ? `J'ai partagé ${file_urls.length} fichier(s). Peux-tu analyser ce contenu pour m'aider (nouvelle structure, ajout en masse, etc.) ?` : '');
     setInput('');
-    await base44.agents.addMessage(conversation, { role: 'user', content: text });
+    setAttachedFiles([]);
+    await base44.agents.addMessage(conversation, { role: 'user', content, file_urls: file_urls.length ? file_urls : undefined });
   };
 
   const handleKeyDown = (e) => {
@@ -47,6 +53,22 @@ export default function Chatbot() {
       e.preventDefault();
       sendMessage(input);
     }
+  };
+
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        setAttachedFiles(prev => [...prev, { url: file_url, name: file.name }]);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+    }
+    setUploading(false);
+    e.target.value = '';
   };
 
   if (loading) return (
@@ -98,13 +120,43 @@ export default function Chatbot() {
 
       {/* Input */}
       <div className="px-6 py-4 bg-white border-t border-border">
+        {attachedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {attachedFiles.map((f, i) => (
+              <div key={i} className="flex items-center gap-1.5 bg-secondary rounded-lg px-2.5 py-1.5 text-xs">
+                <FileText className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <span className="text-foreground max-w-[180px] truncate">{f.name}</span>
+                <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex gap-3 items-end">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileSelect}
+            accept=".xlsx,.xls,.csv,.png,.jpg,.jpeg,.pdf,.docx"
+          />
+          <Button
+            variant="outline"
+            className="h-11 w-11 p-0 rounded-xl flex-shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || sending}
+            title="Joindre un fichier (Excel, capture d'écran, PDF...)"
+          >
+            {uploading ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <Paperclip className="w-4 h-4" />}
+          </Button>
           <div className="flex-1 relative">
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Posez une question ou donnez une instruction..."
+              placeholder="Posez une question, donnez une instruction, ou joignez un fichier..."
               rows={1}
               className="w-full px-4 py-3 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-secondary"
               style={{ maxHeight: '120px', minHeight: '44px' }}
@@ -113,12 +165,12 @@ export default function Chatbot() {
           <Button
             className="h-11 w-11 p-0 rounded-xl flex-shrink-0"
             onClick={() => sendMessage(input)}
-            disabled={sending || !input.trim()}
+            disabled={sending || (!input.trim() && attachedFiles.length === 0)}
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2 text-center">Entrée pour envoyer · Shift+Entrée pour nouvelle ligne</p>
+        <p className="text-xs text-muted-foreground mt-2 text-center">Entrée pour envoyer · Shift+Entrée pour nouvelle ligne · 📎 Joindre Excel, capture d'écran, PDF...</p>
       </div>
     </div>
   );

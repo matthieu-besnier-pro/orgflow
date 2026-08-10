@@ -21,6 +21,9 @@ export default function PublicChart() {
   const [error, setError] = useState(null);
   const [zoom, setZoom] = useState(0.85);
   const [search, setSearch] = useState('');
+  const [filterZone, setFilterZone] = useState('');
+  const [filterAgency, setFilterAgency] = useState('');
+  const [filterAncienneEntite, setFilterAncienneEntite] = useState('');
   const [matchIndex, setMatchIndex] = useState(0);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [size, setSize] = useState(null);
@@ -80,9 +83,37 @@ export default function PublicChart() {
     </div>
   );
 
-  const childrenMap = buildChildrenMap(data.employees);
-  const ids = new Set(data.employees.map(e => e.id));
-  const roots = data.employees.filter(e => !e.manager_id || !ids.has(e.manager_id));
+  // Options de filtre
+  const zones = [...new Set(data.employees.map(e => e.zone).filter(Boolean))].sort();
+  const anciennesEntites = [...new Set(data.employees.map(e => e.ancienne_entite).filter(Boolean))].sort();
+  const agencies = data.agencies || [];
+
+  // Filtrage par zone / agence / ancienne entité (+ ancêtres pour préserver l'arbre)
+  const hasFilters = filterZone || filterAgency || filterAncienneEntite;
+  const filteredEmployees = (() => {
+    if (!hasFilters) return data.employees;
+    const empById = {};
+    data.employees.forEach(e => { empById[e.id] = e; });
+    const matching = data.employees.filter(e => {
+      if (filterZone && e.zone !== filterZone) return false;
+      if (filterAgency && e.agency_id !== filterAgency) return false;
+      if (filterAncienneEntite && e.ancienne_entite !== filterAncienneEntite) return false;
+      return true;
+    });
+    const result = new Set(matching.map(e => e.id));
+    matching.forEach(e => {
+      let cur = empById[e.id];
+      while (cur?.manager_id && empById[cur.manager_id]) {
+        result.add(cur.manager_id);
+        cur = empById[cur.manager_id];
+      }
+    });
+    return data.employees.filter(e => result.has(e.id));
+  })();
+
+  const childrenMap = buildChildrenMap(filteredEmployees);
+  const ids = new Set(filteredEmployees.map(e => e.id));
+  const roots = filteredEmployees.filter(e => !e.manager_id || !ids.has(e.manager_id));
   const rootsWithChildren = roots.filter(r => (childrenMap[r.id]?.length || 0) > 0);
   const orphanLeaves = roots.filter(r => !(childrenMap[r.id]?.length || 0) > 0);
   const searchTerm = search.trim().toLowerCase();
@@ -91,8 +122,8 @@ export default function PublicChart() {
   const visibleIds = (() => {
     if (!searchTerm) return null;
     const empById = {};
-    data.employees.forEach(e => { empById[e.id] = e; });
-    const matches = data.employees.filter(e => `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm));
+    filteredEmployees.forEach(e => { empById[e.id] = e; });
+    const matches = filteredEmployees.filter(e => `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm));
     const result = new Set(matches.map(e => e.id));
     result.forEach(id => {
       let e = empById[id];
@@ -110,7 +141,7 @@ export default function PublicChart() {
   // Ordre des services : utilise le mode figé sur le lien de partage (défaut: alphabétique)
   const serviceOrder = (() => {
     const counts = {};
-    data.employees.forEach(e => {
+    filteredEmployees.forEach(e => {
       const s = e.service || 'Sans service';
       counts[s] = (counts[s] || 0) + 1;
     });
@@ -130,7 +161,7 @@ export default function PublicChart() {
   })();
 
   const matchCount = searchTerm
-    ? data.employees.filter(e => `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm)).length
+    ? filteredEmployees.filter(e => `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase().includes(searchTerm)).length
     : 0;
 
   return (
@@ -192,6 +223,45 @@ export default function PublicChart() {
             <Maximize className="w-3.5 h-3.5" />
           </button>
         </div>
+      </div>
+
+      {/* Barre de filtres */}
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/30 flex-wrap">
+        <select
+          value={filterZone}
+          onChange={e => setFilterZone(e.target.value)}
+          className="h-8 text-sm rounded-md border border-input bg-white px-2 pr-7"
+        >
+          <option value="">Toutes zones</option>
+          {zones.map(z => <option key={z} value={z}>{z}</option>)}
+        </select>
+        <select
+          value={filterAgency}
+          onChange={e => setFilterAgency(e.target.value)}
+          className="h-8 text-sm rounded-md border border-input bg-white px-2 pr-7"
+        >
+          <option value="">Toutes agences</option>
+          {agencies.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+        <select
+          value={filterAncienneEntite}
+          onChange={e => setFilterAncienneEntite(e.target.value)}
+          className="h-8 text-sm rounded-md border border-input bg-white px-2 pr-7"
+        >
+          <option value="">Toutes entités</option>
+          {anciennesEntites.map(ae => <option key={ae} value={ae}>{ae}</option>)}
+        </select>
+        {hasFilters && (
+          <button
+            onClick={() => { setFilterZone(''); setFilterAgency(''); setFilterAncienneEntite(''); }}
+            className="text-xs text-primary hover:underline h-8 px-2"
+          >
+            Réinitialiser
+          </button>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto">
+          {filteredEmployees.length} / {data.employees.length} collaborateurs
+        </span>
       </div>
 
       <div
@@ -266,6 +336,7 @@ export default function PublicChart() {
         <PublicEmployeeModal
           employee={selectedEmployee}
           employees={data.employees}
+          agencies={data.agencies || []}
           onClose={() => setSelectedEmployee(null)}
         />
       )}
