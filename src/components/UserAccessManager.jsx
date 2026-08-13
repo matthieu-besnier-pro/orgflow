@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useCompany } from '@/lib/CompanyContext';
-import { Shield, Check, X, UserPlus } from 'lucide-react';
+import { Shield, Check, X, Link2, Crown } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 export default function UserAccessManager() {
   const { companies } = useCompany();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
-  const [showInvite, setShowInvite] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('user');
-  const [inviting, setInviting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
   const loadUsers = () => {
@@ -26,19 +22,30 @@ export default function UserAccessManager() {
 
   useEffect(() => { loadUsers(); }, []);
 
-  const sendInvite = async () => {
-    if (!inviteEmail.trim()) return;
-    setInviting(true);
+  const registerUrl = `${window.location.origin}/register`;
+
+  const copyRegisterLink = async () => {
     try {
-      await base44.users.inviteUser(inviteEmail.trim(), inviteRole);
-      setInviteEmail('');
-      setShowInvite(false);
-      loadUsers();
-      toast({ title: 'Invitation envoyée', description: `${inviteEmail.trim()} peut maintenant se connecter.`, duration: 4000 });
-    } catch (err) {
-      toast({ title: 'Erreur', description: err?.message || "Impossible d'inviter cet utilisateur.", variant: 'destructive', duration: 4000 });
+      await navigator.clipboard.writeText(registerUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({ title: 'Lien copié', description: 'Partagez ce lien à la personne à inviter. Elle s\'inscrira directement depuis l\'app.', duration: 5000 });
+    } catch {
+      toast({ title: 'Lien', description: registerUrl, duration: 8000 });
     }
-    setInviting(false);
+  };
+
+  const toggleRole = async (user) => {
+    setUpdating(user.id);
+    const newRole = user.role === 'admin' ? 'user' : 'admin';
+    try {
+      await base44.entities.User.update(user.id, { role: newRole });
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u));
+      toast({ title: 'Rôle mis à jour', description: `${user.full_name || user.email} est maintenant ${newRole === 'admin' ? 'administrateur' : 'utilisateur'}.`, duration: 3000 });
+    } catch {
+      toast({ title: 'Erreur', description: 'Impossible de changer le rôle.', variant: 'destructive', duration: 3000 });
+    }
+    setUpdating(null);
   };
 
   const toggleCompany = async (user, companyId) => {
@@ -83,38 +90,20 @@ export default function UserAccessManager() {
           <Shield className="w-5 h-5 text-primary" />
           <h2 className="font-heading font-semibold text-foreground">Gestion des accès</h2>
         </div>
-        <Button onClick={() => setShowInvite(v => !v)} variant="outline" className="gap-2 text-sm">
-          <UserPlus className="w-4 h-4" />
-          Inviter un utilisateur
+        <Button onClick={copyRegisterLink} variant="outline" className="gap-2 text-sm">
+          {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Link2 className="w-4 h-4" />}
+          {copied ? 'Lien copié !' : 'Copier le lien d\'inscription'}
         </Button>
       </div>
 
-      {showInvite && (
-        <div className="mb-4 p-4 bg-secondary rounded-xl space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              type="email"
-              placeholder="email@exemple.fr"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendInvite()}
-              className="flex-1"
-            />
-            <select
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value)}
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-            >
-              <option value="user">Utilisateur</option>
-              <option value="admin">Administrateur</option>
-            </select>
-            <Button onClick={sendInvite} disabled={inviting || !inviteEmail.trim()} className="gap-2">
-              {inviting ? 'Envoi…' : 'Inviter'}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">L'utilisateur recevra un email pour créer son mot de passe et se connecter.</p>
-        </div>
-      )}
+      <div className="mb-4 p-3 bg-lavender/40 rounded-xl flex items-start gap-2">
+        <Link2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-muted-foreground">
+          Partagez le lien d'inscription à la personne à inviter. Elle crée elle-même son compte
+          (email + mot de passe) directement depuis l'app, sans passer par Base44.
+          Elle apparaîtra ensuite dans la liste ci-dessous pour l'attribution des sociétés et du rôle.
+        </p>
+      </div>
 
       <p className="text-sm text-muted-foreground mb-4">
         Assignez les sociétés accessibles à chaque utilisateur. Laissez vide pour un accès total (super admin).
@@ -157,6 +146,20 @@ export default function UserAccessManager() {
                   );
                 })}
               </div>
+
+              <button
+                onClick={() => toggleRole(user)}
+                disabled={updating === user.id}
+                title={user.role === 'admin' ? 'Rétrograder en utilisateur' : 'Promouvoir administrateur'}
+                className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full transition-colors flex-shrink-0 ${
+                  user.role === 'admin'
+                    ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                    : 'bg-secondary text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                <Crown className="w-3 h-3" />
+                {user.role === 'admin' ? 'Admin' : 'User'}
+              </button>
 
               {!isSuperAdmin && (
                 <button

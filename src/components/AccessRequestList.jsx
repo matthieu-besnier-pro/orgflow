@@ -1,28 +1,28 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Inbox, Check, UserPlus, Shield } from 'lucide-react';
+import { Inbox, Check, Link2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function AccessRequestList() {
   const [requests, setRequests] = useState([]);
-  const [inviting, setInviting] = useState(null);
+  const [copied, setCopied] = useState(null);
   const { toast } = useToast();
 
   const load = () => base44.entities.AccessRequest.filter({ status: 'En attente' }, '-created_date').then(setRequests);
 
   useEffect(() => { load(); }, []);
 
-  const invite = async (r, role = 'user') => {
-    setInviting(r.id);
+  const registerUrl = `${window.location.origin}/register`;
+
+  const copyLink = async (r) => {
     try {
-      await base44.users.inviteUser(r.user_email, role);
-      await base44.entities.AccessRequest.update(r.id, { status: 'Traitée' });
-      setRequests(prev => prev.filter(x => x.id !== r.id));
-      toast({ title: 'Invitation envoyée', description: `${r.user_email} peut maintenant se connecter.`, duration: 4000 });
-    } catch (err) {
-      toast({ title: 'Erreur', description: err?.message || "Impossible d'inviter cet utilisateur.", variant: 'destructive', duration: 4000 });
+      await navigator.clipboard.writeText(registerUrl);
+      setCopied(r.id);
+      setTimeout(() => setCopied(null), 2000);
+      toast({ title: 'Lien copié', description: `Envoyez ce lien à ${r.user_email} pour qu'elle s'inscrive.`, duration: 5000 });
+    } catch {
+      toast({ title: 'Lien', description: registerUrl, duration: 8000 });
     }
-    setInviting(null);
   };
 
   const markDone = async (r) => {
@@ -48,23 +48,15 @@ export default function AccessRequestList() {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={() => invite(r, 'user')}
-                disabled={inviting === r.id}
-                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary text-white hover:opacity-90 disabled:opacity-50"
+                onClick={() => copyLink(r)}
+                title="Copier le lien d'inscription"
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary text-white hover:opacity-90"
               >
-                <UserPlus className="w-3 h-3" /> {inviting === r.id ? 'Envoi…' : 'Inviter'}
-              </button>
-              <button
-                onClick={() => invite(r, 'admin')}
-                disabled={inviting === r.id}
-                title="Inviter en tant qu'administrateur"
-                className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 disabled:opacity-50"
-              >
-                <Shield className="w-3 h-3" /> Admin
+                {copied === r.id ? <Check className="w-3 h-3" /> : <Link2 className="w-3 h-3" />}
+                {copied === r.id ? 'Copié !' : 'Copier le lien'}
               </button>
               <button
                 onClick={() => markDone(r)}
-                disabled={inviting === r.id}
                 className="text-xs text-muted-foreground hover:text-foreground hover:underline"
               >
                 Ignorer
@@ -73,7 +65,7 @@ export default function AccessRequestList() {
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground mt-3">L'utilisateur invité apparaîtra ci-dessous pour l'attribution des sociétés.</p>
+      <p className="text-xs text-muted-foreground mt-3">Envoyez le lien à la personne : elle crée son compte directement depuis l'app, sans Base44. Elle apparaîtra ensuite ci-dessous.</p>
     </div>
   );
 }
