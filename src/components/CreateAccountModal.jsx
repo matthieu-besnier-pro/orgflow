@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { X, Mail, Lock, UserPlus, Loader2, Crown, Shield } from 'lucide-react';
+import { useCompany } from '@/lib/CompanyContext';
+import { X, Mail, Lock, UserPlus, Loader2, Crown, Shield, Building2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,15 +9,21 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { useToast } from '@/components/ui/use-toast';
 
 export default function CreateAccountModal({ onClose, onCreated }) {
+  const { companies } = useCompany();
   const [step, setStep] = useState('form'); // form | otp | done
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('user');
+  const [companyIds, setCompanyIds] = useState([]); // [] = super admin (toutes)
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  const toggleCompany = (id) => {
+    setCompanyIds(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+  };
 
   const handleRegister = async (e) => {
     e?.preventDefault();
@@ -40,24 +47,26 @@ export default function CreateAccountModal({ onClose, onCreated }) {
     setError('');
     setLoading(true);
     try {
-      const result = await base44.auth.verifyOtp({ email: email.trim(), otpCode });
-      // On NE PAS setToken : on reste connecté en tant qu'admin
-      // Le compte est maintenant vérifié, l'utilisateur peut se connecter
-      if (role === 'admin') {
-        // On doit retrouver l'utilisateur pour changer son rôle
-        // La liste des users est rechargée par le parent
-        try {
-          const users = await base44.entities.User.list();
-          const newUser = users.find(u => u.email === email.trim());
-          if (newUser) {
-            await base44.entities.User.update(newUser.id, { role: 'admin' });
+      await base44.auth.verifyOtp({ email: email.trim(), otpCode });
+      // On NE setToken PAS : on reste connecté en tant qu'admin
+      // Le compte est maintenant vérifié. On attribue le rôle + les sociétés.
+      try {
+        const users = await base44.entities.User.list();
+        const newUser = users.find(u => u.email === email.trim());
+        if (newUser) {
+          const updates = {};
+          if (role === 'admin') updates.role = 'admin';
+          // accessible_company_ids : [] = super admin (toutes les sociétés)
+          if (companyIds.length > 0) updates.accessible_company_ids = companyIds;
+          if (Object.keys(updates).length > 0) {
+            await base44.entities.User.update(newUser.id, updates);
           }
-        } catch {
-          // Le rôle sera changeable manuellement plus tard
         }
+      } catch {
+        // Les attributions seront possibles manuellement plus tard
       }
       setStep('done');
-      toast({ title: 'Compte créé', description: `${email.trim()} peut maintenant se connecter avec le mot de passe défini.`, duration: 5000 });
+      toast({ title: 'Compte créé', description: `${email.trim()} peut maintenant se connecter.`, duration: 5000 });
     } catch (err) {
       setError(err?.message || 'Code incorrect.');
     } finally {
@@ -82,7 +91,7 @@ export default function CreateAccountModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={handleClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -130,10 +139,42 @@ export default function CreateAccountModal({ onClose, onCreated }) {
                 </button>
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                Sociétés accessibles
+              </Label>
+              <p className="text-xs text-muted-foreground -mt-1">
+                Laissez vide pour un accès total (super admin). Sinon, sélectionnez les sociétés.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {companies.map((c) => {
+                  const selected = companyIds.includes(c.id);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => toggleCompany(c.id)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        selected
+                          ? 'bg-primary text-white'
+                          : 'bg-white border border-border text-muted-foreground hover:border-primary/50'
+                      }`}
+                    >
+                      {selected && <Check className="w-3 h-3" />}
+                      {c.name}
+                    </button>
+                  );
+                })}
+                {companies.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Aucune société disponible.</p>
+                )}
+              </div>
+            </div>
             <div className="p-3 bg-blue-50 rounded-xl">
               <p className="text-xs text-blue-800">
                 Un code de vérification à 6 chiffres sera envoyé à cette adresse. Demandez-le à la personne
-                et saisissez-le à l'étape suivante pour valider le compte.
+                et saisissez-le à l'étape suivante pour activer le compte (étape obligatoire de la plateforme).
               </p>
             </div>
             <Button type="submit" className="w-full h-11" disabled={loading}>
@@ -182,12 +223,13 @@ export default function CreateAccountModal({ onClose, onCreated }) {
             <div>
               <p className="font-heading font-semibold text-foreground text-lg">Compte créé avec succès</p>
               <p className="text-sm text-muted-foreground mt-1">
-                <strong>{email}</strong> peut maintenant se connecter avec le mot de passe que vous avez défini.
-                {role === 'admin' && ' Le rôle administrateur a été attribué.'}
+                <strong>{email}</strong> peut maintenant se connecter avec le mot de passe défini.
+                {role === 'admin' && ' Rôle administrateur attribué.'}
+                {companyIds.length > 0 ? ` ${companyIds.length} société(s) accessible(s).` : ' Accès total (super admin).'}
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Pensez à communiquer le mot de passe à la personne et à lui attribuer les sociétés ci-dessous.
+              Pensez à communiquer le mot de passe à la personne.
             </p>
             <Button onClick={handleClose} className="w-full h-11">Terminer</Button>
           </div>
