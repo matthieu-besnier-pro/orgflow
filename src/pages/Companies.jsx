@@ -17,35 +17,30 @@ export default function Companies() {
   const [stats, setStats] = useState({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { setSelectedCompany } = useCompany();
-
-  const load = () => {
-    base44.entities.Company.list().then((comps) => {
-      setCompanies(comps);
-      setLoading(false);
-      // Compter collaborateurs et agences par société
-      Promise.all([
-        base44.entities.Employee.list('-created_date', 500),
-        base44.entities.Agency.list('-created_date', 500),
-      ]).then(([emps, ags]) => {
-        const s = {};
-        comps.forEach((c) => {
-          const cEmps = emps.filter((e) => e.company_id === c.id);
-          const director = cEmps.find((e) => !e.manager_id);
-          s[c.id] = {
-            employees: cEmps.length,
-            agencies: ags.filter((a) => a.company_id === c.id).length,
-            director: director ? `${director.first_name} ${director.last_name}` : null,
-          };
-        });
-        setStats(s);
-      });
-    });
-  };
+  const { setSelectedCompany, companies: contextCompanies, loading: companyLoading } = useCompany();
 
   useEffect(() => {
-    load();
-  }, []);
+    setCompanies(contextCompanies);
+    setLoading(companyLoading);
+    if (contextCompanies.length === 0) return;
+    // Compter collaborateurs et agences par société
+    Promise.all([
+      base44.entities.Employee.list('-created_date', 500),
+      base44.entities.Agency.list('-created_date', 500),
+    ]).then(([emps, ags]) => {
+      const s = {};
+      contextCompanies.forEach((c) => {
+        const cEmps = emps.filter((e) => e.company_id === c.id);
+        const director = cEmps.find((e) => !e.manager_id);
+        s[c.id] = {
+          employees: cEmps.length,
+          agencies: ags.filter((a) => a.company_id === c.id).length,
+          director: director ? `${director.first_name} ${director.last_name}` : null,
+        };
+      });
+      setStats(s);
+    });
+  }, [contextCompanies, companyLoading]);
 
   const viewOrgChart = (company) => {
     setSelectedCompany(company.id);
@@ -55,7 +50,6 @@ export default function Companies() {
   const handleDelete = async (company) => {
     if (!confirm(`Supprimer la société ${company.name} ? Les données rattachées ne seront pas supprimées mais ne seront plus accessibles.`)) return;
     await base44.entities.Company.delete(company.id);
-    load();
     toast({ title: 'Société supprimée', duration: 2000 });
   };
 
@@ -203,7 +197,7 @@ export default function Companies() {
         <AddCompanyModal
           company={editingCompany}
           onClose={() => setModalOpen(false)}
-          onSaved={load}
+          onSaved={() => setModalOpen(false)}
         />
       )}
     </div>

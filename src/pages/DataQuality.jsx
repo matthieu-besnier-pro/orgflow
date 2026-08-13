@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { AlertTriangle, Merge, ShieldCheck } from 'lucide-react';
 import { useCompany } from '@/lib/CompanyContext';
+import AccessRequestButton from '@/components/AccessRequestButton';
 import AnomalyList from '@/components/AnomalyList';
 import ServiceMergePanel from '@/components/ServiceMergePanel';
 
@@ -10,7 +11,7 @@ export default function DataQuality() {
   const [agencies, setAgencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('anomalies');
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, loading: companyLoading } = useCompany();
 
   const load = () => {
     if (!selectedCompanyId) return;
@@ -22,6 +23,21 @@ export default function DataQuality() {
   };
 
   useEffect(load, [selectedCompanyId]);
+
+  if (companyLoading) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!selectedCompanyId) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+      <ShieldCheck className="w-10 h-10 text-muted-foreground/40" />
+      <p className="text-muted-foreground font-medium">Aucune société accessible avec ce compte</p>
+      <p className="text-sm text-muted-foreground">Demandez l'accès à un administrateur.</p>
+      <AccessRequestButton />
+    </div>
+  );
 
   if (loading) return (
     <div className="flex items-center justify-center h-full">

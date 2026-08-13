@@ -15,7 +15,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, loading: companyLoading } = useCompany();
 
   useEffect(() => {
     if (!selectedCompanyId) return;
@@ -52,6 +52,12 @@ export default function Dashboard() {
     });
     return unsubscribe;
   }, [selectedCompanyId]);
+
+  if (companyLoading) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
+    </div>
+  );
 
   if (!selectedCompanyId) return (
     <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">

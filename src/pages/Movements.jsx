@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCompany } from '@/lib/CompanyContext';
+import AccessRequestButton from '@/components/AccessRequestButton';
+import { Building2 } from 'lucide-react';
 
 const MOVEMENT_TYPES = ["Arrivée","Départ","Mutation","Changement de poste","Promotion"];
 const STATUSES = ["En attente","Validé","Annulé"];
@@ -30,7 +32,7 @@ export default function Movements() {
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
 
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, loading: companyLoading } = useCompany();
 
   useEffect(() => {
     if (!selectedCompanyId) return;
@@ -48,6 +50,21 @@ export default function Movements() {
       setLoading(false);
     });
   }, [selectedCompanyId]);
+
+  if (companyLoading) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!selectedCompanyId) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+      <Building2 className="w-10 h-10 text-muted-foreground/40" />
+      <p className="text-muted-foreground font-medium">Aucune société accessible avec ce compte</p>
+      <p className="text-sm text-muted-foreground">Demandez l'accès à un administrateur.</p>
+      <AccessRequestButton />
+    </div>
+  );
 
   const isHR = user?.role === 'admin';
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));

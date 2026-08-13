@@ -15,7 +15,7 @@ import AccessRequestButton from '@/components/AccessRequestButton';
 import { useCompany } from '@/lib/CompanyContext';
 
 export default function Directory() {
-  const { selectedCompanyId, services: companyServices, statuses: companyStatuses } = useCompany();
+  const { selectedCompanyId, services: companyServices, statuses: companyStatuses, loading: companyLoading } = useCompany();
   const SERVICES = ['Tous', ...companyServices];
   const STATUSES = ['Tous', ...companyStatuses];
 
@@ -57,6 +57,12 @@ export default function Directory() {
     });
     return unsubscribe;
   }, [selectedCompanyId]);
+
+  if (companyLoading) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
+    </div>
+  );
 
   if (!selectedCompanyId) return (
     <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">

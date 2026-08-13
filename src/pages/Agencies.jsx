@@ -4,6 +4,7 @@ import { Plus, Building2, MapPin, Phone, Mail, Pencil, Trash2, Users, Layers } f
 import AddAgencyModal from '@/components/AddAgencyModal';
 import { useToast } from '@/components/ui/use-toast';
 import { useCompany } from '@/lib/CompanyContext';
+import AccessRequestButton from '@/components/AccessRequestButton';
 
 const ZONE_COLORS = {
   'Zone Centre': 'bg-blue-100 text-blue-700',
@@ -70,7 +71,7 @@ export default function Agencies() {
   const [showModal, setShowModal] = useState(false);
   const [editingAgency, setEditingAgency] = useState(null);
   const { toast } = useToast();
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, loading: companyLoading } = useCompany();
 
   useEffect(() => {
     loadData();
@@ -88,6 +89,21 @@ export default function Agencies() {
     setEmployees(emps);
     setLoading(false);
   };
+
+  if (companyLoading) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!selectedCompanyId) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+      <Building2 className="w-10 h-10 text-muted-foreground/40" />
+      <p className="text-muted-foreground font-medium">Aucune société accessible avec ce compte</p>
+      <p className="text-sm text-muted-foreground">Demandez l'accès à un administrateur.</p>
+      <AccessRequestButton />
+    </div>
+  );
 
   const handleDelete = async (agency) => {
     const count = employees.filter(e => e.agency_id === agency.id).length;
