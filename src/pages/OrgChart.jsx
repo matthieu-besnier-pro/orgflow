@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move, ListOrdered } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move, ListOrdered, Undo2, Redo2 } from 'lucide-react';
+import { useOrgHistory } from '@/hooks/useOrgHistory';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import OrgTreeNode from '@/components/OrgTreeNode';
@@ -149,6 +150,7 @@ export default function OrgChart() {
   const filterPanelRef = useRef(null);
   const contentRef = useRef(null);
   const { toast } = useToast();
+  const { pushAction, undo, redo, canUndo, canRedo } = useOrgHistory(setEmployees, toast);
 
   const { selectedCompanyId, selectedCompany, zones: companyZones, loading: companyLoading } = useCompany();
   const pan = usePanDrag();
@@ -192,11 +194,20 @@ export default function OrgChart() {
     toast({ title: 'Apparence enregistrée', description: `Réglages propres à ${selectedCompany?.name || 'cette société'}`, duration: 3000 });
   };
 
-  // Recharger les employés en temps réel quand le chat en ajoute
+  // Mise à jour incrémentale en temps réel (évite un rechargement complet à chaque changement)
   useEffect(() => {
-    const unsubscribe = base44.entities.Employee.subscribe(() => {
+    const unsubscribe = base44.entities.Employee.subscribe((event) => {
       if (!selectedCompanyId) return;
-      base44.entities.Employee.filter({ company_id: selectedCompanyId }).then(emps => setEmployees(emps));
+      const { id, type, data } = event || {};
+      if (type === 'delete') {
+        setEmployees(prev => prev.filter(e => e.id !== id));
+      } else if (type === 'create' && data) {
+        setEmployees(prev => prev.some(e => e.id === id) ? prev : [...prev, data]);
+      } else if (type === 'update' && data) {
+        setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...data } : e));
+      } else {
+        base44.entities.Employee.filter({ company_id: selectedCompanyId }).then(setEmployees);
+      }
     });
     return unsubscribe;
   }, [selectedCompanyId]);
@@ -250,12 +261,26 @@ export default function OrgChart() {
     }
   }, [expandAll, loading, viewMode, template]);
 
+  // Raccourcis clavier : Ctrl+Z annuler, Ctrl+Y / Ctrl+Shift+Z rétablir
+  useEffect(() => {
+    const handler = (e) => {
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+        else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
+
   // Build pool from zone/agency/ancienne entité filters
   // baseFiltered = only the directly matching employees (for service view)
   // pool = baseFiltered + ancestors (for tree view, so hierarchy connects)
   // Support Groupe employees are always included (transversal to all agencies),
   // EXCEPT when the filter is explicitly set to "Support Groupe" only.
-  const { baseFiltered, pool } = (() => {
+  const { baseFiltered, pool } = useMemo(() => {
     let base;
     if (selectedZone === 'Support Groupe') {
       base = employees.filter(e => e.is_group_support);
@@ -276,29 +301,31 @@ export default function OrgChart() {
     } else {
       return { baseFiltered: employees, pool: employees };
     }
-    // Add ancestors so the tree is connected
     const withAncestors = addAncestors(base.map(e => e.id), employees);
     return { baseFiltered: base, pool: employees.filter(e => withAncestors.has(e.id)) };
-  })();
+  }, [employees, agencies, selectedZone, selectedAgency, selectedAncienneEntite]);
 
-  const baseChildrenMap = buildChildrenMap(pool);
+  const baseChildrenMap = useMemo(() => buildChildrenMap(pool), [pool]);
 
   // Apply manager filter
-  let filteredPool = pool;
-  let filteredBase = baseFiltered;
-  if (selectedManagerId !== 'all') {
+  const { filteredPool, filteredBase } = useMemo(() => {
+    if (selectedManagerId === 'all') return { filteredPool: pool, filteredBase: baseFiltered };
     const fullMap = buildChildrenMap(employees);
     const desc = getDescendantIds(selectedManagerId, fullMap);
     desc.add(selectedManagerId);
-    filteredPool = pool.filter(e => desc.has(e.id));
-    filteredBase = baseFiltered.filter(e => desc.has(e.id));
-  }
+    return { filteredPool: pool.filter(e => desc.has(e.id)), filteredBase: baseFiltered.filter(e => desc.has(e.id)) };
+  }, [pool, baseFiltered, employees, selectedManagerId]);
 
-  const finalChildrenMap = buildChildrenMap(filteredPool);
-  const finalPoolIds = new Set(filteredPool.map(e => e.id));
-  const roots = filteredPool.filter(e => !e.manager_id || !finalPoolIds.has(e.manager_id));
-  const rootsWithChildren = roots.filter(r => (finalChildrenMap[r.id]?.length || 0) > 0);
-  const orphanLeaves = roots.filter(r => !(finalChildrenMap[r.id]?.length || 0) > 0);
+  const finalChildrenMap = useMemo(() => buildChildrenMap(filteredPool), [filteredPool]);
+  const { roots, rootsWithChildren, orphanLeaves } = useMemo(() => {
+    const finalPoolIds = new Set(filteredPool.map(e => e.id));
+    const r = filteredPool.filter(e => !e.manager_id || !finalPoolIds.has(e.manager_id));
+    return {
+      roots: r,
+      rootsWithChildren: r.filter(x => (finalChildrenMap[x.id]?.length || 0) > 0),
+      orphanLeaves: r.filter(x => !(finalChildrenMap[x.id]?.length || 0) > 0),
+    };
+  }, [filteredPool, finalChildrenMap]);
 
   // Search: highlight matching nodes (passed as prop)
   const searchTerm = search.trim().toLowerCase();
@@ -307,10 +334,10 @@ export default function OrgChart() {
   const activeFilters = [selectedZone !== 'all', selectedAgency !== 'all', selectedAncienneEntite !== 'all', selectedManagerId !== 'all'].filter(Boolean).length;
 
   // Managers list for filter dropdown (people with at least one direct report in pool)
-  const managersInPool = pool.filter(e => baseChildrenMap[e.id]?.length > 0);
+  const managersInPool = useMemo(() => pool.filter(e => baseChildrenMap[e.id]?.length > 0), [pool, baseChildrenMap]);
 
   // Ordre global des services selon le mode de tri choisi (appliqué à tout l'organigramme)
-  const serviceOrder = (() => {
+  const serviceOrder = useMemo(() => {
     const counts = {};
     filteredBase.forEach(e => {
       const s = e.service || 'Sans service';
@@ -328,14 +355,14 @@ export default function OrgChart() {
       });
     }
     return all.sort((a, b) => counts[b] - counts[a]);
-  })();
+  }, [filteredBase, serviceSortMode, selectedCompany]);
 
-  const handleDragStart = (e, employee) => {
+  const handleDragStart = useCallback((e, employee) => {
     draggedId.current = employee.id;
     e.dataTransfer.effectAllowed = 'move';
-  };
+  }, []);
 
-  const handleDrop = async (e, targetEmployee) => {
+  const handleDrop = useCallback(async (e, targetEmployee) => {
     // Dépôt d'un fichier image depuis l'ordinateur → mise à jour de la photo
     const droppedFiles = await readDroppedFiles(e.dataTransfer);
     const image = droppedFiles.find(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i.test(f.name));
@@ -346,6 +373,7 @@ export default function OrgChart() {
         const { file_url } = await base44.integrations.Core.UploadFile({ file: image });
         await base44.entities.Employee.update(targetEmployee.id, { photo_url: file_url });
         setEmployees(prev => prev.map(emp => emp.id === targetEmployee.id ? { ...emp, photo_url: file_url } : emp));
+        pushAction({ type: 'photo', employeeId: targetEmployee.id, oldPhotoUrl: targetEmployee.photo_url || null, newPhotoUrl: file_url });
         toast({ title: 'Photo mise à jour', description: `${targetEmployee.first_name} ${targetEmployee.last_name}`, duration: 3000 });
       } catch {
         toast({ title: 'Erreur', description: "Impossible d'envoyer la photo.", variant: 'destructive', duration: 3000 });
@@ -367,8 +395,10 @@ export default function OrgChart() {
     }
     try {
       const source = employees.find(e => e.id === sourceId);
+      const oldManagerId = source?.manager_id || null;
       await base44.entities.Employee.update(sourceId, { manager_id: targetEmployee.id });
       setEmployees(prev => prev.map(e => e.id === sourceId ? { ...e, manager_id: targetEmployee.id } : e));
+      pushAction({ type: 'hierarchy', employeeId: sourceId, oldManagerId, newManagerId: targetEmployee.id });
       // Traçabilité : enregistrer le changement de rattachement dans les mouvements RH
       if (source) {
         const oldManager = employees.find(e => e.id === source.manager_id);
@@ -386,10 +416,10 @@ export default function OrgChart() {
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de mettre à jour la hiérarchie.', variant: 'destructive', duration: 3000 });
     }
-  };
+  }, [finalChildrenMap, employees, selectedCompanyId, pushAction, toast]);
 
   // Double-clic sur une carte : centrer l'organigramme sur ce collaborateur
-  const handleFocus = (employee) => {
+  const handleFocus = useCallback((employee) => {
     if (selectedManagerId === employee.id) {
       setSelectedManagerId('all');
       toast({ title: 'Vue complète rétablie', duration: 2000 });
@@ -397,24 +427,35 @@ export default function OrgChart() {
       setSelectedManagerId(employee.id);
       toast({ title: 'Vue centrée', description: `${employee.first_name} ${employee.last_name} et son équipe`, duration: 2500 });
     }
-  };
+  }, [selectedManagerId, toast]);
 
-  const handleServiceReorder = async (newOrder) => {
+  const handleServiceReorder = useCallback(async (newOrder) => {
     try {
       await base44.entities.Company.update(selectedCompanyId, { services: newOrder });
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de sauvegarder l\'ordre des services.', variant: 'destructive' });
     }
-  };
+  }, [selectedCompanyId, toast]);
 
-  const handleSave = (updated) => {
+  const handleSave = useCallback((updated) => {
+    const old = employees.find(e => e.id === updated.id);
+    if (old) {
+      const oldFields = {};
+      const newFields = {};
+      Object.keys(updated).forEach(k => {
+        if (old[k] !== updated[k]) { oldFields[k] = old[k]; newFields[k] = updated[k]; }
+      });
+      if (Object.keys(oldFields).length > 0) {
+        pushAction({ type: 'edit', employeeId: updated.id, oldFields, newFields });
+      }
+    }
     setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
     setSelectedEmployee(null);
-  };
-  const handleDelete = (id) => {
+  }, [employees, pushAction]);
+  const handleDelete = useCallback((id) => {
     setEmployees(prev => prev.filter(e => e.id !== id));
     setSelectedEmployee(null);
-  };
+  }, []);
 
   const resetFilters = () => {
     setSelectedZone('all');
@@ -450,6 +491,18 @@ export default function OrgChart() {
 
         {/* Company switcher */}
         <CompanySwitcher />
+
+        {/* Undo / Redo */}
+        <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+          <button onClick={undo} disabled={!canUndo} title="Annuler (Ctrl+Z)"
+            className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${canUndo ? 'text-foreground hover:bg-white' : 'text-muted-foreground/40 cursor-not-allowed'}`}>
+            <Undo2 className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={redo} disabled={!canRedo} title="Rétablir (Ctrl+Y)"
+            className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${canRedo ? 'text-foreground hover:bg-white' : 'text-muted-foreground/40 cursor-not-allowed'}`}>
+            <Redo2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         {/* Title */}
         <h1 className="font-heading font-semibold text-foreground text-base hidden sm:block mr-2">Organigramme</h1>

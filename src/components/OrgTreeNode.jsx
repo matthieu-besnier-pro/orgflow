@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { getServiceColor } from '@/lib/serviceColors';
 import OrgCardPresentation from '@/components/OrgCardPresentation';
@@ -222,9 +222,10 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null, hideCard = false }) {
+function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null, hideCard = false }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isFileDrag, setIsFileDrag] = useState(false);
   const children = childrenMap[employee.id] || [];
   const isHighlighted = matchesSearch(employee, searchTerm);
 
@@ -290,9 +291,9 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
   // border color of the team group box — slightly darker than line
   const { border: groupBorderColor } = getDepthColor(depth + 1, depthColors);
 
-  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); };
-  const handleDragLeave = (e) => { e.stopPropagation(); setIsDragOver(false); };
-  const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); onDrop(e, employee); };
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.types?.includes('Files')) setIsFileDrag(true); setIsDragOver(true); };
+  const handleDragLeave = (e) => { e.stopPropagation(); setIsDragOver(false); setIsFileDrag(false); };
+  const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); setIsFileDrag(false); onDrop(e, employee); };
 
   return (
     <div className="flex flex-col items-center">
@@ -305,7 +306,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                 {employee.service}
               </div>
             )}
-            <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
+            <div className="relative" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
               <CardComponent
                 employee={employee}
                 onSelect={onSelect}
@@ -319,6 +320,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
                 color={cardColor}
                 anomalies={anomalies}
               />
+              {isFileDrag && <div className="absolute inset-0 rounded-xl bg-emerald-400/30 border-2 border-dashed border-emerald-500 flex items-center justify-center pointer-events-none z-50"><span className="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full whitespace-nowrap">📷 Déposer la photo</span></div>}
             </div>
           </div>
           {/* Cartes latérales : positionnées à droite du directeur, sans lien avec la hiérarchie */}
@@ -359,7 +361,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
               {employee.service}
             </div>
           )}
-          <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
+          <div className="relative" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} data-match={isHighlighted ? 'true' : undefined}>
             <CardComponent
               employee={employee}
               onSelect={onSelect}
@@ -373,6 +375,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
               color={cardColor}
               anomalies={anomalies}
             />
+            {isFileDrag && <div className="absolute inset-0 rounded-xl bg-emerald-400/30 border-2 border-dashed border-emerald-500 flex items-center justify-center pointer-events-none z-50"><span className="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full whitespace-nowrap">📷 Déposer la photo</span></div>}
           </div>
         </div>
       ))}
@@ -615,5 +618,7 @@ export default function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, 
         )
       )}
     </div>
-  );
-}
+    );
+    }
+
+    export default memo(OrgTreeNode);

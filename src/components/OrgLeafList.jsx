@@ -13,6 +13,7 @@ const STATUS_DOT = {
 
 function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies, opacityClass = 'opacity-100' }) {
   const [over, setOver] = useState(false);
+  const [isFileDrag, setIsFileDrag] = useState(false);
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
   const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
@@ -22,9 +23,9 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
     <div
       draggable
       onDragStart={(e) => onDragStart(e, employee)}
-      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOver(true); }}
-      onDragLeave={() => setOver(false)}
-      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); onDrop(e, employee); }}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.types?.includes('Files')) setIsFileDrag(true); setOver(true); }}
+      onDragLeave={() => { setOver(false); setIsFileDrag(false); }}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); setIsFileDrag(false); onDrop(e, employee); }}
       onClick={() => onSelect(employee)}
       style={{ backgroundColor: '#ffffff', borderLeft: `5px solid ${svc.bg}`, boxShadow: '0 4px 14px rgba(15,23,42,0.10)' }}
       className={`relative rounded-xl border border-border cursor-grab active:cursor-grabbing active:opacity-80 hover:shadow-xl hover:-translate-y-1 hover:z-50 transition-all duration-200 flex items-center gap-2.5 px-3 py-2.5 min-w-[13rem] w-full ${opacityClass}
@@ -51,6 +52,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
         <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.last_name}</p>
         <p className="text-muted-foreground leading-snug max-w-[9rem] break-words" style={{ fontSize: '9px' }}>{employee.position}</p>
       </div>
+      {isFileDrag && <div className="absolute inset-0 rounded-xl bg-emerald-400/30 border-2 border-dashed border-emerald-500 flex items-center justify-center pointer-events-none z-50"><span className="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full whitespace-nowrap">📷 Déposer la photo</span></div>}
     </div>
   );
 }
