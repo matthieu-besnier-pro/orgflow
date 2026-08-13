@@ -1,22 +1,45 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useCompany } from '@/lib/CompanyContext';
-import { Shield, Check, X } from 'lucide-react';
+import { Shield, Check, X, UserPlus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function UserAccessManager() {
   const { companies } = useCompany();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('user');
+  const [inviting, setInviting] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const loadUsers = () => {
     base44.entities.User.list().then((u) => {
       setUsers(u);
       setLoading(false);
     });
-  }, []);
+  };
+
+  useEffect(() => { loadUsers(); }, []);
+
+  const sendInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    try {
+      await base44.users.inviteUser(inviteEmail.trim(), inviteRole);
+      setInviteEmail('');
+      setShowInvite(false);
+      loadUsers();
+      toast({ title: 'Invitation envoyée', description: `${inviteEmail.trim()} peut maintenant se connecter.`, duration: 4000 });
+    } catch (err) {
+      toast({ title: 'Erreur', description: err?.message || "Impossible d'inviter cet utilisateur.", variant: 'destructive', duration: 4000 });
+    }
+    setInviting(false);
+  };
 
   const toggleCompany = async (user, companyId) => {
     setUpdating(user.id);
@@ -55,10 +78,44 @@ export default function UserAccessManager() {
 
   return (
     <div className="bg-white rounded-2xl border border-border p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Shield className="w-5 h-5 text-primary" />
-        <h2 className="font-heading font-semibold text-foreground">Gestion des accès</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          <h2 className="font-heading font-semibold text-foreground">Gestion des accès</h2>
+        </div>
+        <Button onClick={() => setShowInvite(v => !v)} variant="outline" className="gap-2 text-sm">
+          <UserPlus className="w-4 h-4" />
+          Inviter un utilisateur
+        </Button>
       </div>
+
+      {showInvite && (
+        <div className="mb-4 p-4 bg-secondary rounded-xl space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              type="email"
+              placeholder="email@exemple.fr"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendInvite()}
+              className="flex-1"
+            />
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value)}
+              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+            >
+              <option value="user">Utilisateur</option>
+              <option value="admin">Administrateur</option>
+            </select>
+            <Button onClick={sendInvite} disabled={inviting || !inviteEmail.trim()} className="gap-2">
+              {inviting ? 'Envoi…' : 'Inviter'}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">L'utilisateur recevra un email pour créer son mot de passe et se connecter.</p>
+        </div>
+      )}
+
       <p className="text-sm text-muted-foreground mb-4">
         Assignez les sociétés accessibles à chaque utilisateur. Laissez vide pour un accès total (super admin).
       </p>
