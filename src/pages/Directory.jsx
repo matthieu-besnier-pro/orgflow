@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Search, UserPlus, Trash2, CheckSquare, Download, ImagePlus, FileSpreadsheet, FileUp } from 'lucide-react';
+import { Search, UserPlus, Trash2, CheckSquare, Download, ImagePlus, FileSpreadsheet, FileUp, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import AddEmployeeModal from '@/components/AddEmployeeModal';
 import BulkPhotoImport from '@/components/BulkPhotoImport';
 import BulkImportModal from '@/components/BulkImportModal';
 import { getAssignmentLabel } from '@/components/AssignmentSelector';
+import AccessRequestButton from '@/components/AccessRequestButton';
 import { useCompany } from '@/lib/CompanyContext';
 
 export default function Directory() {
@@ -56,6 +57,15 @@ export default function Directory() {
     });
     return unsubscribe;
   }, [selectedCompanyId]);
+
+  if (!selectedCompanyId) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+      <Users className="w-10 h-10 text-muted-foreground/40" />
+      <p className="text-muted-foreground font-medium">Aucune société accessible avec ce compte</p>
+      <p className="text-sm text-muted-foreground">Demandez l'accès à un administrateur.</p>
+      <AccessRequestButton />
+    </div>
+  );
 
   const isHR = user?.role === 'admin';
 

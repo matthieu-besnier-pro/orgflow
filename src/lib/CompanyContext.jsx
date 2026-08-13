@@ -9,8 +9,9 @@ export function CompanyProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.Company.list()
-      .then((comps) => {
+    base44.functions.invoke('getUserCompanies', {})
+      .then((res) => {
+        const comps = res.data?.companies || [];
         setCompanies(comps);
         const stored = localStorage.getItem('selectedCompanyId');
         if (stored && comps.find((c) => c.id === stored)) {
@@ -26,7 +27,9 @@ export function CompanyProvider({ children }) {
   // Realtime: refresh company list on changes
   useEffect(() => {
     const unsubscribe = base44.entities.Company.subscribe(() => {
-      base44.entities.Company.list().then(setCompanies);
+      base44.functions.invoke('getUserCompanies', {})
+        .then((res) => setCompanies(res.data?.companies || []))
+        .catch(() => {});
     });
     return unsubscribe;
   }, []);

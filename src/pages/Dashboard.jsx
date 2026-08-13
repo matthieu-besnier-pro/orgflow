@@ -4,6 +4,7 @@ import { Users, Building2, ArrowLeftRight, UserPlus, TrendingUp, Network } from 
 import { Link } from 'react-router-dom';
 import OnboardingModal from '@/components/OnboardingModal';
 import CompanySwitcher from '@/components/CompanySwitcher';
+import AccessRequestButton from '@/components/AccessRequestButton';
 import { useCompany } from '@/lib/CompanyContext';
 
 export default function Dashboard() {
@@ -51,6 +52,15 @@ export default function Dashboard() {
     });
     return unsubscribe;
   }, [selectedCompanyId]);
+
+  if (!selectedCompanyId) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+      <Users className="w-10 h-10 text-muted-foreground/40" />
+      <p className="text-muted-foreground font-medium">Aucune société accessible avec ce compte</p>
+      <p className="text-sm text-muted-foreground">Demandez l'accès à un administrateur.</p>
+      <AccessRequestButton />
+    </div>
+  );
 
   if (loading) return (
     <div className="flex items-center justify-center h-full">
