@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useCompany } from '@/lib/CompanyContext';
-import { Shield, Check, X, Link2, Crown } from 'lucide-react';
+import { Shield, Check, X, Crown, UserPlus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
+import CreateAccountModal from '@/components/CreateAccountModal';
 
 export default function UserAccessManager() {
   const { companies } = useCompany();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
-  const [copied, setCopied] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const { toast } = useToast();
 
   const loadUsers = () => {
@@ -21,19 +22,6 @@ export default function UserAccessManager() {
   };
 
   useEffect(() => { loadUsers(); }, []);
-
-  const registerUrl = `${window.location.origin}/register`;
-
-  const copyRegisterLink = async () => {
-    try {
-      await navigator.clipboard.writeText(registerUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({ title: 'Lien copié', description: 'Partagez ce lien à la personne à inviter. Elle s\'inscrira directement depuis l\'app.', duration: 5000 });
-    } catch {
-      toast({ title: 'Lien', description: registerUrl, duration: 8000 });
-    }
-  };
 
   const toggleRole = async (user) => {
     setUpdating(user.id);
@@ -90,23 +78,15 @@ export default function UserAccessManager() {
           <Shield className="w-5 h-5 text-primary" />
           <h2 className="font-heading font-semibold text-foreground">Gestion des accès</h2>
         </div>
-        <Button onClick={copyRegisterLink} variant="outline" className="gap-2 text-sm">
-          {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Link2 className="w-4 h-4" />}
-          {copied ? 'Lien copié !' : 'Copier le lien d\'inscription'}
+        <Button onClick={() => setShowCreate(true)} className="gap-2 text-sm">
+          <UserPlus className="w-4 h-4" />
+          Créer un compte RH
         </Button>
       </div>
 
-      <div className="mb-4 p-3 bg-lavender/40 rounded-xl flex items-start gap-2">
-        <Link2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-muted-foreground">
-          Partagez le lien d'inscription à la personne à inviter. Elle crée elle-même son compte
-          (email + mot de passe) directement depuis l'app, sans passer par Base44.
-          Elle apparaîtra ensuite dans la liste ci-dessous pour l'attribution des sociétés et du rôle.
-        </p>
-      </div>
-
       <p className="text-sm text-muted-foreground mb-4">
-        Assignez les sociétés accessibles à chaque utilisateur. Laissez vide pour un accès total (super admin).
+        Créez les comptes directement depuis l'app (email + mot de passe) et attribuez les sociétés accessibles.
+        Laissez vide pour un accès total (super admin).
       </p>
 
       <div className="space-y-3">
@@ -174,6 +154,13 @@ export default function UserAccessManager() {
           );
         })}
       </div>
+
+      {showCreate && (
+        <CreateAccountModal
+          onClose={() => setShowCreate(false)}
+          onCreated={loadUsers}
+        />
+      )}
     </div>
   );
 }
