@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Building2, Plus, Pencil, Trash2, Users, MapPin, Layers, History } from 'lucide-react';
+import { useCompany } from '@/lib/CompanyContext';
+import { Building2, Plus, Pencil, Trash2, Users, MapPin, Layers, History, Network, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import AddCompanyModal from '@/components/AddCompanyModal';
@@ -12,18 +14,43 @@ export default function Companies() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState(null);
+  const [stats, setStats] = useState({});
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { setSelectedCompany } = useCompany();
 
   const load = () => {
     base44.entities.Company.list().then((comps) => {
       setCompanies(comps);
       setLoading(false);
+      // Compter collaborateurs et agences par société
+      Promise.all([
+        base44.entities.Employee.list('-created_date', 500),
+        base44.entities.Agency.list('-created_date', 500),
+      ]).then(([emps, ags]) => {
+        const s = {};
+        comps.forEach((c) => {
+          const cEmps = emps.filter((e) => e.company_id === c.id);
+          const director = cEmps.find((e) => !e.manager_id);
+          s[c.id] = {
+            employees: cEmps.length,
+            agencies: ags.filter((a) => a.company_id === c.id).length,
+            director: director ? `${director.first_name} ${director.last_name}` : null,
+          };
+        });
+        setStats(s);
+      });
     });
   };
 
   useEffect(() => {
     load();
   }, []);
+
+  const viewOrgChart = (company) => {
+    setSelectedCompany(company.id);
+    navigate('/organigramme');
+  };
 
   const handleDelete = async (company) => {
     if (!confirm(`Supprimer la société ${company.name} ? Les données rattachées ne seront pas supprimées mais ne seront plus accessibles.`)) return;
@@ -43,8 +70,8 @@ export default function Companies() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">Sociétés</h1>
-          <p className="text-muted-foreground text-sm mt-1">Gérez les sociétés et leur structure (services, statuts, zones)</p>
+          <h1 className="font-heading text-2xl font-bold text-foreground">Sociétés & Organigrammes</h1>
+          <p className="text-muted-foreground text-sm mt-1">Gérez les sociétés, leur structure et accédez à leur organigramme</p>
         </div>
         <Button onClick={() => { setEditingCompany(null); setModalOpen(true); }} className="gap-2">
           <Plus className="w-4 h-4" />
@@ -66,7 +93,10 @@ export default function Companies() {
               )}
               <div className="flex-1 min-w-0">
                 <h2 className="font-heading font-semibold text-foreground text-lg">{c.name}</h2>
-                <div className="flex items-center gap-2 mt-0.5">
+                {stats[c.id]?.director && (
+                  <p className="text-xs text-muted-foreground mt-0.5">Directeur : {stats[c.id].director}</p>
+                )}
+                <div className="flex items-center gap-2 mt-1">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.brand_color || '#003D7A' }} />
                   <span className="text-xs text-muted-foreground">{c.brand_color || '#003D7A'}</span>
                 </div>
@@ -90,17 +120,24 @@ export default function Companies() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
               <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl">
+                <Users className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Collaborateurs</p>
+                  <p className="text-sm font-semibold text-foreground">{stats[c.id]?.employees ?? '–'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl">
+                <Store className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Agences</p>
+                  <p className="text-sm font-semibold text-foreground">{stats[c.id]?.agencies ?? '–'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl">
                 <Layers className="w-4 h-4 text-primary" />
                 <div>
                   <p className="text-xs text-muted-foreground">Services</p>
                   <p className="text-sm font-semibold text-foreground">{c.services?.length || 0}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl">
-                <Users className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Statuts</p>
-                  <p className="text-sm font-semibold text-foreground">{c.statuses?.length || 0}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl">
@@ -110,14 +147,16 @@ export default function Companies() {
                   <p className="text-sm font-semibold text-foreground">{c.zones?.length || 0}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl">
-                <History className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Anc. entités</p>
-                  <p className="text-sm font-semibold text-foreground">{c.anciennes_entites?.length || 0}</p>
-                </div>
-              </div>
             </div>
+
+            {/* Org chart button */}
+            <button
+              onClick={() => viewOrgChart(c)}
+              className="w-full mt-4 flex items-center justify-center gap-2 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-colors"
+            >
+              <Network className="w-4 h-4" />
+              Voir l'organigramme
+            </button>
 
             {/* Lists */}
             <div className="mt-4 space-y-2">
