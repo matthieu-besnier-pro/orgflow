@@ -112,11 +112,6 @@ export default function Dashboard() {
           <h1 className="font-heading text-3xl font-bold text-foreground">
             {greeting}, {user?.full_name?.split(' ')[0] || 'Bienvenue'} 👋
           </h1>
-          <p className="text-muted-foreground mt-1">
-            {recruitingCount > 0
-              ? `${recruitingCount} poste${recruitingCount > 1 ? 's' : ''} en recrutement • ${employees.length} collaborateurs au total`
-              : `${employees.length} collaborateurs dans le groupe`}
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <CompanySwitcher />
