@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import ReactMarkdown from 'react-markdown';
 import ChatSuggestionsPanel from '@/components/ChatSuggestionsPanel';
 import { useToast } from '@/components/ui/use-toast';
+import { useCompany } from '@/lib/CompanyContext';
+import { logCreditUsage } from '@/lib/creditTracking';
 
 export default function Chatbot() {
   const [conversation, setConversation] = useState(null);
@@ -20,6 +22,7 @@ export default function Chatbot() {
   const fileInputRef = useRef();
   const unsubscribeRef = useRef(null);
   const { toast } = useToast();
+  const { selectedCompany } = useCompany();
 
   useEffect(() => {
     loadSessions();
@@ -127,6 +130,13 @@ export default function Chatbot() {
     setInput('');
     setAttachedFiles([]);
     await base44.agents.addMessage(conversation, { role: 'user', content, file_urls: file_urls.length ? file_urls : undefined });
+    logCreditUsage({
+      companyId: selectedCompany?.id,
+      companyName: selectedCompany?.name,
+      service: 'agent_message',
+      creditsEstimated: 3,
+      description: content.slice(0, 100),
+    });
 
     // Mettre à jour le titre si c'est le premier message
     if (messages.length === 0 && text.trim()) {

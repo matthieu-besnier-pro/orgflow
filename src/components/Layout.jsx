@@ -1,8 +1,8 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { 
-  LayoutDashboard, Network, Users, ArrowLeftRight, 
-  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin, Layers, ShieldCheck, Shield, History
+  LayoutDashboard, Network, Users, ArrowLeftRight,
+  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin, Layers, ShieldCheck, Shield, History, Zap
 } from 'lucide-react';
 import CompanySelector from '@/components/CompanySelector';
 import { useCompany } from '@/lib/CompanyContext';
@@ -19,6 +19,7 @@ const allNavItems = [
   { path: '/chatbot', icon: MessageSquareText, label: 'Assistant IA', help: '⭐ L\'outil le plus simple pour débuter !', roles: ['admin', 'rh', 'user'] },
   { path: '/utilisateurs', icon: Shield, label: 'Utilisateurs', help: 'Gérez les rôles et accès', roles: ['admin'] },
   { path: '/journal', icon: History, label: 'Journal d\'activité', help: 'Suivi des actions sur les organigrammes', roles: ['admin', 'rh'] },
+  { path: '/credits', icon: Zap, label: 'Crédits', help: 'Consommation des crédits par société', roles: ['admin'] },
 ];
 
 export default function Layout() {

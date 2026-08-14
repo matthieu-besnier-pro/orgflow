@@ -1,0 +1,76 @@
+{
+  "name": "CreditUsage",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "title": "Soci\u00e9t\u00e9"
+    },
+    "company_name": {
+      "type": "string",
+      "title": "Nom soci\u00e9t\u00e9"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "Utilisateur"
+    },
+    "user_name": {
+      "type": "string",
+      "title": "Nom utilisateur"
+    },
+    "credit_type": {
+      "type": "string",
+      "title": "Type de cr\u00e9dit",
+      "enum": [
+        "integration"
+      ],
+      "default": "integration"
+    },
+    "service": {
+      "type": "string",
+      "title": "Service consommateur",
+      "enum": [
+        "agent_message",
+        "invoke_llm",
+        "invoke_llm_advanced",
+        "send_email",
+        "generate_image",
+        "generate_video",
+        "generate_speech",
+        "transcribe_audio",
+        "extract_data",
+        "upload_file"
+      ]
+    },
+    "credits_estimated": {
+      "type": "number",
+      "title": "Cr\u00e9dits estim\u00e9s"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    }
+  },
+  "required": [
+    "service",
+    "credits_estimated"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

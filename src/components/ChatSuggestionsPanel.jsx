@@ -1,4 +1,4 @@
-import { ChevronRight, Search, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { ChevronRight, Search, Trash2, ArrowRight } from 'lucide-react';
 
 export default function ChatSuggestionsPanel({ onSelect }) {
   const categories = [
@@ -10,16 +10,6 @@ export default function ChatSuggestionsPanel({ onSelect }) {
         'Liste les commerciaux de la Zone Ouest',
         'Combien de collaborateurs actifs ?',
         'Qui est en recrutement actuellement ?',
-      ]
-    },
-    {
-      title: '➕ Ajouter / Modifier',
-      icon: Plus,
-      examples: [
-        'Ajoute Jean Dupont, technicien SAV à Issoudun',
-        'Change Maurice de poste à Commercial',
-        'Passe Pierre à l\'agence de Naintré',
-        'Attribue Marie comme manager d\'Édouard',
       ]
     },
     {

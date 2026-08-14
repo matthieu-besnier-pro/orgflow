@@ -59,10 +59,10 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
   const currentManager = managers.find(m => m.id === form.manager_id);
 
   return (
-    <div className="fixed inset-0 z-50 flex" onClick={onClose}>
-      <div className="flex-1 bg-black/20 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
       <div
-        className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-fade-in overflow-hidden"
+        className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col animate-fade-in overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
