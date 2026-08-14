@@ -17,7 +17,7 @@ const ACTION_LABELS = {
 };
 
 export default function AuditLog() {
-  const { companies, selectedCompanyId, setSelectedCompanyId } = useCompany();
+  const { companies, selectedCompanyId, setSelectedCompany } = useCompany();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterAction, setFilterAction] = useState('all');
@@ -99,7 +99,7 @@ export default function AuditLog() {
         </div>
 
         {/* Company filter */}
-        <Select value={selectedCompanyId || 'all'} onValueChange={(v) => setSelectedCompanyId(v === 'all' ? null : v)}>
+        <Select value={selectedCompanyId || 'all'} onValueChange={(v) => setSelectedCompany(v === 'all' ? null : v)}>
           <SelectTrigger className="w-48 h-9 text-sm">
             <SelectValue placeholder="Toutes les sociétés" />
           </SelectTrigger>
