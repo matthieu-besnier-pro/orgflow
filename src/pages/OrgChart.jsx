@@ -17,11 +17,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { useCompany } from '@/lib/CompanyContext';
+import { useAuth } from '@/lib/AuthContext';
 import readDroppedFiles from '@/lib/readDroppedFiles';
 import ChartAppearancePanel from '@/components/ChartAppearancePanel';
 import ServiceManagerPanel from '@/components/ServiceManagerPanel';
 import ShareChartPanel from '@/components/ShareChartPanel';
 import AccessRequestButton from '@/components/AccessRequestButton';
+import { logAuditAction } from '@/lib/auditLog';
 import { Tags, Share2 } from 'lucide-react';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
@@ -153,6 +155,8 @@ export default function OrgChart() {
   const { pushAction, undo, redo, canUndo, canRedo } = useOrgHistory(setEmployees, toast);
 
   const { selectedCompanyId, selectedCompany, zones: companyZones, loading: companyLoading } = useCompany();
+  const { user } = useAuth();
+  const isHR = user?.role === 'admin' || user?.role === 'rh';
   const pan = usePanDrag();
 
   useEffect(() => {
@@ -374,6 +378,7 @@ export default function OrgChart() {
         await base44.entities.Employee.update(targetEmployee.id, { photo_url: file_url });
         setEmployees(prev => prev.map(emp => emp.id === targetEmployee.id ? { ...emp, photo_url: file_url } : emp));
         pushAction({ type: 'photo', employeeId: targetEmployee.id, oldPhotoUrl: targetEmployee.photo_url || null, newPhotoUrl: file_url });
+        logAuditAction({ action: 'photo', entityId: targetEmployee.id, entityName: `${targetEmployee.first_name} ${targetEmployee.last_name}`, details: 'Photo mise à jour', companyId: selectedCompanyId });
         toast({ title: 'Photo mise à jour', description: `${targetEmployee.first_name} ${targetEmployee.last_name}`, duration: 3000 });
       } catch {
         toast({ title: 'Erreur', description: "Impossible d'envoyer la photo.", variant: 'destructive', duration: 3000 });
@@ -399,6 +404,7 @@ export default function OrgChart() {
       await base44.entities.Employee.update(sourceId, { manager_id: targetEmployee.id });
       setEmployees(prev => prev.map(e => e.id === sourceId ? { ...e, manager_id: targetEmployee.id } : e));
       pushAction({ type: 'hierarchy', employeeId: sourceId, oldManagerId, newManagerId: targetEmployee.id });
+      logAuditAction({ action: 'move', entityId: sourceId, entityName: source ? `${source.first_name} ${source.last_name}` : null, details: `Rattachement : ${oldManagerId ? employees.find(e => e.id === oldManagerId)?.first_name + ' ' + employees.find(e => e.id === oldManagerId)?.last_name : 'aucun'} → ${targetEmployee.first_name} ${targetEmployee.last_name}`, companyId: selectedCompanyId });
       // Traçabilité : enregistrer le changement de rattachement dans les mouvements RH
       if (source) {
         const oldManager = employees.find(e => e.id === source.manager_id);
@@ -447,15 +453,18 @@ export default function OrgChart() {
       });
       if (Object.keys(oldFields).length > 0) {
         pushAction({ type: 'edit', employeeId: updated.id, oldFields, newFields });
+        logAuditAction({ action: 'update', entityId: updated.id, entityName: `${updated.first_name} ${updated.last_name}`, details: Object.keys(newFields).join(', '), companyId: selectedCompanyId });
       }
     }
     setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
     setSelectedEmployee(null);
-  }, [employees, pushAction]);
+  }, [employees, pushAction, selectedCompanyId]);
   const handleDelete = useCallback((id) => {
+    const emp = employees.find(e => e.id === id);
+    logAuditAction({ action: 'delete', entityId: id, entityName: emp ? `${emp.first_name} ${emp.last_name}` : null, details: 'Suppression collaborateur', companyId: selectedCompanyId });
     setEmployees(prev => prev.filter(e => e.id !== id));
     setSelectedEmployee(null);
-  }, []);
+  }, [employees, selectedCompanyId]);
 
   const resetFilters = () => {
     setSelectedZone('all');
@@ -998,7 +1007,7 @@ export default function OrgChart() {
           employee={selectedEmployee}
           agencies={agencies}
           allEmployees={employees}
-          isHR={true}
+          isHR={isHR}
           onClose={() => setSelectedEmployee(null)}
           onSave={handleSave}
           onDelete={handleDelete}

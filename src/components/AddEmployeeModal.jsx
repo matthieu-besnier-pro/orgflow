@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AssignmentSelector from '@/components/AssignmentSelector';
 import ServiceCombobox from '@/components/ServiceCombobox';
 import { useCompany } from '@/lib/CompanyContext';
+import { logAuditAction } from '@/lib/auditLog';
 
 export default function AddEmployeeModal({ agencies, allEmployees, onClose, onAdd }) {
   const { services: SERVICES, statuses: STATUSES, selectedCompanyId } = useCompany();
@@ -29,6 +30,7 @@ export default function AddEmployeeModal({ agencies, allEmployees, onClose, onAd
     if (!form.first_name || !form.last_name || !form.position) return;
     setSaving(true);
     const created = await base44.entities.Employee.create({ ...form, company_id: selectedCompanyId });
+    logAuditAction({ action: 'create', entityId: created.id, entityName: `${created.first_name} ${created.last_name}`, details: `Nouveau collaborateur : ${created.position || ''}`, companyId: selectedCompanyId });
     onAdd && onAdd(created);
     setSaving(false);
   };

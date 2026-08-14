@@ -2,27 +2,33 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { 
   LayoutDashboard, Network, Users, ArrowLeftRight, 
-  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin, Layers, ShieldCheck
+  MessageSquareText, ChevronRight, Menu, X, Building2, HelpCircle, MapPin, Layers, ShieldCheck, Shield, History
 } from 'lucide-react';
 import CompanySelector from '@/components/CompanySelector';
 import { useCompany } from '@/lib/CompanyContext';
+import { useAuth } from '@/lib/AuthContext';
 
-const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Tableau de bord', help: 'Vue d\'ensemble et statistiques clés' },
-  { path: '/organigramme', icon: Network, label: 'Organigramme', help: 'Visualisez la hiérarchie (cliquez sur les noms)' },
-  { path: '/annuaire', icon: Users, label: 'Annuaire', help: 'Cherchez et modifiez les collaborateurs' },
-  { path: '/agences', icon: MapPin, label: 'Agences', help: 'Gérez les agences du groupe' },
-  { path: '/mouvements', icon: ArrowLeftRight, label: 'Mouvements RH', help: 'Enregistrez arrivées, départs, mutations...' },
-  { path: '/societes', icon: Layers, label: 'Sociétés', help: 'Gérez les sociétés et leur structure' },
-  { path: '/qualite-donnees', icon: ShieldCheck, label: 'Qualité des données', help: 'Fiches incomplètes et libellés à harmoniser' },
-  { path: '/chatbot', icon: MessageSquareText, label: 'Assistant IA', help: '⭐ L\'outil le plus simple pour débuter !' },
+const allNavItems = [
+  { path: '/', icon: LayoutDashboard, label: 'Tableau de bord', help: 'Vue d\'ensemble et statistiques clés', roles: ['admin', 'rh', 'user'] },
+  { path: '/organigramme', icon: Network, label: 'Organigramme', help: 'Visualisez la hiérarchie (cliquez sur les noms)', roles: ['admin', 'rh', 'user'] },
+  { path: '/annuaire', icon: Users, label: 'Annuaire', help: 'Cherchez et modifiez les collaborateurs', roles: ['admin', 'rh', 'user'] },
+  { path: '/agences', icon: MapPin, label: 'Agences', help: 'Gérez les agences du groupe', roles: ['admin', 'rh', 'user'] },
+  { path: '/mouvements', icon: ArrowLeftRight, label: 'Mouvements RH', help: 'Enregistrez arrivées, départs, mutations...', roles: ['admin', 'rh', 'user'] },
+  { path: '/societes', icon: Layers, label: 'Sociétés', help: 'Gérez les sociétés et leur structure', roles: ['admin', 'rh', 'user'] },
+  { path: '/qualite-donnees', icon: ShieldCheck, label: 'Qualité des données', help: 'Fiches incomplètes et libellés à harmoniser', roles: ['admin', 'rh', 'user'] },
+  { path: '/chatbot', icon: MessageSquareText, label: 'Assistant IA', help: '⭐ L\'outil le plus simple pour débuter !', roles: ['admin', 'rh', 'user'] },
+  { path: '/utilisateurs', icon: Shield, label: 'Utilisateurs', help: 'Gérez les rôles et accès', roles: ['admin'] },
+  { path: '/journal', icon: History, label: 'Journal d\'activité', help: 'Suivi des actions sur les organigrammes', roles: ['admin', 'rh'] },
 ];
 
 export default function Layout() {
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
   const { selectedCompany } = useCompany();
+  const { user } = useAuth();
+  const userRole = user?.role || 'user';
 
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
   const companyName = selectedCompany?.name || 'Multi-Sociétés';
 
   return (

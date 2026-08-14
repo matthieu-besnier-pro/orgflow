@@ -73,7 +73,7 @@ export default function Directory() {
     </div>
   );
 
-  const isHR = user?.role === 'admin';
+  const isHR = user?.role === 'admin' || user?.role === 'rh';
 
   const filtered = employees.filter(e => {
     const name = `${e.first_name} ${e.last_name} ${e.position} ${e.email || ''}`.toLowerCase();

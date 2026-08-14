@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AssignmentSelector, { getAssignmentLabel } from '@/components/AssignmentSelector';
 import ServiceCombobox from '@/components/ServiceCombobox';
 import { useCompany } from '@/lib/CompanyContext';
+import { logAuditAction } from '@/lib/auditLog';
 
 export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR, onClose, onSave, onDelete }) {
   const { services: SERVICES, statuses: STATUSES } = useCompany();
@@ -30,6 +31,8 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
   const handleSave = async () => {
     setSaving(true);
     await base44.entities.Employee.update(employee.id, form);
+    const changedFields = Object.keys(form).filter(k => form[k] !== employee[k]);
+    logAuditAction({ action: 'update', entityId: employee.id, entityName: `${employee.first_name} ${employee.last_name}`, details: changedFields.join(', ') || 'Modification fiche', companyId: employee.company_id });
     onSave && onSave({ ...employee, ...form });
     setSaving(false);
   };
@@ -37,6 +40,7 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
   const handleDelete = async () => {
     if (!confirm(`Supprimer ${employee.first_name} ${employee.last_name} ?`)) return;
     await base44.entities.Employee.delete(employee.id);
+    logAuditAction({ action: 'delete', entityId: employee.id, entityName: `${employee.first_name} ${employee.last_name}`, details: 'Suppression collaborateur', companyId: employee.company_id });
     onDelete && onDelete(employee.id);
     onClose();
   };

@@ -1,0 +1,86 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "company_id": {
+      "type": "string",
+      "title": "Soci\u00e9t\u00e9"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "Utilisateur"
+    },
+    "user_name": {
+      "type": "string",
+      "title": "Nom utilisateur"
+    },
+    "user_email": {
+      "type": "string",
+      "title": "Email utilisateur"
+    },
+    "action": {
+      "type": "string",
+      "title": "Action",
+      "enum": [
+        "create",
+        "update",
+        "delete",
+        "move",
+        "photo",
+        "service_reorder",
+        "role_change",
+        "access_change"
+      ]
+    },
+    "entity_type": {
+      "type": "string",
+      "title": "Type d'entit\u00e9",
+      "default": "employee"
+    },
+    "entity_id": {
+      "type": "string",
+      "title": "ID entit\u00e9"
+    },
+    "entity_name": {
+      "type": "string",
+      "title": "Nom entit\u00e9"
+    },
+    "details": {
+      "type": "string",
+      "title": "D\u00e9tails"
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "rh"
+          }
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        }
+      ]
+    },
+    "create": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
