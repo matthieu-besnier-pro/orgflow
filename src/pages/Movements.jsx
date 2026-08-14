@@ -66,7 +66,7 @@ export default function Movements() {
     </div>
   );
 
-  const isHR = user?.role === 'admin';
+  const isHR = user?.role === 'admin' || user?.role === 'rh';
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
 
   const handleEmployeeSelect = (empId) => {
