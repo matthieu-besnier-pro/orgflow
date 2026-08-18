@@ -99,21 +99,15 @@ function getDescendantIds(managerId, childrenMap) {
   return result;
 }
 
-function addAncestors(ids, allEmps) {
-  const empById = {};
-  allEmps.forEach(e => { empById[e.id] = e; });
+function addAncestors(ids, empById) {
   const result = new Set(ids);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    result.forEach(id => {
-      const e = empById[id];
-      if (e?.manager_id && !result.has(e.manager_id) && empById[e.manager_id]) {
-        result.add(e.manager_id);
-        changed = true;
-      }
-    });
-  }
+  ids.forEach(id => {
+    let current = empById[id];
+    while (current?.manager_id && empById[current.manager_id] && !result.has(current.manager_id)) {
+      result.add(current.manager_id);
+      current = empById[current.manager_id];
+    }
+  });
   return result;
 }
 
@@ -139,6 +133,7 @@ export default function OrgChart() {
   const [serviceSortMode, setServiceSortMode] = useState('count');
 
   // Filters
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [selectedZone, setSelectedZone] = useState('all');
   const [selectedAgency, setSelectedAgency] = useState('all');
@@ -159,8 +154,17 @@ export default function OrgChart() {
   const isHR = user?.role === 'admin' || user?.role === 'rh';
   const pan = usePanDrag();
 
+  // Debounce search to avoid re-rendering the tree on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 200);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
   useEffect(() => {
     if (!selectedCompanyId) return;
+    setSelectedAncienneEntite('all');
+    setSelectedZone('all');
+    setSelectedAgency('all');
     setLoading(true);
     Promise.all([
       base44.entities.Employee.filter({ company_id: selectedCompanyId }),
@@ -279,11 +283,36 @@ export default function OrgChart() {
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo]);
 
+  // Maps de recherche O(1) pour les performances
+  const empById = useMemo(() => {
+    const map = {};
+    employees.forEach(e => { map[e.id] = e; });
+    return map;
+  }, [employees]);
+
+  const fullChildrenMap = useMemo(() => buildChildrenMap(employees), [employees]);
+
+  const agencyEntiteMap = useMemo(() => {
+    const map = {};
+    agencies.forEach(a => { map[a.id] = getAncienneEntite(a); });
+    return map;
+  }, [agencies]);
+
+  const entiteToZone = useMemo(() => {
+    const map = {};
+    agencies.forEach(a => {
+      const entite = getAncienneEntite(a);
+      if (entite && a.zone) map[entite] = a.zone;
+    });
+    employees.forEach(e => {
+      if (e.ancienne_entite && e.zone) map[e.ancienne_entite] = e.zone;
+    });
+    return map;
+  }, [agencies, employees]);
+
+  const companyAnciennesEntites = selectedCompany?.anciennes_entites || [];
+
   // Build pool from zone/agency/ancienne entité filters
-  // baseFiltered = only the directly matching employees (for service view)
-  // pool = baseFiltered + ancestors (for tree view, so hierarchy connects)
-  // Support Groupe employees are always included (transversal to all agencies),
-  // EXCEPT when the filter is explicitly set to "Support Groupe" only.
   const { baseFiltered, pool } = useMemo(() => {
     let base;
     if (selectedZone === 'Support Groupe') {
@@ -292,35 +321,44 @@ export default function OrgChart() {
       base = employees.filter(e => e.agency_id === selectedAgency || e.is_group_support);
     } else if (selectedAncienneEntite !== 'all') {
       const entiteAgencyIds = new Set(
-        agencies.filter(a => getAncienneEntite(a) === selectedAncienneEntite).map(a => a.id)
+        agencies.filter(a => agencyEntiteMap[a.id] === selectedAncienneEntite).map(a => a.id)
       );
-      if (selectedAncienneEntite === 'DURIS') {
-        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.ancienne_entite === selectedAncienneEntite || e.service === 'PY Pneus' || e.is_group_support);
-      } else {
-        base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.ancienne_entite === selectedAncienneEntite || e.is_group_support);
-      }
+      base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.ancienne_entite === selectedAncienneEntite || e.is_group_support);
     } else if (selectedZone !== 'all') {
       const ids = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
       base = employees.filter(e => ids.has(e.agency_id) || e.zone === selectedZone || e.is_group_support);
     } else {
       return { baseFiltered: employees, pool: employees };
     }
-    const withAncestors = addAncestors(base.map(e => e.id), employees);
+    const withAncestors = addAncestors(base.map(e => e.id), empById);
     return { baseFiltered: base, pool: employees.filter(e => withAncestors.has(e.id)) };
-  }, [employees, agencies, selectedZone, selectedAgency, selectedAncienneEntite]);
+  }, [employees, agencies, agencyEntiteMap, empById, selectedZone, selectedAgency, selectedAncienneEntite]);
 
-  const baseChildrenMap = useMemo(() => buildChildrenMap(pool), [pool]);
+  const baseChildrenMap = useMemo(() => {
+    const poolIds = new Set(pool.map(e => e.id));
+    const result = {};
+    poolIds.forEach(id => {
+      if (fullChildrenMap[id]) result[id] = fullChildrenMap[id].filter(c => poolIds.has(c.id));
+    });
+    return result;
+  }, [pool, fullChildrenMap]);
 
   // Apply manager filter
   const { filteredPool, filteredBase } = useMemo(() => {
     if (selectedManagerId === 'all') return { filteredPool: pool, filteredBase: baseFiltered };
-    const fullMap = buildChildrenMap(employees);
-    const desc = getDescendantIds(selectedManagerId, fullMap);
+    const desc = getDescendantIds(selectedManagerId, fullChildrenMap);
     desc.add(selectedManagerId);
     return { filteredPool: pool.filter(e => desc.has(e.id)), filteredBase: baseFiltered.filter(e => desc.has(e.id)) };
-  }, [pool, baseFiltered, employees, selectedManagerId]);
+  }, [pool, baseFiltered, fullChildrenMap, selectedManagerId]);
 
-  const finalChildrenMap = useMemo(() => buildChildrenMap(filteredPool), [filteredPool]);
+  const finalChildrenMap = useMemo(() => {
+    const poolIds = new Set(filteredPool.map(e => e.id));
+    const result = {};
+    poolIds.forEach(id => {
+      if (fullChildrenMap[id]) result[id] = fullChildrenMap[id].filter(c => poolIds.has(c.id));
+    });
+    return result;
+  }, [filteredPool, fullChildrenMap]);
   const { roots, rootsWithChildren, orphanLeaves } = useMemo(() => {
     const finalPoolIds = new Set(filteredPool.map(e => e.id));
     const r = filteredPool.filter(e => !e.manager_id || !finalPoolIds.has(e.manager_id));
@@ -333,6 +371,17 @@ export default function OrgChart() {
 
   // Search: highlight matching nodes (passed as prop)
   const searchTerm = search.trim().toLowerCase();
+
+  // Precompute search match IDs to avoid O(n²) traversal in OrgTreeNode
+  const searchMatchIds = useMemo(() => {
+    if (!searchTerm) return null;
+    const matches = new Set();
+    employees.forEach(e => {
+      const haystack = `${e.first_name} ${e.last_name} ${e.position || ''} ${e.service || ''}`.toLowerCase();
+      if (haystack.includes(searchTerm)) matches.add(e.id);
+    });
+    return addAncestors(matches, empById);
+  }, [employees, searchTerm, empById]);
 
   // Count active filters
   const activeFilters = [selectedZone !== 'all', selectedAgency !== 'all', selectedAncienneEntite !== 'all', selectedManagerId !== 'all'].filter(Boolean).length;
@@ -522,11 +571,11 @@ export default function OrgChart() {
           <Input
             className="pl-8 h-8 text-sm"
             placeholder="Rechercher un collaborateur..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
           />
-          {search && (
-            <button className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => setSearch('')}>
+          {searchInput && (
+            <button className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => { setSearchInput(''); setSearch(''); }}>
               <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
             </button>
           )}
@@ -555,16 +604,18 @@ export default function OrgChart() {
                 )}
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Ancienne entité</label>
-                <Select value={selectedAncienneEntite} onValueChange={v => { setSelectedAncienneEntite(v); setSelectedZone(v !== 'all' ? ENTITE_TO_ZONE[v] : 'all'); setSelectedAgency('all'); }}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Toutes les entités</SelectItem>
-                    {ANCIENNES_ENTITES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              {companyAnciennesEntites.length > 0 && (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Ancienne entité</label>
+                  <Select value={selectedAncienneEntite} onValueChange={v => { setSelectedAncienneEntite(v); setSelectedZone(v !== 'all' ? entiteToZone[v] : 'all'); setSelectedAgency('all'); }}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les entités</SelectItem>
+                      {companyAnciennesEntites.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Zone géographique</label>
@@ -587,7 +638,7 @@ export default function OrgChart() {
                       {agencies
                         .filter(a => {
                           if (selectedZone !== 'all') return a.zone === selectedZone;
-                          if (selectedAncienneEntite !== 'all') return a.zone === ENTITE_TO_ZONE[selectedAncienneEntite];
+                          if (selectedAncienneEntite !== 'all') return agencyEntiteMap[a.id] === selectedAncienneEntite;
                           return true;
                         })
                         .map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
@@ -912,6 +963,7 @@ export default function OrgChart() {
                       serviceOrder={serviceOrder}
                       onServiceReorder={handleServiceReorder}
                       sideCards={orphanLeaves}
+                      visibleIds={searchMatchIds}
                     />
                   </div>
                 ) : rootsWithChildren.length > 1 ? (
@@ -936,6 +988,7 @@ export default function OrgChart() {
                         serviceOrder={serviceOrder}
                         onServiceReorder={handleServiceReorder}
                         sideCards={i === 0 ? orphanLeaves : []}
+                        visibleIds={searchMatchIds}
                       />
                     ))}
                   </div>
@@ -957,6 +1010,7 @@ export default function OrgChart() {
                         colorMode={colorMode}
                         showAnomalies={showAnomalies}
                         depthColors={depthColors}
+                        visibleIds={searchMatchIds}
                       />
                     ))}
                   </div>
