@@ -24,10 +24,18 @@ export default function Users() {
   const { toast } = useToast();
 
   const loadUsers = () => {
-    base44.entities.User.list().then((u) => {
-      setUsers(u);
-      setLoading(false);
-    });
+    base44.entities.User.list()
+      .then((u) => {
+        setUsers(u);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        const msg = err?.status === 403
+          ? 'Vous n\'avez pas les permissions pour voir les utilisateurs.'
+          : 'Impossible de charger les utilisateurs.';
+        toast({ title: 'Erreur', description: msg, variant: 'destructive', duration: 4000 });
+      });
   };
 
   useEffect(() => { loadUsers(); }, []);
