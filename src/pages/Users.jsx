@@ -24,17 +24,14 @@ export default function Users() {
   const { toast } = useToast();
 
   const loadUsers = () => {
-    base44.entities.User.list()
-      .then((u) => {
-        setUsers(u);
+    base44.functions.invoke('getUsers', {})
+      .then((res) => {
+        setUsers(res.data?.users || []);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(() => {
         setLoading(false);
-        const msg = err?.status === 403
-          ? 'Vous n\'avez pas les permissions pour voir les utilisateurs.'
-          : 'Impossible de charger les utilisateurs.';
-        toast({ title: 'Erreur', description: msg, variant: 'destructive', duration: 4000 });
+        toast({ title: 'Erreur', description: 'Impossible de charger les utilisateurs.', variant: 'destructive', duration: 4000 });
       });
   };
 
@@ -44,7 +41,7 @@ export default function Users() {
     if (user.role === newRole) return;
     setUpdating(user.id);
     try {
-      await base44.entities.User.update(user.id, { role: newRole });
+      await base44.functions.invoke('updateUser', { userId: user.id, data: { role: newRole } });
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u));
       await logAuditAction({
         action: 'role_change',
@@ -67,7 +64,7 @@ export default function Users() {
       ? current.filter((id) => id !== companyId)
       : [...current, companyId];
     try {
-      await base44.entities.User.update(user.id, { accessible_company_ids: next });
+      await base44.functions.invoke('updateUser', { userId: user.id, data: { accessible_company_ids: next } });
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, accessible_company_ids: next } : u));
       const companyName = companies.find(c => c.id === companyId)?.name || companyId;
       await logAuditAction({
@@ -87,7 +84,7 @@ export default function Users() {
   const setAllCompanies = async (user) => {
     setUpdating(user.id);
     try {
-      await base44.entities.User.update(user.id, { accessible_company_ids: [] });
+      await base44.functions.invoke('updateUser', { userId: user.id, data: { accessible_company_ids: [] } });
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, accessible_company_ids: [] } : u));
       await logAuditAction({
         action: 'access_change',
