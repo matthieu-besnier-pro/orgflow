@@ -25,51 +25,19 @@ import ShareChartPanel from '@/components/ShareChartPanel';
 import AccessRequestButton from '@/components/AccessRequestButton';
 import { logAuditAction } from '@/lib/auditLog';
 import { Tags, Share2 } from 'lucide-react';
+import { getAncienneEntite } from '@/lib/ancienneEntite';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
-// Anciennes entités : mapping ville → entité
-const ANCIENNE_ENTITE_MAP = {
-  'Sauze': 'GONNIN',
-  'Naintré': 'GONNIN',
-  'Chasseneuil': 'GONNIN',
-  'La Ferrière': 'GONNIN',
-  'Melle': 'QUITTE',
-  'Niort': 'QUITTE',
-  'Chatillon': 'QUITTE',
-  'Vasles': 'QUITTE',
-  'Luçay': 'DURIS',
-  'Saint Maur': 'DURIS',
-  'Issoudun': 'DURIS',
-  'Noyers': 'DURIS',
-  'PY Pneus': 'DURIS',
-  'Arnac': 'DBS',
-  'Arnac la Poste': 'DBS',
-  'Rivarennes': 'DBS',
-  'Béthines': 'DBS',
-};
-
 const ANCIENNES_ENTITES = ['GONNIN', 'QUITTE', 'DURIS', 'DBS'];
 
-// Mapping ancienne entité → zone géographique
+// Mapping ancienne entité → zone géographique (fallback statique — remplacé par entiteToZone dynamique)
 const ENTITE_TO_ZONE = {
   'GONNIN': 'Zone Ouest',
   'QUITTE': 'Zone Ouest',
   'DURIS': 'Zone Centre',
   'DBS': 'Zone Centre',
 };
-
-function getAncienneEntite(agency) {
-  if (!agency) return null;
-  const city = agency.city || '';
-  const name = agency.name || '';
-  for (const [key, entite] of Object.entries(ANCIENNE_ENTITE_MAP)) {
-    if (city.toLowerCase().includes(key.toLowerCase()) || name.toLowerCase().includes(key.toLowerCase())) {
-      return entite;
-    }
-  }
-  return null;
-}
 
 function buildChildrenMap(pool) {
   const poolIds = new Set(pool.map(e => e.id));

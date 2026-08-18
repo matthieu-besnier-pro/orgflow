@@ -4,6 +4,7 @@ import { ZoomIn, ZoomOut, Maximize, Search, X, ChevronUp, ChevronDown } from 'lu
 import OrgTreeNode from '@/components/OrgTreeNode';
 import PublicEmployeeModal from '@/components/PublicEmployeeModal';
 import usePanDrag from '@/hooks/usePanDrag';
+import { buildAgencyEntiteMap, buildEntiteToZone } from '@/lib/ancienneEntite';
 
 function buildChildrenMap(pool) {
   const ids = new Set(pool.map(e => e.id));
@@ -93,33 +94,46 @@ export default function PublicChart() {
   })();
   const agencies = data.agencies || [];
 
-  // Filtrage par zone / agence / ancienne entité (+ ancêtres pour préserver l'arbre)
+  // Mapping dynamique entité → zone (basé sur les agences et collaborateurs)
+  const agencyEntiteMap = buildAgencyEntiteMap(agencies);
+  const entiteToZone = buildEntiteToZone(agencies, data.employees);
+
+  // Filtrage par zone / agence / ancienne entité (+ supports groupe + ancêtres)
+  // Hiérarchie : Zone → Ancienne entité → Agence → Collaborateurs
+  // Les supports groupe sont toujours inclus mais grisés (hors directIds)
   const hasFilters = filterZone || filterAgency || filterAncienneEntite;
-  const filterMatchIds = hasFilters ? new Set(data.employees.filter(e => {
-    if (filterZone && e.zone !== filterZone) return false;
-    if (filterAgency && e.agency_id !== filterAgency) return false;
-    if (filterAncienneEntite && e.ancienne_entite !== filterAncienneEntite) return false;
-    return true;
-  }).map(e => e.id)) : null;
-  const filteredEmployees = (() => {
-    if (!hasFilters) return data.employees;
+  const { filteredEmployees, filterMatchIds } = (() => {
+    if (!hasFilters) return { filteredEmployees: data.employees, filterMatchIds: null };
     const empById = {};
     data.employees.forEach(e => { empById[e.id] = e; });
-    const matching = data.employees.filter(e => {
-      if (filterZone && e.zone !== filterZone) return false;
-      if (filterAgency && e.agency_id !== filterAgency) return false;
-      if (filterAncienneEntite && e.ancienne_entite !== filterAncienneEntite) return false;
-      return true;
-    });
-    const result = new Set(matching.map(e => e.id));
-    matching.forEach(e => {
+    let matching;
+    if (filterAgency) {
+      matching = data.employees.filter(e => e.agency_id === filterAgency);
+    } else if (filterAncienneEntite) {
+      const entiteAgencyIds = new Set(agencies.filter(a => agencyEntiteMap[a.id] === filterAncienneEntite).map(a => a.id));
+      matching = data.employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.ancienne_entite === filterAncienneEntite);
+    } else if (filterZone) {
+      const zoneAgencyIds = new Set(agencies.filter(a => a.zone === filterZone).map(a => a.id));
+      agencies.forEach(a => {
+        const entite = agencyEntiteMap[a.id];
+        if (entite && entiteToZone[entite] === filterZone) zoneAgencyIds.add(a.id);
+      });
+      matching = data.employees.filter(e => zoneAgencyIds.has(e.agency_id) || e.zone === filterZone || (e.ancienne_entite && entiteToZone[e.ancienne_entite] === filterZone));
+    }
+    const directIds = new Set(matching.map(e => e.id));
+    // Supports groupe : toujours inclus mais grisés (hors directIds)
+    const groupSupport = data.employees.filter(e => e.is_group_support && !directIds.has(e.id));
+    const base = [...matching, ...groupSupport];
+    // Ajouter les ancêtres pour préserver l'arbre
+    const resultIds = new Set(base.map(e => e.id));
+    base.forEach(e => {
       let cur = empById[e.id];
       while (cur?.manager_id && empById[cur.manager_id]) {
-        result.add(cur.manager_id);
+        resultIds.add(cur.manager_id);
         cur = empById[cur.manager_id];
       }
     });
-    return data.employees.filter(e => result.has(e.id));
+    return { filteredEmployees: data.employees.filter(e => resultIds.has(e.id)), filterMatchIds: directIds };
   })();
 
   const childrenMap = buildChildrenMap(filteredEmployees);
