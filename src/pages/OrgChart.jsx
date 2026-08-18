@@ -313,26 +313,44 @@ export default function OrgChart() {
   const companyAnciennesEntites = selectedCompany?.anciennes_entites || [];
 
   // Build pool from zone/agency/ancienne entité filters
-  const { baseFiltered, pool } = useMemo(() => {
+  // directMatchIds = collaborateurs correspondant directement au filtre (sans supports groupe)
+  // → utilisés pour griser les supports groupe et les managers hors périmètre
+  const { baseFiltered, pool, directMatchIds } = useMemo(() => {
     let base;
+    let directIds = null;
     if (selectedZone === 'Support Groupe') {
       base = employees.filter(e => e.is_group_support);
+      directIds = new Set(base.map(e => e.id));
     } else if (selectedAgency !== 'all') {
-      base = employees.filter(e => e.agency_id === selectedAgency || e.is_group_support);
+      const matching = employees.filter(e => e.agency_id === selectedAgency);
+      directIds = new Set(matching.map(e => e.id));
+      const groupSupport = employees.filter(e => e.is_group_support && !directIds.has(e.id));
+      base = [...matching, ...groupSupport];
     } else if (selectedAncienneEntite !== 'all') {
       const entiteAgencyIds = new Set(
         agencies.filter(a => agencyEntiteMap[a.id] === selectedAncienneEntite).map(a => a.id)
       );
-      base = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.ancienne_entite === selectedAncienneEntite || e.is_group_support);
+      const matching = employees.filter(e => entiteAgencyIds.has(e.agency_id) || e.ancienne_entite === selectedAncienneEntite);
+      directIds = new Set(matching.map(e => e.id));
+      const groupSupport = employees.filter(e => e.is_group_support && !directIds.has(e.id));
+      base = [...matching, ...groupSupport];
     } else if (selectedZone !== 'all') {
-      const ids = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
-      base = employees.filter(e => ids.has(e.agency_id) || e.zone === selectedZone || e.is_group_support);
+      // Inclure les agences de la zone directement + celles dont l'entité appartient à la zone
+      const zoneAgencyIds = new Set(agencies.filter(a => a.zone === selectedZone).map(a => a.id));
+      agencies.forEach(a => {
+        const entite = agencyEntiteMap[a.id];
+        if (entite && entiteToZone[entite] === selectedZone) zoneAgencyIds.add(a.id);
+      });
+      const matching = employees.filter(e => zoneAgencyIds.has(e.agency_id) || e.zone === selectedZone || (e.ancienne_entite && entiteToZone[e.ancienne_entite] === selectedZone));
+      directIds = new Set(matching.map(e => e.id));
+      const groupSupport = employees.filter(e => e.is_group_support && !directIds.has(e.id));
+      base = [...matching, ...groupSupport];
     } else {
-      return { baseFiltered: employees, pool: employees };
+      return { baseFiltered: employees, pool: employees, directMatchIds: null };
     }
     const withAncestors = addAncestors(base.map(e => e.id), empById);
-    return { baseFiltered: base, pool: employees.filter(e => withAncestors.has(e.id)) };
-  }, [employees, agencies, agencyEntiteMap, empById, selectedZone, selectedAgency, selectedAncienneEntite]);
+    return { baseFiltered: base, pool: employees.filter(e => withAncestors.has(e.id)), directMatchIds: directIds };
+  }, [employees, agencies, agencyEntiteMap, entiteToZone, empById, selectedZone, selectedAgency, selectedAncienneEntite]);
 
   const baseChildrenMap = useMemo(() => {
     const poolIds = new Set(pool.map(e => e.id));
@@ -964,6 +982,7 @@ export default function OrgChart() {
                       onServiceReorder={handleServiceReorder}
                       sideCards={orphanLeaves}
                       visibleIds={searchMatchIds}
+                      filterMatchIds={directMatchIds}
                     />
                   </div>
                 ) : rootsWithChildren.length > 1 ? (
@@ -989,6 +1008,7 @@ export default function OrgChart() {
                         onServiceReorder={handleServiceReorder}
                         sideCards={i === 0 ? orphanLeaves : []}
                         visibleIds={searchMatchIds}
+                        filterMatchIds={directMatchIds}
                       />
                     ))}
                   </div>
@@ -1011,6 +1031,7 @@ export default function OrgChart() {
                         showAnomalies={showAnomalies}
                         depthColors={depthColors}
                         visibleIds={searchMatchIds}
+                        filterMatchIds={directMatchIds}
                       />
                     ))}
                   </div>
