@@ -100,4 +100,16 @@ export async function processPhoto(file, size = TARGET_SIZE) {
   }
 }
 
+/**
+ * Récupère une photo existante depuis son URL, la retraite (recadrage 500×500
+ * centré sur le visage) et retourne un nouveau File JPEG optimisé.
+ */
+export async function processPhotoFromUrl(url, size = TARGET_SIZE) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Photo introuvable');
+  const blob = await response.blob();
+  const file = new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' });
+  return processPhoto(file, size);
+}
+
 export const SUPPORTED_PHOTO_EXTENSIONS = '.jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.gif,.bmp,.tiff,.tif';

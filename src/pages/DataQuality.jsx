@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { AlertTriangle, Merge, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Merge, ShieldCheck, Camera } from 'lucide-react';
 import { useCompany } from '@/lib/CompanyContext';
 import AccessRequestButton from '@/components/AccessRequestButton';
 import AnomalyList from '@/components/AnomalyList';
 import ServiceMergePanel from '@/components/ServiceMergePanel';
+import PhotoNormalizationPanel from '@/components/PhotoNormalizationPanel';
 
 export default function DataQuality() {
   const [employees, setEmployees] = useState([]);
@@ -62,12 +63,18 @@ export default function DataQuality() {
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'services' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'}`}>
           <Merge className="w-4 h-4" /> Harmonisation des services
         </button>
+        <button onClick={() => setTab('photos')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'photos' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'}`}>
+          <Camera className="w-4 h-4" /> Photos
+        </button>
       </div>
 
       {tab === 'anomalies' ? (
         <AnomalyList employees={employees} agencies={agencies} onChanged={load} />
-      ) : (
+      ) : tab === 'services' ? (
         <ServiceMergePanel employees={employees} onChanged={load} />
+      ) : (
+        <PhotoNormalizationPanel employees={employees} onChanged={load} />
       )}
     </div>
   );

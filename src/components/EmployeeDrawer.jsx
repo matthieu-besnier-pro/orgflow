@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Mail, Phone, Building2, User, Camera, Save, Trash2, Search, Trash, Plus } from 'lucide-react';
+import { X, Mail, Phone, Building2, User, Camera, Save, Trash2, Search, Trash, Plus, Wand2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,13 +8,14 @@ import AssignmentSelector, { getAssignmentLabel } from '@/components/AssignmentS
 import ServiceCombobox from '@/components/ServiceCombobox';
 import { useCompany } from '@/lib/CompanyContext';
 import { logAuditAction } from '@/lib/auditLog';
-import { processPhoto } from '@/lib/imageProcessing';
+import { processPhoto, processPhotoFromUrl } from '@/lib/imageProcessing';
 
 export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR, onClose, onSave, onDelete }) {
   const { services: SERVICES, statuses: STATUSES } = useCompany();
   const [form, setForm] = useState({ ...employee });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
   const fileRef = useRef();
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
 
@@ -30,6 +31,17 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
       set('photo_url', file_url);
     } catch { /* erreur de traitement */ }
     setUploading(false);
+  };
+
+  const handleOptimizePhoto = async () => {
+    if (!form.photo_url) return;
+    setOptimizing(true);
+    try {
+      const processed = await processPhotoFromUrl(form.photo_url);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: processed });
+      set('photo_url', file_url);
+    } catch { /* erreur de traitement */ }
+    setOptimizing(false);
   };
 
   const handleSave = async () => {
@@ -109,6 +121,16 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*,.heic,.heif,.avif" className="hidden" onChange={handlePhotoUpload} />
+            {isHR && form.photo_url && (
+              <button
+                onClick={handleOptimizePhoto}
+                disabled={optimizing || uploading}
+                className="text-xs text-primary hover:underline flex items-center gap-1 disabled:opacity-50"
+              >
+                {optimizing ? <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                {optimizing ? 'Optimisation…' : 'Optimiser (500×500)'}
+              </button>
+            )}
             {!isHR && (
               <div className="text-center">
                 <p className="font-heading font-semibold text-foreground text-lg">{employee.first_name} {employee.last_name}</p>
