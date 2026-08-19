@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { AlertTriangle, Merge, ShieldCheck, Camera } from 'lucide-react';
+import { AlertTriangle, Merge, ShieldCheck, Camera, RefreshCw } from 'lucide-react';
 import { useCompany } from '@/lib/CompanyContext';
 import AccessRequestButton from '@/components/AccessRequestButton';
 import AnomalyList from '@/components/AnomalyList';
@@ -11,19 +11,28 @@ export default function DataQuality() {
   const [employees, setEmployees] = useState([]);
   const [agencies, setAgencies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [tab, setTab] = useState('anomalies');
   const { selectedCompanyId, loading: companyLoading } = useCompany();
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!selectedCompanyId) return;
     setLoading(true);
+    setError(null);
     Promise.all([
       base44.entities.Employee.filter({ company_id: selectedCompanyId }),
       base44.entities.Agency.filter({ company_id: selectedCompanyId }),
-    ]).then(([emps, ags]) => { setEmployees(emps); setAgencies(ags); setLoading(false); });
-  };
+    ]).then(([emps, ags]) => {
+      setEmployees(emps);
+      setAgencies(ags);
+      setLoading(false);
+    }).catch((err) => {
+      setError(err?.message || 'Erreur de chargement');
+      setLoading(false);
+    });
+  }, [selectedCompanyId]);
 
-  useEffect(load, [selectedCompanyId]);
+  useEffect(() => { load(); }, [load]);
 
   if (companyLoading) return (
     <div className="flex items-center justify-center h-full">
@@ -43,6 +52,21 @@ export default function DataQuality() {
   if (loading) return (
     <div className="flex items-center justify-center h-full">
       <div className="w-8 h-8 border-4 border-lavender border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
+      <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+        <AlertTriangle className="w-6 h-6 text-destructive" />
+      </div>
+      <div>
+        <p className="font-medium text-foreground">Impossible de charger les données</p>
+        <p className="text-sm text-muted-foreground mt-1">{error}</p>
+      </div>
+      <button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90">
+        <RefreshCw className="w-4 h-4" /> Réessayer
+      </button>
     </div>
   );
 
