@@ -20,7 +20,7 @@ export default function EmployeeCard({ employee, compact = false, onClick, onDel
       >
         <div className="relative flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-10 h-10 rounded-full object-cover" />
+            <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-10 h-10 rounded-full object-cover" />
           ) : (
             <div className="w-10 h-10 rounded-full bg-lavender flex items-center justify-center">
               <span className="text-xs font-semibold text-primary">{initials}</span>
@@ -45,7 +45,7 @@ export default function EmployeeCard({ employee, compact = false, onClick, onDel
       <div className="flex items-start gap-4">
         <div className="relative flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-2xl object-cover" />
+            <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-2xl object-cover" />
           ) : (
             <div className="w-16 h-16 rounded-2xl bg-lavender flex items-center justify-center">
               <span className="text-xl font-bold text-primary">{initials}</span>

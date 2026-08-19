@@ -300,14 +300,14 @@ export default function Chatbot() {
               multiple
               className="hidden"
               onChange={handleFileSelect}
-              accept=".xlsx,.xls,.csv,.png,.jpg,.jpeg,.pdf,.docx"
+              accept=".xlsx,.xls,.csv,.json,.txt,.xml,.html,.png,.jpg,.jpeg,.webp,.heic,.heif,.avif,.gif,.bmp,.pdf,.docx,.doc,.pptx,.ods,.odt"
             />
             <Button
               variant="outline"
               className="h-11 w-11 p-0 rounded-xl flex-shrink-0"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading || sending}
-              title="Joindre un fichier (Excel, capture d'écran, PDF...)"
+              title="Joindre un fichier (Excel, CSV, photos HEIC/WEBP, PDF...)"
             >
               {uploading ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <Paperclip className="w-4 h-4" />}
             </Button>
@@ -330,7 +330,7 @@ export default function Chatbot() {
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">Entrée pour envoyer · Shift+Entrée pour nouvelle ligne · 📎 Joindre Excel, capture d'écran, PDF...</p>
+          <p className="text-xs text-muted-foreground mt-2 text-center">Entrée pour envoyer · Shift+Entrée pour nouvelle ligne · 📎 Joindre Excel, CSV, photos (HEIC/WEBP/AVIF), PDF...</p>
         </div>
       </div>
     </div>

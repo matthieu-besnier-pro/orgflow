@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import readDroppedFiles from '@/lib/readDroppedFiles';
+import { processPhoto } from '@/lib/imageProcessing';
 
-const PHOTO_EXTENSIONS = /\.(jpg|jpeg|png|webp|gif|bmp|heic)$/i;
+const PHOTO_EXTENSIONS = /\.(jpg|jpeg|png|webp|gif|bmp|heic|heif|avif|tiff?|tif)$/i;
 
 function normalize(str) {
   return (str || '')
@@ -194,7 +195,8 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
     let done = 0;
     for (const item of toImport) {
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: item.file });
+        const processed = await processPhoto(item.file);
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: processed });
         await base44.entities.Employee.update(item.matchedEmployee.id, { photo_url: file_url });
         item.uploaded = true;
         item.photo_url = file_url;
@@ -361,7 +363,7 @@ export default function BulkPhotoImport({ employees, onClose, onDone }) {
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.heic,.heif,.avif"
           multiple
           className="hidden"
           onChange={handleFiles}

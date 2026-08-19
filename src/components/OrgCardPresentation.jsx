@@ -43,7 +43,7 @@ export default function OrgCardPresentation({
 
       <div className="relative mb-2">
         {employee.photo_url ? (
-          <img src={employee.photo_url} alt={initials} className="w-14 h-14 rounded-md object-cover border-2 border-white/70 shadow-md pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
+          <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-14 h-14 rounded-md object-cover border-2 border-white/70 shadow-md pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
         ) : (
           <div className="w-14 h-14 rounded-md bg-white/20 flex items-center justify-center border-2 border-white/50 shadow-md">
             <span className="text-lg font-bold text-white">{initials}</span>

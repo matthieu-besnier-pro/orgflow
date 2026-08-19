@@ -77,7 +77,7 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
         {/* Avatar */}
         <div className="relative mb-2">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-12 h-12 rounded-full object-cover border-2 border-white/80 shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
+            <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-12 h-12 rounded-full object-cover border-2 border-white/80 shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
           ) : (
             <div className="w-12 h-12 rounded-full bg-white/25 flex items-center justify-center border-2 border-white/60 shadow">
               <span className="text-base font-bold text-white">{initials}</span>
@@ -135,7 +135,7 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         )}
         <div className="relative flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
+            <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
           ) : (
             <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-white shadow" style={{ backgroundColor: svc.light }}>
               <span className="text-base font-bold" style={{ color: svc.bg }}>{initials}</span>
@@ -188,7 +188,7 @@ function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         )}
         <div className="relative flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-8 h-8 rounded-full object-cover pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.5] hover:z-50" />
+            <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-8 h-8 rounded-full object-cover pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.5] hover:z-50" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-lavender flex items-center justify-center">
               <span className="text-xs font-bold text-primary">{initials}</span>

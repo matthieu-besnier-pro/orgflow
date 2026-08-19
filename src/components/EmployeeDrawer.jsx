@@ -8,6 +8,7 @@ import AssignmentSelector, { getAssignmentLabel } from '@/components/AssignmentS
 import ServiceCombobox from '@/components/ServiceCombobox';
 import { useCompany } from '@/lib/CompanyContext';
 import { logAuditAction } from '@/lib/auditLog';
+import { processPhoto } from '@/lib/imageProcessing';
 
 export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR, onClose, onSave, onDelete }) {
   const { services: SERVICES, statuses: STATUSES } = useCompany();
@@ -23,8 +24,11 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    set('photo_url', file_url);
+    try {
+      const processed = await processPhoto(file);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: processed });
+      set('photo_url', file_url);
+    } catch { /* erreur de traitement */ }
     setUploading(false);
   };
 
@@ -104,7 +108,7 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
                 </>
               )}
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            <input ref={fileRef} type="file" accept="image/*,.heic,.heif,.avif" className="hidden" onChange={handlePhotoUpload} />
             {!isHR && (
               <div className="text-center">
                 <p className="font-heading font-semibold text-foreground text-lg">{employee.first_name} {employee.last_name}</p>

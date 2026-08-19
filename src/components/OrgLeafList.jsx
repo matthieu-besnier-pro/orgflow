@@ -39,7 +39,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
       )}
       <div className="relative flex-shrink-0">
         {employee.photo_url ? (
-          <img src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
+          <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
         ) : (
           <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-white shadow" style={{ backgroundColor: svc.light }}>
             <span className="text-base font-bold" style={{ color: svc.bg }}>{initials}</span>

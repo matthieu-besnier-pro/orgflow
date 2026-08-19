@@ -26,6 +26,7 @@ import AccessRequestButton from '@/components/AccessRequestButton';
 import { logAuditAction } from '@/lib/auditLog';
 import { Tags, Share2 } from 'lucide-react';
 import { getAncienneEntite } from '@/lib/ancienneEntite';
+import { processPhoto } from '@/lib/imageProcessing';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
@@ -181,8 +182,6 @@ export default function OrgChart() {
         setEmployees(prev => prev.some(e => e.id === id) ? prev : [...prev, data]);
       } else if (type === 'update' && data) {
         setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...data } : e));
-      } else {
-        base44.entities.Employee.filter({ company_id: selectedCompanyId }).then(setEmployees);
       }
     });
     return unsubscribe;
@@ -404,12 +403,13 @@ export default function OrgChart() {
   const handleDrop = useCallback(async (e, targetEmployee) => {
     // Dépôt d'un fichier image depuis l'ordinateur → mise à jour de la photo
     const droppedFiles = await readDroppedFiles(e.dataTransfer);
-    const image = droppedFiles.find(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i.test(f.name));
+    const image = droppedFiles.find(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?|tif)$/i.test(f.name));
     if (image) {
       draggedId.current = null;
-      toast({ title: 'Envoi de la photo…', duration: 2000 });
+      toast({ title: 'Traitement de la photo…', duration: 2000 });
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: image });
+        const processed = await processPhoto(image);
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: processed });
         await base44.entities.Employee.update(targetEmployee.id, { photo_url: file_url });
         setEmployees(prev => prev.map(emp => emp.id === targetEmployee.id ? { ...emp, photo_url: file_url } : emp));
         pushAction({ type: 'photo', employeeId: targetEmployee.id, oldPhotoUrl: targetEmployee.photo_url || null, newPhotoUrl: file_url });

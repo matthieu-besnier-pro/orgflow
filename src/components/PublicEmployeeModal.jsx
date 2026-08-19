@@ -45,7 +45,7 @@ export default function PublicEmployeeModal({ employee, employees, agencies = []
           <div className="flex items-center gap-4">
             <div className="relative flex-shrink-0">
               {employee.photo_url ? (
-                <img src={employee.photo_url} alt={initials} className="w-20 h-20 rounded-2xl object-cover border-2 border-white/80 shadow-lg" />
+                <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-20 h-20 rounded-2xl object-cover border-2 border-white/80 shadow-lg" />
               ) : (
                 <div className="w-20 h-20 rounded-2xl bg-white/25 flex items-center justify-center border-2 border-white/60 shadow-lg">
                   <span className="text-2xl font-bold text-white">{initials}</span>

@@ -72,7 +72,7 @@ function StickyCard({ employee, agencyName, onSelect, searchTerm, isManager = fa
       <div className="flex items-center gap-1.5">
         <div className="relative flex-shrink-0">
           {employee.photo_url ? (
-            <img src={employee.photo_url} alt={initials} className="w-7 h-7 rounded-full object-cover border border-border" />
+            <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-7 h-7 rounded-full object-cover border border-border" />
           ) : (
             <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isManager ? 'bg-slate-500' : 'bg-lavender'}`}>
               <span className={`text-[9px] font-bold ${isManager ? 'text-white' : 'text-primary'}`}>{initials}</span>

@@ -12,7 +12,7 @@ function Avatar({ employee }) {
   return (
     <div className="relative flex-shrink-0">
       {employee.photo_url ? (
-        <img src={employee.photo_url} alt={initials} className="w-6 h-6 rounded-full object-cover" />
+        <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-6 h-6 rounded-full object-cover" />
       ) : (
         <div className="w-6 h-6 rounded-full bg-slate-300 text-[9px] font-bold text-slate-700 flex items-center justify-center">
           {initials}
