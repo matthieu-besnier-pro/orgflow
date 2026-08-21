@@ -60,9 +60,15 @@ export default function Users() {
   const toggleCompany = async (user, companyId) => {
     setUpdating(user.id);
     const current = user.accessible_company_ids || [];
-    const next = current.includes(companyId)
-      ? current.filter((id) => id !== companyId)
-      : [...current, companyId];
+    let next;
+    if (current.length === 0) {
+      // Super admin (toutes les sociétés) → passage en liste explicite avec toutes sauf celle cliquée
+      next = companies.map(c => c.id).filter(id => id !== companyId);
+    } else {
+      next = current.includes(companyId)
+        ? current.filter((id) => id !== companyId)
+        : [...current, companyId];
+    }
     try {
       await base44.functions.invoke('updateUser', { userId: user.id, data: { accessible_company_ids: next } });
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, accessible_company_ids: next } : u));
@@ -206,7 +212,7 @@ export default function Users() {
                     {/* Company access */}
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5 max-w-md">
-                        {isSuperAdmin ? (
+                        {user.role === 'admin' ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary text-white">
                             <Check className="w-3 h-3" />
                             Toutes les sociétés (super admin)
@@ -216,7 +222,7 @@ export default function Users() {
                         ) : (
                           <>
                             {companies.map((c) => {
-                              const has = access.includes(c.id);
+                              const has = isSuperAdmin || access.includes(c.id);
                               return (
                                 <button
                                   key={c.id}
