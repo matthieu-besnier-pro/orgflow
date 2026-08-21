@@ -4,6 +4,7 @@ import { Plus, Building2, MapPin, Phone, Mail, Pencil, Trash2, Users, Layers } f
 import AddAgencyModal from '@/components/AddAgencyModal';
 import { useToast } from '@/components/ui/use-toast';
 import { useCompany } from '@/lib/CompanyContext';
+import { getAncienneEntite } from '@/lib/ancienneEntite';
 import AccessRequestButton from '@/components/AccessRequestButton';
 
 const ZONE_COLORS = {
@@ -52,18 +53,6 @@ const ENTITE_BADGE = {
   'DBS': 'bg-purple-100 text-purple-700',
 };
 
-function getAncienneEntite(agency) {
-  if (!agency) return null;
-  const city = (agency.city || '').toLowerCase();
-  const name = (agency.name || '').toLowerCase();
-  for (const [key, entite] of Object.entries(ANCIENNE_ENTITE_MAP)) {
-    if (city.includes(key.toLowerCase()) || name.includes(key.toLowerCase())) {
-      return entite;
-    }
-  }
-  return null;
-}
-
 export default function Agencies() {
   const [agencies, setAgencies] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -71,7 +60,7 @@ export default function Agencies() {
   const [showModal, setShowModal] = useState(false);
   const [editingAgency, setEditingAgency] = useState(null);
   const { toast } = useToast();
-  const { selectedCompanyId, loading: companyLoading } = useCompany();
+  const { selectedCompanyId, selectedCompany, loading: companyLoading } = useCompany();
 
   useEffect(() => {
     loadData();
@@ -124,19 +113,20 @@ export default function Agencies() {
     }
   };
 
+  const companyEntites = selectedCompany?.anciennes_entites || [];
   const countEmployees = (id) => employees.filter(e => e.agency_id === id).length;
   const countEntityEmployees = (entite) => {
-    const agencyIds = new Set(agencies.filter(a => getAncienneEntite(a) === entite).map(a => a.id));
+    const agencyIds = new Set(agencies.filter(a => getAncienneEntite(a, companyEntites) === entite).map(a => a.id));
     return employees.filter(e =>
       (e.agency_id && agencyIds.has(e.agency_id)) || e.ancienne_entite === entite
     ).length;
   };
 
-  // Group agencies by old entity
+  // Group agencies by old entity (filtré par les entités de la société courante)
   const grouped = {};
   const ungrouped = [];
   agencies.forEach(a => {
-    const entite = getAncienneEntite(a);
+    const entite = getAncienneEntite(a, companyEntites);
     if (entite) {
       if (!grouped[entite]) grouped[entite] = [];
       grouped[entite].push(a);
@@ -224,17 +214,17 @@ export default function Agencies() {
 
       {/* Grid grouped by old entity */}
       <div className="flex-1 overflow-auto p-6 space-y-6">
-        {ANCIENNES_ENTITES.filter(e => grouped[e]?.length > 0).map(entite => (
+        {companyEntites.filter(e => grouped[e]?.length > 0).map(entite => (
           <div key={entite}>
             <div className="flex items-center gap-2 mb-3">
               <Layers className="w-4 h-4 text-muted-foreground" />
               <h2 className="font-heading font-semibold text-foreground text-sm">{entite}</h2>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${ENTITE_BADGE[entite]}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${ENTITE_BADGE[entite] || 'bg-secondary text-muted-foreground'}`}>
                 {grouped[entite].length} agence(s) · {countEntityEmployees(entite)} collab.
               </span>
               <div className="flex-1 h-px bg-border ml-2" />
             </div>
-            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 rounded-2xl border ${ENTITE_COLORS[entite]}`}>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 rounded-2xl border ${ENTITE_COLORS[entite] || 'bg-secondary/30 border-border'}`}>
               {grouped[entite].map(renderCard)}
             </div>
           </div>

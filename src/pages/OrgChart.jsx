@@ -259,25 +259,25 @@ export default function OrgChart() {
 
   const fullChildrenMap = useMemo(() => buildChildrenMap(employees), [employees]);
 
+  const companyAnciennesEntites = selectedCompany?.anciennes_entites || [];
+
   const agencyEntiteMap = useMemo(() => {
     const map = {};
-    agencies.forEach(a => { map[a.id] = getAncienneEntite(a); });
+    agencies.forEach(a => { map[a.id] = getAncienneEntite(a, companyAnciennesEntites); });
     return map;
-  }, [agencies]);
+  }, [agencies, companyAnciennesEntites]);
 
   const entiteToZone = useMemo(() => {
     const map = {};
     agencies.forEach(a => {
-      const entite = getAncienneEntite(a);
+      const entite = getAncienneEntite(a, companyAnciennesEntites);
       if (entite && a.zone) map[entite] = a.zone;
     });
     employees.forEach(e => {
       if (e.ancienne_entite && e.zone) map[e.ancienne_entite] = e.zone;
     });
     return map;
-  }, [agencies, employees]);
-
-  const companyAnciennesEntites = selectedCompany?.anciennes_entites || [];
+  }, [agencies, employees, companyAnciennesEntites]);
 
   // Build pool from zone/agency/ancienne entité filters
   // directMatchIds = collaborateurs correspondant directement au filtre (sans supports groupe)

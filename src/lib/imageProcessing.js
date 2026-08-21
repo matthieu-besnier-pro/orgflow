@@ -47,9 +47,43 @@ async function detectFaceCenter(img) {
   return null;
 }
 
+// Fallback : centre de masse des pixels non-fond pour les navigateurs sans
+// FaceDetector (Firefox, Safari) ou quand aucun visage n'est détecté.
+// Gère les photos excentrées ou en situation.
+async function detectSubjectCenter(img) {
+  const SAMPLE = 80;
+  const canvas = document.createElement('canvas');
+  canvas.width = SAMPLE;
+  canvas.height = SAMPLE;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, SAMPLE, SAMPLE);
+  const data = ctx.getImageData(0, 0, SAMPLE, SAMPLE).data;
+
+  // Échantillonner les 4 coins comme couleur de fond estimée
+  const corners = [[0, 0], [0, SAMPLE - 1], [SAMPLE - 1, 0], [SAMPLE - 1, SAMPLE - 1]];
+  let bgR = 0, bgG = 0, bgB = 0;
+  corners.forEach(([y, x]) => { const i = (y * SAMPLE + x) * 4; bgR += data[i]; bgG += data[i + 1]; bgB += data[i + 2]; });
+  bgR /= 4; bgG /= 4; bgB /= 4;
+
+  let sumX = 0, sumY = 0, count = 0;
+  for (let y = 0; y < SAMPLE; y++) {
+    for (let x = 0; x < SAMPLE; x++) {
+      const i = (y * SAMPLE + x) * 4;
+      const dist = Math.abs(data[i] - bgR) + Math.abs(data[i + 1] - bgG) + Math.abs(data[i + 2] - bgB);
+      if (dist > 40) { sumX += x; sumY += y; count++; }
+    }
+  }
+  if (count < SAMPLE) return null;
+  return {
+    x: (sumX / count) * (img.naturalWidth / SAMPLE),
+    y: (sumY / count) * (img.naturalHeight / SAMPLE),
+  };
+}
+
 /**
- * Traite une photo : conversion HEIC → JPEG, recadrage carré centré sur le visage,
- * redimensionnement à 500×500px. Retourne un File JPEG optimisé.
+ * Traite une photo : conversion HEIC → JPEG, recadrage carré centré sur la tête
+ * (largeur des épaules), redimensionnement à 500×500px. Retourne un File JPEG optimisé.
+ * Gère les photos de près, de loin et excentrées.
  */
 export async function processPhoto(file, size = TARGET_SIZE) {
   // 1. Convertir HEIC/HEIF si nécessaire
@@ -62,15 +96,22 @@ export async function processPhoto(file, size = TARGET_SIZE) {
   const url = img.src;
 
   try {
-    // 3. Détecter le visage pour le centrage
+    // 3. Détecter le visage (Chrome/Edge) ou le sujet (fallback universel)
     const face = await detectFaceCenter(img);
+    const subject = !face ? await detectSubjectCenter(img) : null;
 
     // 4. Calculer la zone de recadrage (carré)
     let cx, cy, cropSize;
     if (face) {
+      // Centrer sur la tête, croper à la largeur des épaules (≈ 3× la taille du visage)
       cx = face.x;
       cy = face.y;
-      cropSize = Math.min(iw, ih, face.faceSize * 2.5);
+      cropSize = Math.min(iw, ih, face.faceSize * 3);
+    } else if (subject) {
+      // Sujet détecté par centre de masse — centrer dessus
+      cx = subject.x;
+      cy = subject.y;
+      cropSize = Math.min(iw, ih);
     } else {
       cx = iw / 2;
       cy = ih / 2;

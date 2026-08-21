@@ -95,8 +95,9 @@ export default function PublicChart() {
   const agencies = data.agencies || [];
 
   // Mapping dynamique entité → zone (basé sur les agences et collaborateurs)
-  const agencyEntiteMap = buildAgencyEntiteMap(agencies);
-  const entiteToZone = buildEntiteToZone(agencies, data.employees);
+  const companyEntites = data.company?.anciennes_entites || null;
+  const agencyEntiteMap = buildAgencyEntiteMap(agencies, companyEntites);
+  const entiteToZone = buildEntiteToZone(agencies, data.employees, companyEntites);
 
   // Filtrage par zone / agence / ancienne entité (+ supports groupe + ancêtres)
   // Hiérarchie : Zone → Ancienne entité → Agence → Collaborateurs

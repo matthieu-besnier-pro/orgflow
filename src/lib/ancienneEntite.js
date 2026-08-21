@@ -1,6 +1,9 @@
 // Mapping ville → ancienne entité (logique métier historique)
 const ANCIENNE_ENTITE_MAP = {
   'Sauze': 'GONNIN',
+  'Sauzé': 'GONNIN',
+  'Sauzé-Vaussais': 'GONNIN',
+  'Vaussais': 'GONNIN',
   'Naintré': 'GONNIN',
   'Chasseneuil': 'GONNIN',
   'La Ferrière': 'GONNIN',
@@ -19,28 +22,30 @@ const ANCIENNE_ENTITE_MAP = {
   'Béthines': 'DBS',
 };
 
-export function getAncienneEntite(agency) {
+export function getAncienneEntite(agency, validEntites = null) {
   if (!agency) return null;
   const city = agency.city || '';
   const name = agency.name || '';
   for (const [key, entite] of Object.entries(ANCIENNE_ENTITE_MAP)) {
     if (city.toLowerCase().includes(key.toLowerCase()) || name.toLowerCase().includes(key.toLowerCase())) {
+      // Ne retourner l'entité que si elle appartient à la société courante
+      if (validEntites && validEntites.length > 0 && !validEntites.includes(entite)) return null;
       return entite;
     }
   }
   return null;
 }
 
-export function buildAgencyEntiteMap(agencies) {
+export function buildAgencyEntiteMap(agencies, validEntites = null) {
   const map = {};
-  agencies.forEach(a => { map[a.id] = getAncienneEntite(a); });
+  agencies.forEach(a => { map[a.id] = getAncienneEntite(a, validEntites); });
   return map;
 }
 
-export function buildEntiteToZone(agencies, employees = []) {
+export function buildEntiteToZone(agencies, employees = [], validEntites = null) {
   const map = {};
   agencies.forEach(a => {
-    const entite = getAncienneEntite(a);
+    const entite = getAncienneEntite(a, validEntites);
     if (entite && a.zone) map[entite] = a.zone;
   });
   employees.forEach(e => {
