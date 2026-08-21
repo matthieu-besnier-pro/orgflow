@@ -6,6 +6,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import CompanySwitcher from '@/components/CompanySwitcher';
 import AccessRequestButton from '@/components/AccessRequestButton';
 import { useCompany } from '@/lib/CompanyContext';
+import { isActiveEmployee } from '@/lib/employeeStats';
 
 export default function Dashboard() {
   const [employees, setEmployees] = useState([]);
@@ -74,20 +75,21 @@ export default function Dashboard() {
     </div>
   );
 
-  const activeCount = employees.filter(e => e.status === 'Actif' || !e.status).length;
+  const activeEmployees = employees.filter(isActiveEmployee);
+  const activeCount = activeEmployees.length;
   const recruitingCount = employees.filter(e => e.status === 'En recrutement').length;
   const recentMovements = movements.slice(0, 5);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bonsoir' : 'Bonsoir';
 
-  const statsByService = employees.reduce((acc, e) => {
+  const statsByService = activeEmployees.reduce((acc, e) => {
     const s = e.service || 'Non défini';
     acc[s] = (acc[s] || 0) + 1;
     return acc;
   }, {});
   const topServices = Object.entries(statsByService).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  const statsByAgency = employees.reduce((acc, e) => {
+  const statsByAgency = activeEmployees.reduce((acc, e) => {
     const ag = agencies.find(a => a.id === e.agency_id);
     const name = ag ? ag.name : 'Support Groupe';
     acc[name] = (acc[name] || 0) + 1;
@@ -161,7 +163,7 @@ export default function Dashboard() {
                   <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min((count / employees.length) * 100 * 2, 100)}%` }}
+                      style={{ width: `${Math.min((count / activeCount) * 100 * 2, 100)}%` }}
                     />
                   </div>
                 </div>

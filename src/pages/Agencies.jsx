@@ -5,6 +5,7 @@ import AddAgencyModal from '@/components/AddAgencyModal';
 import { useToast } from '@/components/ui/use-toast';
 import { useCompany } from '@/lib/CompanyContext';
 import { getAncienneEntite } from '@/lib/ancienneEntite';
+import { isActiveEmployee } from '@/lib/employeeStats';
 import AccessRequestButton from '@/components/AccessRequestButton';
 
 const ZONE_COLORS = {
@@ -114,11 +115,11 @@ export default function Agencies() {
   };
 
   const companyEntites = selectedCompany?.anciennes_entites || [];
-  const countEmployees = (id) => employees.filter(e => e.agency_id === id).length;
+  const countEmployees = (id) => employees.filter(e => e.agency_id === id && isActiveEmployee(e)).length;
   const countEntityEmployees = (entite) => {
     const agencyIds = new Set(agencies.filter(a => getAncienneEntite(a, companyEntites) === entite).map(a => a.id));
     return employees.filter(e =>
-      (e.agency_id && agencyIds.has(e.agency_id)) || e.ancienne_entite === entite
+      isActiveEmployee(e) && ((e.agency_id && agencyIds.has(e.agency_id)) || e.ancienne_entite === entite)
     ).length;
   };
 

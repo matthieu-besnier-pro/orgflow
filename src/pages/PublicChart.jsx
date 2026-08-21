@@ -5,6 +5,7 @@ import OrgTreeNode from '@/components/OrgTreeNode';
 import PublicEmployeeModal from '@/components/PublicEmployeeModal';
 import usePanDrag from '@/hooks/usePanDrag';
 import { buildAgencyEntiteMap, buildEntiteToZone } from '@/lib/ancienneEntite';
+import { isActiveEmployee } from '@/lib/employeeStats';
 
 function buildChildrenMap(pool) {
   const ids = new Set(pool.map(e => e.id));
@@ -288,7 +289,7 @@ export default function PublicChart() {
           </button>
         )}
         <span className="text-xs text-muted-foreground ml-auto">
-          {filteredEmployees.length} / {data.employees.length} collaborateurs
+          {filteredEmployees.filter(isActiveEmployee).length} / {data.employees.filter(isActiveEmployee).length} collaborateurs actifs
         </span>
       </div>
 

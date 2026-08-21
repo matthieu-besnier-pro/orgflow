@@ -6,6 +6,7 @@ import { Building2, Plus, Pencil, Trash2, Users, MapPin, Layers, History, Networ
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import AddCompanyModal from '@/components/AddCompanyModal';
+import { isActiveEmployee } from '@/lib/employeeStats';
 
 export default function Companies() {
   const [companies, setCompanies] = useState([]);
@@ -31,7 +32,7 @@ export default function Companies() {
         const cEmps = emps.filter((e) => e.company_id === c.id);
         const director = cEmps.find((e) => !e.manager_id);
         s[c.id] = {
-          employees: cEmps.length,
+          employees: cEmps.filter(isActiveEmployee).length,
           agencies: ags.filter((a) => a.company_id === c.id).length,
           director: director ? `${director.first_name} ${director.last_name}` : null,
         };
