@@ -62,8 +62,8 @@ export default function Users() {
     const current = user.accessible_company_ids || [];
     let next;
     if (current.length === 0) {
-      // Super admin (toutes les sociétés) → passage en liste explicite avec toutes sauf celle cliquée
-      next = companies.map(c => c.id).filter(id => id !== companyId);
+      // Super admin (toutes les sociétés) → restreindre à cette seule société
+      next = [companyId];
     } else {
       next = current.includes(companyId)
         ? current.filter((id) => id !== companyId)
