@@ -18,6 +18,10 @@
       "type": "string",
       "title": "Poste"
     },
+    "position_constructeur": {
+      "type": "string",
+      "title": "Poste (intitul\u00e9 constructeur)"
+    },
     "service": {
       "type": "string",
       "title": "Service"

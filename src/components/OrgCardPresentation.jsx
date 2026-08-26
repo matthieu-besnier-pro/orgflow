@@ -1,4 +1,6 @@
 import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
+import { useViewMode } from '@/lib/ViewModeContext';
+import { getDisplayPosition } from '@/lib/displayPosition';
 
 const STATUS_DOT = {
   'Actif': 'bg-emerald-400',
@@ -13,6 +15,7 @@ export default function OrgCardPresentation({
   onDragStart, isDragOver, isHighlighted, color, anomalies = [],
 }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
+  const viewMode = useViewMode();
   const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
   const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
 
@@ -55,7 +58,7 @@ export default function OrgCardPresentation({
       <div className="text-center pointer-events-none w-full">
         <p className="text-[11px] font-bold text-white leading-tight truncate">{employee.first_name}</p>
         <p className="text-[11px] font-bold text-white leading-tight truncate uppercase">{employee.last_name}</p>
-        <p className="text-white/75 leading-tight mt-1 line-clamp-2" style={{ fontSize: '9px' }}>{employee.position}</p>
+        <p className="text-white/75 leading-tight mt-1 line-clamp-2" style={{ fontSize: '9px' }}>{getDisplayPosition(employee, viewMode)}</p>
       </div>
 
       {hasChildren && (

@@ -3,6 +3,8 @@ import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { getServiceColor } from '@/lib/serviceColors';
 import OrgCardPresentation from '@/components/OrgCardPresentation';
 import OrgLeafList from '@/components/OrgLeafList';
+import { useViewMode } from '@/lib/ViewModeContext';
+import { getDisplayPosition } from '@/lib/displayPosition';
 
 // Détection d'anomalies de données sur une fiche collaborateur
 export function getAnomalies(employee, depth) {
@@ -52,6 +54,7 @@ function getDepthColor(depth, palette) {
 function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, color, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const { bg, shadow } = color;
+  const viewMode = useViewMode();
   const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
   const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
 
@@ -92,7 +95,7 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
         </div>
         {/* Fonction */}
         <p className="text-white/70 leading-tight text-center pointer-events-none w-full mt-0.5 line-clamp-2" style={{ fontSize: '9px' }}>
-          {employee.position}
+          {getDisplayPosition(employee, viewMode)}
         </p>
         {/* Expand button */}
         {hasChildren && (
@@ -111,6 +114,7 @@ function CardClassique({ employee, onSelect, onFocus, hasChildren, expanded, onT
 function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const svc = getServiceColor(employee.service);
+  const viewMode = useViewMode();
   const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
   const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
 
@@ -146,7 +150,7 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         <div className="flex-1 pointer-events-none">
           <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.first_name}</p>
           <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.last_name}</p>
-          <p className="text-muted-foreground leading-snug max-w-[9rem] break-words" style={{ fontSize: '9px' }}>{employee.position}</p>
+          <p className="text-muted-foreground leading-snug max-w-[9rem] break-words" style={{ fontSize: '9px' }}>{getDisplayPosition(employee, viewMode)}</p>
         </div>
         {hasChildren && (
           <button
@@ -165,6 +169,7 @@ function CardModerne({ employee, onSelect, onFocus, hasChildren, expanded, onTog
 // ── Template: Compact ──────────────────────────────────────────────────────
 function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onToggle, onDragStart, isDragOver, isHighlighted, anomalies = [] }) {
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
+  const viewMode = useViewMode();
   const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
   const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
 
@@ -199,7 +204,7 @@ function CardCompact({ employee, onSelect, onFocus, hasChildren, expanded, onTog
         <div className="flex-1 min-w-0 pointer-events-none">
           <p className="text-xs font-semibold text-foreground leading-tight truncate">{employee.first_name}</p>
           <p className="text-xs font-semibold text-foreground leading-tight truncate">{employee.last_name}</p>
-          <p className="text-muted-foreground truncate" style={{ fontSize: '9px' }}>{employee.position}</p>
+          <p className="text-muted-foreground truncate" style={{ fontSize: '9px' }}>{getDisplayPosition(employee, viewMode)}</p>
         </div>
         {hasChildren && (
           <button

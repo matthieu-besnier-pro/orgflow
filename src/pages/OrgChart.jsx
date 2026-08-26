@@ -27,6 +27,7 @@ import { logAuditAction } from '@/lib/auditLog';
 import { Tags, Share2 } from 'lucide-react';
 import { getAncienneEntite } from '@/lib/ancienneEntite';
 import { processPhoto } from '@/lib/imageProcessing';
+import { ViewModeProvider } from '@/lib/ViewModeContext';
 
 const positionOrder = ['Directeur', 'Président', 'Responsable', 'Resp.', 'Manager', 'Chef', 'Commercial', 'Technicien', 'Magasinier'];
 
@@ -100,6 +101,7 @@ export default function OrgChart() {
   const [shareOpen, setShareOpen] = useState(false);
   const [scaledSize, setScaledSize] = useState(null);
   const [serviceSortMode, setServiceSortMode] = useState('count');
+  const [positionViewMode, setPositionViewMode] = useState('standard');
 
   // Filters
   const [searchInput, setSearchInput] = useState('');
@@ -742,6 +744,18 @@ export default function OrgChart() {
           </div>
         )}
 
+        {/* Intitulés standard / constructeur */}
+        <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+          <button onClick={() => setPositionViewMode('standard')} title="Intitulés de poste standards"
+            className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${positionViewMode === 'standard' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            Standard
+          </button>
+          <button onClick={() => setPositionViewMode('constructeur')} title="Intitulés de poste constructeur"
+            className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${positionViewMode === 'constructeur' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            Constructeur
+          </button>
+        </div>
+
         {/* Tri des services (tree only) */}
         {viewMode === 'hierarchical' && (
           <Select value={serviceSortMode} onValueChange={setServiceSortMode}>
@@ -855,6 +869,7 @@ export default function OrgChart() {
         ref={pan.ref}
         {...(viewMode === 'hierarchical' && !printMode ? pan.handlers : {})}
         className={`flex-1 overflow-auto ${printMode ? 'p-0 bg-gray-100' : 'p-8'} ${viewMode === 'hierarchical' && !printMode ? (pan.panning ? 'cursor-grabbing' : 'cursor-grab') : ''}`}>
+        <ViewModeProvider mode={positionViewMode}>
         {printMode && (
           <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-border p-4 flex items-center gap-4 shadow-sm">
             <div className="flex items-center gap-2">
@@ -1010,6 +1025,7 @@ export default function OrgChart() {
             )}
           </>
         )}
+        </ViewModeProvider>
       </div>
 
       {viewMode === 'hierarchical' && !printMode && (

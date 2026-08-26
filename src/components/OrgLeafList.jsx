@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { AlertTriangle, GripVertical } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { getServiceColor } from '@/lib/serviceColors';
+import { useViewMode } from '@/lib/ViewModeContext';
+import { getDisplayPosition } from '@/lib/displayPosition';
 
 const STATUS_DOT = {
   'Actif': 'bg-emerald-400',
@@ -15,6 +17,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
   const [over, setOver] = useState(false);
   const [isFileDrag, setIsFileDrag] = useState(false);
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
+  const viewMode = useViewMode();
   const isApprenti = employee.status === 'Apprenti' || employee.status === 'Alternant';
   const apprentiDot = employee.status === 'Apprenti' ? 'bg-blue-400' : 'bg-purple-400';
   const svc = getServiceColor(employee.service);
@@ -50,7 +53,7 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
       <div className="flex-1">
         <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.first_name}</p>
         <p className="text-xs font-bold text-foreground leading-tight whitespace-nowrap">{employee.last_name}</p>
-        <p className="text-muted-foreground leading-snug max-w-[9rem] break-words" style={{ fontSize: '9px' }}>{employee.position}</p>
+        <p className="text-muted-foreground leading-snug max-w-[9rem] break-words" style={{ fontSize: '9px' }}>{getDisplayPosition(employee, viewMode)}</p>
       </div>
       {isFileDrag && <div className="absolute inset-0 rounded-xl bg-emerald-400/30 border-2 border-dashed border-emerald-500 flex items-center justify-center pointer-events-none z-50"><span className="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full whitespace-nowrap">📷 Déposer la photo</span></div>}
     </div>

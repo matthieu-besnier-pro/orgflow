@@ -18,12 +18,14 @@ export default async function (req) {
     return Response.json({
       company: company ? { name: company.name, logo_url: company.logo_url, brand_color: company.brand_color, services: company.services || [], zones: company.zones || [], anciennes_entites: company.anciennes_entites || [] } : null,
       service_sort_mode: share.service_sort_mode || 'alpha',
+      view_mode: share.view_mode || 'standard',
       agencies: agencies.map((a) => ({ id: a.id, name: a.name, zone: a.zone, city: a.city })),
       employees: employees.map((e) => ({
         id: e.id,
         first_name: e.first_name,
         last_name: e.last_name,
         position: e.position,
+        position_constructeur: e.position_constructeur,
         service: e.service,
         photo_url: e.photo_url,
         status: e.status,

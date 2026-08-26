@@ -6,6 +6,7 @@ import PublicEmployeeModal from '@/components/PublicEmployeeModal';
 import usePanDrag from '@/hooks/usePanDrag';
 import { buildAgencyEntiteMap, buildEntiteToZone } from '@/lib/ancienneEntite';
 import { isActiveEmployee } from '@/lib/employeeStats';
+import { ViewModeProvider } from '@/lib/ViewModeContext';
 
 function buildChildrenMap(pool) {
   const ids = new Set(pool.map(e => e.id));
@@ -300,6 +301,7 @@ export default function PublicChart() {
       >
         <div style={{ width: size?.w, height: size?.h, margin: 'auto' }}>
           <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
+            <ViewModeProvider mode={data.view_mode || 'standard'}>
             {rootsWithChildren.length === 1 ? (
               <div className="flex justify-center">
                 <OrgTreeNode
@@ -360,6 +362,7 @@ export default function PublicChart() {
                 ))}
               </div>
             )}
+            </ViewModeProvider>
           </div>
         </div>
       </div>

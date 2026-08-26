@@ -156,6 +156,10 @@ export default function EmployeeDrawer({ employee, agencies, allEmployees, isHR,
                 <Input value={form.position || ''} onChange={e => set('position', e.target.value)} />
               </div>
               <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Poste (intitulé constructeur)</label>
+                <Input value={form.position_constructeur || ''} onChange={e => set('position_constructeur', e.target.value)} placeholder="Affiché sur le lien de partage constructeur" />
+              </div>
+              <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Email</label>
                 <Input value={form.email || ''} onChange={e => set('email', e.target.value)} />
               </div>

@@ -24,6 +24,15 @@
         "custom"
       ],
       "default": "alpha"
+    },
+    "view_mode": {
+      "type": "string",
+      "title": "Mode d'affichage",
+      "enum": [
+        "standard",
+        "constructeur"
+      ],
+      "default": "standard"
     }
   },
   "required": [
