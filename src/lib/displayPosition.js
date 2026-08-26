@@ -6,7 +6,11 @@
 export function getDisplayPosition(employee, viewMode) {
   if (!employee) return '';
   if (viewMode === 'constructeur') {
-    return employee.position_constructeur || employee.position || '';
+    const pc = (employee.position_constructeur || '').trim();
+    if (!pc || pc.toLowerCase().startsWith('autre')) {
+      return employee.position || '';
+    }
+    return pc;
   }
   return employee.position || '';
 }
