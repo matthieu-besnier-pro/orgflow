@@ -127,7 +127,10 @@
 @media print {
   .no-print { display: none !important; }
   html, body { overflow: visible !important; height: auto !important; }
-  .h-screen { height: auto !important; }
+  .h-screen { height: auto !important; min-height: auto !important; }
   .overflow-auto { overflow: visible !important; }
   .cursor-grab, .cursor-grabbing { cursor: default !important; }
+  .print-wrapper { width: auto !important; height: auto !important; max-width: none !important; max-height: none !important; }
+  .print-content { transform: none !important; width: max-content !important; }
+  @page { size: A3 landscape; margin: 10mm; }
 }

@@ -55,14 +55,7 @@ export default function PublicChart() {
     setZoom(w > avail ? Math.max(0.15, Math.min(1, avail / w)) : 0.85);
   };
 
-  const handlePrint = () => {
-    const prevZoom = zoom;
-    setZoom(1);
-    setTimeout(() => {
-      window.print();
-      setZoom(prevZoom);
-    }, 350);
-  };
+  const handlePrint = () => window.print();
 
   useEffect(() => {
     if (data) setTimeout(fitToScreen, 250);
@@ -341,8 +334,8 @@ export default function PublicChart() {
         {...pan.handlers}
         className={`flex-1 overflow-auto p-6 ${pan.panning ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
-        <div style={{ width: size?.w, height: size?.h, margin: 'auto' }}>
-          <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
+        <div className="print-wrapper" style={{ width: size?.w, height: size?.h, margin: 'auto' }}>
+          <div ref={contentRef} className="print-content" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
             <ViewModeProvider mode={data.view_mode || 'standard'}>
             {rootsWithChildren.length === 1 ? (
               <div className="flex justify-center">
