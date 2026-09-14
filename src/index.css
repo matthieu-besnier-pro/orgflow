@@ -130,7 +130,7 @@
   .h-screen { height: auto !important; min-height: auto !important; }
   .overflow-auto { overflow: visible !important; }
   .cursor-grab, .cursor-grabbing { cursor: default !important; }
-  .print-wrapper { width: auto !important; height: auto !important; max-width: none !important; max-height: none !important; }
-  .print-content { transform: none !important; width: max-content !important; }
+  .print-wrapper { width: var(--print-w, auto) !important; height: var(--print-h, auto) !important; max-width: none !important; max-height: none !important; }
+  .print-content { transform: scale(var(--print-scale, 1)) !important; transform-origin: top left !important; width: max-content !important; }
   @page { size: A3 landscape; margin: 10mm; }
 }

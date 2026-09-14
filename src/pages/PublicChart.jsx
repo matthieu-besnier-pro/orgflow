@@ -55,7 +55,22 @@ export default function PublicChart() {
     setZoom(w > avail ? Math.max(0.15, Math.min(1, avail / w)) : 0.85);
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const el = contentRef.current;
+    const wrapper = el?.parentElement;
+    if (el && wrapper) {
+      const contentW = el.offsetWidth;
+      const contentH = el.offsetHeight;
+      // A3 paysage imprimable ≈ 1500×1000 px (après marges de 10mm)
+      const maxW = 1500;
+      const maxH = 1000;
+      const scale = Math.min(maxW / contentW, maxH / contentH, 1);
+      wrapper.style.setProperty('--print-scale', String(scale));
+      wrapper.style.setProperty('--print-w', `${Math.round(contentW * scale)}px`);
+      wrapper.style.setProperty('--print-h', `${Math.round(contentH * scale)}px`);
+    }
+    window.print();
+  };
 
   useEffect(() => {
     if (data) setTimeout(fitToScreen, 250);
