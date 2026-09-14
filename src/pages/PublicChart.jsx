@@ -185,7 +185,8 @@ export default function PublicChart() {
   const childrenMap = buildChildrenMap(filteredEmployees);
   const ids = new Set(filteredEmployees.map(e => e.id));
   const roots = filteredEmployees.filter(e => !e.manager_id || !ids.has(e.manager_id));
-  const rootsWithChildren = roots.filter(r => (childrenMap[r.id]?.length || 0) > 0);
+  const rootsWithChildren = roots.filter(r => (childrenMap[r.id]?.length || 0) > 0)
+    .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
   const orphanLeaves = roots.filter(r => !(childrenMap[r.id]?.length || 0) > 0);
   const searchTerm = search.trim().toLowerCase();
 
