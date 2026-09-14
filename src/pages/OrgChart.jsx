@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move, ListOrdered, Undo2, Redo2, GripVertical } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move, ListOrdered, Undo2, Redo2, GripVertical, Download } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import html2canvas from 'html2canvas';
 import { useOrgHistory } from '@/hooks/useOrgHistory';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
@@ -103,6 +104,7 @@ export default function OrgChart() {
   const [scaledSize, setScaledSize] = useState(null);
   const [serviceSortMode, setServiceSortMode] = useState('count');
   const [positionViewMode, setPositionViewMode] = useState('standard');
+  const [exporting, setExporting] = useState(false);
 
   // Filters
   const [searchInput, setSearchInput] = useState('');
@@ -532,6 +534,39 @@ export default function OrgChart() {
     }
   }, [toast]);
 
+  const handleExportHD = useCallback(async () => {
+    const el = contentRef.current;
+    if (!el || exporting) return;
+    setExporting(true);
+    const origTransform = el.style.transform;
+    const origTransition = el.style.transition;
+    try {
+      el.style.transform = 'scale(1)';
+      el.style.transition = 'none';
+      await new Promise(r => setTimeout(r, 150));
+      const canvas = await html2canvas(el, {
+        scale: 3,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        windowWidth: el.scrollWidth,
+      });
+      const link = document.createElement('a');
+      link.download = `organigramme-${selectedCompany?.name || 'export'}-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast({ title: 'Export HD réussi', description: 'Image ultra HD téléchargée (3x)', duration: 3000 });
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible d'exporter l'image.", variant: 'destructive', duration: 3000 });
+    } finally {
+      el.style.transform = origTransform;
+      el.style.transition = origTransition;
+      setExporting(false);
+    }
+  }, [exporting, selectedCompany, toast]);
+
   const handleSave = useCallback((updated) => {
     const old = employees.find(e => e.id === updated.id);
     if (old) {
@@ -911,6 +946,18 @@ export default function OrgChart() {
         >
           <Share2 className="w-4 h-4" />
         </button>
+
+        {/* Export HD button */}
+        {viewMode === 'hierarchical' && (
+          <button
+            onClick={handleExportHD}
+            disabled={exporting}
+            title="Exporter en image ultra HD (PNG)"
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            {exporting ? <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+          </button>
+        )}
 
         {/* Print button */}
         <button
