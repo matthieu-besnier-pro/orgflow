@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, Maximize, Search, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Search, X, ChevronUp, ChevronDown, Printer } from 'lucide-react';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import PublicEmployeeModal from '@/components/PublicEmployeeModal';
 import usePanDrag from '@/hooks/usePanDrag';
@@ -28,7 +28,6 @@ export default function PublicChart() {
   const [filterAgency, setFilterAgency] = useState('');
   const [filterAncienneEntite, setFilterAncienneEntite] = useState('');
   const [filterService, setFilterService] = useState('');
-  const [viewMode, setViewMode] = useState('standard');
   const [serviceSortMode, setServiceSortMode] = useState('alpha');
   const [matchIndex, setMatchIndex] = useState(0);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -41,7 +40,6 @@ export default function PublicChart() {
     base44.functions.invoke('publicChart', { token })
       .then(res => {
         setData(res.data);
-        setViewMode(res.data?.view_mode || 'standard');
         setServiceSortMode(res.data?.service_sort_mode || 'alpha');
         const name = res.data?.company?.name;
         if (name) document.title = `Organigramme ${name} — consultation publique`;
@@ -55,6 +53,15 @@ export default function PublicChart() {
     const avail = (pan.ref.current?.clientWidth || 0) - 48;
     const w = el.offsetWidth;
     setZoom(w > avail ? Math.max(0.15, Math.min(1, avail / w)) : 0.85);
+  };
+
+  const handlePrint = () => {
+    const prevZoom = zoom;
+    setZoom(1);
+    setTimeout(() => {
+      window.print();
+      setZoom(prevZoom);
+    }, 350);
   };
 
   useEffect(() => {
@@ -206,7 +213,7 @@ export default function PublicChart() {
 
   return (
     <div className="h-screen flex flex-col bg-white">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border flex-wrap">
+      <div className="no-print flex items-center gap-3 px-4 py-3 border-b border-border flex-wrap">
         {data.company?.logo_url && <img src={data.company.logo_url} alt="" className="h-7 object-contain" />}
         <h1 className="font-heading font-semibold text-foreground text-base">{data.company?.name} — Organigramme</h1>
         <span className="text-xs text-muted-foreground hidden sm:inline">Consultation seule</span>
@@ -248,17 +255,6 @@ export default function PublicChart() {
           </div>
         )}
 
-        <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
-          <button onClick={() => setViewMode('standard')} title="Intitulés standards"
-            className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${viewMode === 'standard' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-            Standard
-          </button>
-          <button onClick={() => setViewMode('constructeur')} title="Intitulés constructeur"
-            className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${viewMode === 'constructeur' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-            Constructeur
-          </button>
-        </div>
-
         <select
           value={serviceSortMode}
           onChange={e => setServiceSortMode(e.target.value)}
@@ -284,11 +280,15 @@ export default function PublicChart() {
             className="w-7 h-7 rounded-md bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary">
             <Maximize className="w-3.5 h-3.5" />
           </button>
+          <button onClick={handlePrint} title="Imprimer"
+            className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center text-muted-foreground hover:text-foreground">
+            <Printer className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
       {/* Barre de filtres */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/30 flex-wrap">
+      <div className="no-print flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/30 flex-wrap">
         <select
           value={filterZone}
           onChange={e => setFilterZone(e.target.value)}
@@ -343,7 +343,7 @@ export default function PublicChart() {
       >
         <div style={{ width: size?.w, height: size?.h, margin: 'auto' }}>
           <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
-            <ViewModeProvider mode={viewMode}>
+            <ViewModeProvider mode={data.view_mode || 'standard'}>
             {rootsWithChildren.length === 1 ? (
               <div className="flex justify-center">
                 <OrgTreeNode

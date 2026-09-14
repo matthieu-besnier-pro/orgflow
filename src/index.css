@@ -123,3 +123,11 @@
     50% { box-shadow: 0 0 0 8px hsla(248, 40%, 88%, 0); }
   }
 }
+
+@media print {
+  .no-print { display: none !important; }
+  html, body { overflow: visible !important; height: auto !important; }
+  .h-screen { height: auto !important; }
+  .overflow-auto { overflow: visible !important; }
+  .cursor-grab, .cursor-grabbing { cursor: default !important; }
+}
