@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move, ListOrdered, Undo2, Redo2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize, ChevronDown, ChevronUp, Search, X, SlidersHorizontal, LayoutGrid, LayoutList, Rows3, Users, Printer, Clipboard, Presentation, Palette, AlertTriangle, Brush, Move, ListOrdered, Undo2, Redo2, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useOrgHistory } from '@/hooks/useOrgHistory';
 import EmployeeDrawer from '@/components/EmployeeDrawer';
 import CompanySwitcher from '@/components/CompanySwitcher';
@@ -363,9 +364,11 @@ export default function OrgChart() {
   const { roots, rootsWithChildren, orphanLeaves } = useMemo(() => {
     const finalPoolIds = new Set(filteredPool.map(e => e.id));
     const r = filteredPool.filter(e => !e.manager_id || !finalPoolIds.has(e.manager_id));
+    const rwc = r.filter(x => (finalChildrenMap[x.id]?.length || 0) > 0)
+      .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
     return {
       roots: r,
-      rootsWithChildren: r.filter(x => (finalChildrenMap[x.id]?.length || 0) > 0),
+      rootsWithChildren: rwc,
       orphanLeaves: r.filter(x => !(finalChildrenMap[x.id]?.length || 0) > 0),
     };
   }, [filteredPool, finalChildrenMap]);
@@ -512,6 +515,20 @@ export default function OrgChart() {
       }));
     } catch {
       toast({ title: 'Erreur', description: "Impossible de sauvegarder l'ordre des collaborateurs.", variant: 'destructive' });
+    }
+  }, [toast]);
+
+  const handleRootReorder = useCallback(async (orderedIds) => {
+    try {
+      await Promise.all(orderedIds.map((id, index) =>
+        base44.entities.Employee.update(id, { sort_order: index })
+      ));
+      setEmployees(prev => prev.map(e => {
+        const idx = orderedIds.indexOf(e.id);
+        return idx !== -1 ? { ...e, sort_order: idx } : e;
+      }));
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de sauvegarder l'ordre des blocs.", variant: 'destructive' });
     }
   }, [toast]);
 
@@ -1052,60 +1069,140 @@ export default function OrgChart() {
                     )}
                   </div>
                 ) : rootsWithChildren.length > 1 ? (
-                  <div className="flex gap-12 items-start justify-center flex-wrap">
-                    {rootsWithChildren.map((root, i) => (
-                      <OrgTreeNode
-                        key={`${root.id}-${expandAll}`}
-                        employee={root}
-                        childrenMap={finalChildrenMap}
-                        onSelect={setSelectedEmployee}
-                        defaultExpanded={expandAll}
-                        depth={0}
-                        onDragStart={handleDragStart}
-                        onDrop={handleDrop}
-                        template={template}
-                        searchTerm={searchTerm}
-                        onFocus={handleFocus}
-                        colorMode={colorMode}
-                        showAnomalies={showAnomalies}
-                        depthColors={depthColors}
-                        serviceSortMode={serviceSortMode}
-                        serviceOrder={serviceOrder}
-                        onServiceReorder={handleServiceReorder}
-                        onEmployeeReorder={handleEmployeeReorder}
-                        sideCards={[]}
-                        visibleIds={searchMatchIds}
-                        filterMatchIds={directMatchIds}
-                      />
-                    ))}
-                    {orphanLeaves.length > 0 && (
-                      <div className="flex flex-col gap-3 items-start flex-shrink-0">
-                        <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-muted-foreground bg-secondary whitespace-nowrap">
-                          Non rattachés
+                  serviceSortMode === 'custom' ? (
+                    <DragDropContext onDragEnd={(result) => {
+                      if (!result.destination || result.type !== 'root') return;
+                      if (result.destination.index === result.source.index) return;
+                      const newOrder = [...rootsWithChildren];
+                      const [moved] = newOrder.splice(result.source.index, 1);
+                      newOrder.splice(result.destination.index, 0, moved);
+                      handleRootReorder(newOrder.map(r => r.id));
+                    }}>
+                      <Droppable droppableId="roots" direction="horizontal" type="root">
+                        {(provided) => (
+                          <div ref={provided.innerRef} {...provided.droppableProps} className="flex gap-12 items-start justify-center flex-wrap">
+                            {rootsWithChildren.map((root, i) => (
+                              <Draggable key={root.id} draggableId={root.id} index={i}>
+                                {(prov, snapshot) => (
+                                  <div ref={prov.innerRef} {...prov.draggableProps} style={prov.draggableProps.style} className={snapshot.isDragging ? 'opacity-80' : ''}>
+                                    <div {...prov.dragHandleProps} className="flex justify-center mb-1 touch-none cursor-grab active:cursor-grabbing" title="Glisser pour réordonner">
+                                      <GripVertical className="w-4 h-4 text-muted-foreground/40 hover:text-primary transition-colors" />
+                                    </div>
+                                    <OrgTreeNode
+                                      key={`${root.id}-${expandAll}`}
+                                      employee={root}
+                                      childrenMap={finalChildrenMap}
+                                      onSelect={setSelectedEmployee}
+                                      defaultExpanded={expandAll}
+                                      depth={0}
+                                      onDragStart={handleDragStart}
+                                      onDrop={handleDrop}
+                                      template={template}
+                                      searchTerm={searchTerm}
+                                      onFocus={handleFocus}
+                                      colorMode={colorMode}
+                                      showAnomalies={showAnomalies}
+                                      depthColors={depthColors}
+                                      serviceSortMode={serviceSortMode}
+                                      serviceOrder={serviceOrder}
+                                      onServiceReorder={handleServiceReorder}
+                                      onEmployeeReorder={handleEmployeeReorder}
+                                      sideCards={[]}
+                                      visibleIds={searchMatchIds}
+                                      filterMatchIds={directMatchIds}
+                                    />
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                            {orphanLeaves.length > 0 && (
+                              <div className="flex flex-col gap-3 items-start flex-shrink-0">
+                                <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-muted-foreground bg-secondary whitespace-nowrap">
+                                  Non rattachés
+                                </div>
+                                {orphanLeaves.map(e => (
+                                  <OrgTreeNode
+                                    key={`${e.id}-${expandAll}`}
+                                    employee={e}
+                                    childrenMap={{}}
+                                    onSelect={setSelectedEmployee}
+                                    defaultExpanded={expandAll}
+                                    depth={0}
+                                    onDragStart={handleDragStart}
+                                    onDrop={handleDrop}
+                                    template={template}
+                                    searchTerm={searchTerm}
+                                    onFocus={handleFocus}
+                                    colorMode={colorMode}
+                                    showAnomalies={showAnomalies}
+                                    depthColors={depthColors}
+                                    visibleIds={searchMatchIds}
+                                    filterMatchIds={directMatchIds}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
+                  ) : (
+                    <div className="flex gap-12 items-start justify-center flex-wrap">
+                      {rootsWithChildren.map((root, i) => (
+                        <OrgTreeNode
+                          key={`${root.id}-${expandAll}`}
+                          employee={root}
+                          childrenMap={finalChildrenMap}
+                          onSelect={setSelectedEmployee}
+                          defaultExpanded={expandAll}
+                          depth={0}
+                          onDragStart={handleDragStart}
+                          onDrop={handleDrop}
+                          template={template}
+                          searchTerm={searchTerm}
+                          onFocus={handleFocus}
+                          colorMode={colorMode}
+                          showAnomalies={showAnomalies}
+                          depthColors={depthColors}
+                          serviceSortMode={serviceSortMode}
+                          serviceOrder={serviceOrder}
+                          onServiceReorder={handleServiceReorder}
+                          onEmployeeReorder={handleEmployeeReorder}
+                          sideCards={[]}
+                          visibleIds={searchMatchIds}
+                          filterMatchIds={directMatchIds}
+                        />
+                      ))}
+                      {orphanLeaves.length > 0 && (
+                        <div className="flex flex-col gap-3 items-start flex-shrink-0">
+                          <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-muted-foreground bg-secondary whitespace-nowrap">
+                            Non rattachés
+                          </div>
+                          {orphanLeaves.map(e => (
+                            <OrgTreeNode
+                              key={`${e.id}-${expandAll}`}
+                              employee={e}
+                              childrenMap={{}}
+                              onSelect={setSelectedEmployee}
+                              defaultExpanded={expandAll}
+                              depth={0}
+                              onDragStart={handleDragStart}
+                              onDrop={handleDrop}
+                              template={template}
+                              searchTerm={searchTerm}
+                              onFocus={handleFocus}
+                              colorMode={colorMode}
+                              showAnomalies={showAnomalies}
+                              depthColors={depthColors}
+                              visibleIds={searchMatchIds}
+                              filterMatchIds={directMatchIds}
+                            />
+                          ))}
                         </div>
-                        {orphanLeaves.map(e => (
-                          <OrgTreeNode
-                            key={`${e.id}-${expandAll}`}
-                            employee={e}
-                            childrenMap={{}}
-                            onSelect={setSelectedEmployee}
-                            defaultExpanded={expandAll}
-                            depth={0}
-                            onDragStart={handleDragStart}
-                            onDrop={handleDrop}
-                            template={template}
-                            searchTerm={searchTerm}
-                            onFocus={handleFocus}
-                            colorMode={colorMode}
-                            showAnomalies={showAnomalies}
-                            depthColors={depthColors}
-                            visibleIds={searchMatchIds}
-                            filterMatchIds={directMatchIds}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )
                 ) : (
                   <div className="flex gap-4 items-start justify-center flex-wrap">
                     {orphanLeaves.map(e => (

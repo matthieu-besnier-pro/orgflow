@@ -65,14 +65,18 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
   );
 }
 
-function ServiceGroupContent({ s, groups, parentService, onSelect, onDragStart, onDrop, isMatch, getAnomalies, depth, draggable = false, getOpacityClass, onEmployeeReorder }) {
+function ServiceGroupContent({ s, groups, parentService, onSelect, onDragStart, onDrop, isMatch, getAnomalies, depth, draggable = false, getOpacityClass, onEmployeeReorder, dragHandleProps }) {
   const svc = getServiceColor(s);
   const canReorder = !!onEmployeeReorder && groups[s].length > 1 && !draggable;
   const droppableId = `emp-${s}`;
 
-  const label = s !== parentService && (
-    <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-max flex items-center justify-center gap-1"
-      style={{ backgroundColor: svc.bg }}>
+  const showLabel = s !== parentService || draggable;
+  const label = showLabel && (
+    <div
+      {...(dragHandleProps || {})}
+      className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-max flex items-center justify-center gap-1 touch-none"
+      style={{ backgroundColor: svc.bg, ...(dragHandleProps ? { cursor: 'grab' } : {}) }}
+    >
       {draggable && <GripVertical className="w-2.5 h-2.5 opacity-60" />}
       {s}
     </div>
@@ -193,13 +197,13 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
                     <div
                       ref={prov.innerRef}
                       {...prov.draggableProps}
-                      {...prov.dragHandleProps}
                       style={prov.draggableProps.style}
                       className={`flex flex-col gap-2 w-max items-stretch ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary opacity-90' : ''}`}
                     >
                       <ServiceGroupContent s={s} groups={groups} parentService={parentService} onSelect={onSelect}
                         onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies}
-                        depth={depth} draggable getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
+                        depth={depth} draggable getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder}
+                        dragHandleProps={prov.dragHandleProps} />
                     </div>
                   )}
                 </Draggable>
