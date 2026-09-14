@@ -109,6 +109,7 @@ export default function OrgChart() {
   const [selectedZone, setSelectedZone] = useState('all');
   const [selectedAgency, setSelectedAgency] = useState('all');
   const [selectedAncienneEntite, setSelectedAncienneEntite] = useState('all');
+  const [selectedService, setSelectedService] = useState('all');
   const [selectedManagerId, setSelectedManagerId] = useState('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [managerSearch, setManagerSearch] = useState('');
@@ -136,6 +137,7 @@ export default function OrgChart() {
     setSelectedAncienneEntite('all');
     setSelectedZone('all');
     setSelectedAgency('all');
+    setSelectedService('all');
     setLoading(true);
     Promise.all([
       base44.entities.Employee.filter({ company_id: selectedCompanyId }),
@@ -315,11 +317,23 @@ export default function OrgChart() {
       const groupSupport = employees.filter(e => e.is_group_support && !directIds.has(e.id));
       base = [...matching, ...groupSupport];
     } else {
-      return { baseFiltered: employees, pool: employees, directMatchIds: null };
+      base = employees;
+      directIds = null;
+    }
+    // Filtre par service (combinable avec les filtres ci-dessus)
+    if (selectedService !== 'all') {
+      const serviceIds = new Set(employees.filter(e => e.service === selectedService).map(e => e.id));
+      if (directIds) {
+        directIds = new Set([...directIds].filter(id => serviceIds.has(id)));
+      } else {
+        directIds = new Set(serviceIds);
+      }
+      const groupSupport = employees.filter(e => e.is_group_support && !directIds.has(e.id));
+      base = [...employees.filter(e => directIds.has(e.id)), ...groupSupport];
     }
     const withAncestors = addAncestors(base.map(e => e.id), empById);
     return { baseFiltered: base, pool: employees.filter(e => withAncestors.has(e.id)), directMatchIds: directIds };
-  }, [employees, agencies, agencyEntiteMap, entiteToZone, empById, selectedZone, selectedAgency, selectedAncienneEntite]);
+  }, [employees, agencies, agencyEntiteMap, entiteToZone, empById, selectedZone, selectedAgency, selectedAncienneEntite, selectedService]);
 
   const baseChildrenMap = useMemo(() => {
     const poolIds = new Set(pool.map(e => e.id));
@@ -371,10 +385,17 @@ export default function OrgChart() {
   }, [employees, searchTerm, empById]);
 
   // Count active filters
-  const activeFilters = [selectedZone !== 'all', selectedAgency !== 'all', selectedAncienneEntite !== 'all', selectedManagerId !== 'all'].filter(Boolean).length;
+  const activeFilters = [selectedZone !== 'all', selectedAgency !== 'all', selectedAncienneEntite !== 'all', selectedService !== 'all', selectedManagerId !== 'all'].filter(Boolean).length;
 
   // Managers list for filter dropdown (people with at least one direct report in pool)
   const managersInPool = useMemo(() => pool.filter(e => baseChildrenMap[e.id]?.length > 0), [pool, baseChildrenMap]);
+
+  // Liste des services disponibles pour le filtre
+  const availableServices = useMemo(() => {
+    const fromEmployees = [...new Set(employees.map(e => e.service).filter(Boolean))];
+    const fromCompany = selectedCompany?.services || [];
+    return [...new Set([...fromCompany, ...fromEmployees])].sort((a, b) => a.localeCompare(b, 'fr'));
+  }, [employees, selectedCompany]);
 
   // Ordre global des services selon le mode de tri choisi (appliqué à tout l'organigramme)
   const serviceOrder = useMemo(() => {
@@ -507,6 +528,7 @@ export default function OrgChart() {
     setSelectedZone('all');
     setSelectedAgency('all');
     setSelectedAncienneEntite('all');
+    setSelectedService('all');
     setSelectedManagerId('all');
     setSearch('');
   };
@@ -636,6 +658,17 @@ export default function OrgChart() {
               )}
 
               <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Service</label>
+                <Select value={selectedService} onValueChange={setSelectedService}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les services</SelectItem>
+                    {availableServices.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Vue centrée sur un manager</label>
                 <div className="relative">
                   <div
@@ -701,6 +734,12 @@ export default function OrgChart() {
           <span className="hidden md:flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
             {agencies.find(a => a.id === selectedAgency)?.name}
             <X className="w-3 h-3 cursor-pointer hover:text-primary/70" onClick={() => setSelectedAgency('all')} />
+          </span>
+        )}
+        {selectedService !== 'all' && (
+          <span className="hidden md:flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
+            {selectedService}
+            <X className="w-3 h-3 cursor-pointer hover:text-primary/70" onClick={() => setSelectedService('all')} />
           </span>
         )}
         {selectedManagerId !== 'all' && selectedManagerName && (

@@ -27,6 +27,9 @@ export default function PublicChart() {
   const [filterZone, setFilterZone] = useState('');
   const [filterAgency, setFilterAgency] = useState('');
   const [filterAncienneEntite, setFilterAncienneEntite] = useState('');
+  const [filterService, setFilterService] = useState('');
+  const [viewMode, setViewMode] = useState('standard');
+  const [serviceSortMode, setServiceSortMode] = useState('alpha');
   const [matchIndex, setMatchIndex] = useState(0);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [size, setSize] = useState(null);
@@ -38,6 +41,8 @@ export default function PublicChart() {
     base44.functions.invoke('publicChart', { token })
       .then(res => {
         setData(res.data);
+        setViewMode(res.data?.view_mode || 'standard');
+        setServiceSortMode(res.data?.service_sort_mode || 'alpha');
         const name = res.data?.company?.name;
         if (name) document.title = `Organigramme ${name} — consultation publique`;
       })
@@ -95,6 +100,7 @@ export default function PublicChart() {
     return companyList.filter(v => employeeValues.has(v));
   })();
   const agencies = data.agencies || [];
+  const availableServices = [...new Set(data.employees.map(e => e.service).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
 
   // Mapping dynamique entité → zone (basé sur les agences et collaborateurs)
   const companyEntites = data.company?.anciennes_entites || null;
@@ -104,7 +110,7 @@ export default function PublicChart() {
   // Filtrage par zone / agence / ancienne entité (+ supports groupe + ancêtres)
   // Hiérarchie : Zone → Ancienne entité → Agence → Collaborateurs
   // Les supports groupe sont toujours inclus mais grisés (hors directIds)
-  const hasFilters = filterZone || filterAgency || filterAncienneEntite;
+  const hasFilters = filterZone || filterAgency || filterAncienneEntite || filterService;
   const { filteredEmployees, filterMatchIds } = (() => {
     if (!hasFilters) return { filteredEmployees: data.employees, filterMatchIds: null };
     const empById = {};
@@ -122,6 +128,12 @@ export default function PublicChart() {
         if (entite && entiteToZone[entite] === filterZone) zoneAgencyIds.add(a.id);
       });
       matching = data.employees.filter(e => zoneAgencyIds.has(e.agency_id) || e.zone === filterZone || (e.ancienne_entite && entiteToZone[e.ancienne_entite] === filterZone));
+    } else {
+      matching = data.employees;
+    }
+    // Filtre par service (combinable avec les autres filtres)
+    if (filterService) {
+      matching = matching.filter(e => e.service === filterService);
     }
     const directIds = new Set(matching.map(e => e.id));
     // Supports groupe : toujours inclus mais grisés (hors directIds)
@@ -174,7 +186,7 @@ export default function PublicChart() {
       counts[s] = (counts[s] || 0) + 1;
     });
     const all = Object.keys(counts);
-    const mode = data.service_sort_mode || 'alpha';
+    const mode = serviceSortMode;
     if (mode === 'alpha') {
       return all.sort((a, b) => a.localeCompare(b, 'fr'));
     } else if (mode === 'custom') {
@@ -236,6 +248,28 @@ export default function PublicChart() {
           </div>
         )}
 
+        <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+          <button onClick={() => setViewMode('standard')} title="Intitulés standards"
+            className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${viewMode === 'standard' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            Standard
+          </button>
+          <button onClick={() => setViewMode('constructeur')} title="Intitulés constructeur"
+            className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${viewMode === 'constructeur' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            Constructeur
+          </button>
+        </div>
+
+        <select
+          value={serviceSortMode}
+          onChange={e => setServiceSortMode(e.target.value)}
+          className="h-8 text-sm rounded-md border border-input bg-white px-2 pr-7"
+          title="Tri des services"
+        >
+          <option value="alpha">Tri : Alphabétique</option>
+          <option value="count">Tri : Par effectif</option>
+          <option value="custom">Tri : Personnalisé</option>
+        </select>
+
         <div className="ml-auto flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
           <button onClick={() => setZoom(z => Math.max(0.1, +(z - 0.1).toFixed(2)))}
             className="w-7 h-7 rounded-md hover:bg-white flex items-center justify-center text-muted-foreground">
@@ -281,9 +315,17 @@ export default function PublicChart() {
             {anciennesEntites.map(ae => <option key={ae} value={ae}>{ae}</option>)}
           </select>
         )}
+        <select
+          value={filterService}
+          onChange={e => setFilterService(e.target.value)}
+          className="h-8 text-sm rounded-md border border-input bg-white px-2 pr-7"
+        >
+          <option value="">Tous services</option>
+          {availableServices.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
         {hasFilters && (
           <button
-            onClick={() => { setFilterZone(''); setFilterAgency(''); setFilterAncienneEntite(''); }}
+            onClick={() => { setFilterZone(''); setFilterAgency(''); setFilterAncienneEntite(''); setFilterService(''); }}
             className="text-xs text-primary hover:underline h-8 px-2"
           >
             Réinitialiser
@@ -301,7 +343,7 @@ export default function PublicChart() {
       >
         <div style={{ width: size?.w, height: size?.h, margin: 'auto' }}>
           <div ref={contentRef} style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', width: 'max-content' }}>
-            <ViewModeProvider mode={data.view_mode || 'standard'}>
+            <ViewModeProvider mode={viewMode}>
             {rootsWithChildren.length === 1 ? (
               <div className="flex justify-center">
                 <OrgTreeNode
