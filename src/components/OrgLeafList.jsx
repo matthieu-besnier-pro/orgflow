@@ -160,16 +160,16 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
     return 'opacity-100';
   };
 
-  const isDraggable = serviceSortMode === 'custom' && onServiceReorder && multiServices.length > 1;
+  const isDraggable = serviceSortMode === 'custom' && onServiceReorder && services.length > 1;
 
   const handleDragEnd = (result) => {
     if (!result.destination) return;
     if (result.type === 'service') {
       if (result.destination.index === result.source.index) return;
-      const newOrder = [...multiServices];
+      const newOrder = [...services];
       const [moved] = newOrder.splice(result.source.index, 1);
       newOrder.splice(result.destination.index, 0, moved);
-      onServiceReorder([...newOrder, ...singleServices]);
+      onServiceReorder(newOrder);
     } else if (result.type === 'employee' && onEmployeeReorder) {
       if (result.source.droppableId === result.destination.droppableId && result.source.index === result.destination.index) return;
       const serviceName = result.destination.droppableId.replace('emp-', '');
@@ -183,34 +183,34 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex items-start gap-4">
-        {isDraggable ? (
-          <Droppable droppableId="services" direction="horizontal" type="service">
-            {(provided) => (
-              <div ref={provided.innerRef} {...provided.droppableProps} className="flex items-start gap-4">
-                {multiServices.map((s, index) => (
-                  <Draggable key={s} draggableId={`svc-${s}`} index={index}>
-                    {(prov, snapshot) => (
-                      <div
-                        ref={prov.innerRef}
-                        {...prov.draggableProps}
-                        {...prov.dragHandleProps}
-                        style={prov.draggableProps.style}
-                        className={`flex flex-col gap-2 w-max items-stretch ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary opacity-90' : ''}`}
-                      >
-                        <ServiceGroupContent s={s} groups={groups} parentService={parentService} onSelect={onSelect}
-                          onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies}
-                          depth={depth} draggable getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        ) : (
-          multiServices.length > 0 && (
+      {isDraggable ? (
+        <Droppable droppableId="services" direction="horizontal" type="service">
+          {(provided) => (
+            <div ref={provided.innerRef} {...provided.droppableProps} className="flex items-start gap-4">
+              {services.map((s, index) => (
+                <Draggable key={s} draggableId={`svc-${s}`} index={index}>
+                  {(prov, snapshot) => (
+                    <div
+                      ref={prov.innerRef}
+                      {...prov.draggableProps}
+                      {...prov.dragHandleProps}
+                      style={prov.draggableProps.style}
+                      className={`flex flex-col gap-2 w-max items-stretch ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary opacity-90' : ''}`}
+                    >
+                      <ServiceGroupContent s={s} groups={groups} parentService={parentService} onSelect={onSelect}
+                        onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies}
+                        depth={depth} draggable getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      ) : (
+        <div className="flex items-start gap-4">
+          {multiServices.length > 0 && (
             <div className="flex items-start gap-4">
               {multiServices.map(s => (
                 <ServiceGroupContent key={s} s={s} groups={groups} parentService={parentService} onSelect={onSelect}
@@ -218,22 +218,22 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
                   depth={depth} getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
               ))}
             </div>
-          )
-        )}
-        {singleServices.length > 0 && (
-          <div className="relative flex flex-col w-max">
-            <div className="absolute left-0 top-0 bottom-0 w-px" style={{ backgroundColor: lineColor }} />
-            {singleServices.map((s, idx) => (
-              <div key={s} className={`relative pl-7 ${idx > 0 ? 'mt-10' : ''}`}>
-                <div className="absolute left-0 top-3 w-7 h-px" style={{ backgroundColor: lineColor }} />
-                <ServiceGroupContent s={s} groups={groups} parentService={parentService} onSelect={onSelect}
-                  onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies}
-                  depth={depth} getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+          )}
+          {singleServices.length > 0 && (
+            <div className="relative flex flex-col w-max">
+              <div className="absolute left-0 top-0 bottom-0 w-px" style={{ backgroundColor: lineColor }} />
+              {singleServices.map((s, idx) => (
+                <div key={s} className={`relative pl-7 ${idx > 0 ? 'mt-10' : ''}`}>
+                  <div className="absolute left-0 top-3 w-7 h-px" style={{ backgroundColor: lineColor }} />
+                  <ServiceGroupContent s={s} groups={groups} parentService={parentService} onSelect={onSelect}
+                    onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies}
+                    depth={depth} getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </DragDropContext>
   );
 }
