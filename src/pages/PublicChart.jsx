@@ -61,13 +61,29 @@ export default function PublicChart() {
     if (el && wrapper) {
       const contentW = el.offsetWidth;
       const contentH = el.offsetHeight;
-      // A3 paysage imprimable ≈ 1500×1000 px (après marges de 10mm)
-      const maxW = 1500;
-      const maxH = 1000;
-      const scale = Math.min(maxW / contentW, maxH / contentH, 1);
-      wrapper.style.setProperty('--print-scale', String(scale));
-      wrapper.style.setProperty('--print-w', `${Math.round(contentW * scale)}px`);
-      wrapper.style.setProperty('--print-h', `${Math.round(contentH * scale)}px`);
+      // A3 paysage ≈ 1587px de large (sans marges)
+      const maxW = 1550;
+      const scale = contentW > maxW ? maxW / contentW : 1;
+
+      const beforePrint = () => {
+        el.dataset.origTransform = el.style.transform;
+        wrapper.dataset.origW = wrapper.style.width;
+        wrapper.dataset.origH = wrapper.style.height;
+        el.style.transform = `scale(${scale})`;
+        el.style.transformOrigin = 'top left';
+        wrapper.style.width = `${Math.round(contentW * scale)}px`;
+        wrapper.style.height = `${Math.round(contentH * scale)}px`;
+      };
+      const afterPrint = () => {
+        el.style.transform = el.dataset.origTransform || '';
+        wrapper.style.width = wrapper.dataset.origW || '';
+        wrapper.style.height = wrapper.dataset.origH || '';
+        window.removeEventListener('beforeprint', beforePrint);
+        window.removeEventListener('afterprint', afterPrint);
+      };
+
+      window.addEventListener('beforeprint', beforePrint);
+      window.addEventListener('afterprint', afterPrint);
     }
     window.print();
   };
