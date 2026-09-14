@@ -227,7 +227,7 @@ const CARD_COMPONENTS = {
 };
 
 // ── OrgTreeNode ────────────────────────────────────────────────────────────
-function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null, hideCard = false }) {
+function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded = false, depth = 0, onDragStart, onDrop, template = 'classique', searchTerm = '', colorMode = 'depth', showAnomalies = false, depthColors = null, parentService = null, sideCards = [], serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null, hideCard = false, onEmployeeReorder = null }) {
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isFileDrag, setIsFileDrag] = useState(false);
@@ -408,6 +408,7 @@ function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded
                   serviceSortMode={serviceSortMode}
                   serviceOrder={serviceOrder}
                   onServiceReorder={onServiceReorder}
+                  onEmployeeReorder={onEmployeeReorder}
                   filterMatchIds={filterMatchIds}
                 />
               ))}
@@ -447,6 +448,7 @@ function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded
                       serviceSortMode={serviceSortMode}
                       serviceOrder={serviceOrder}
                       onServiceReorder={onServiceReorder}
+                      onEmployeeReorder={onEmployeeReorder}
                       visibleIds={visibleIds}
                       filterMatchIds={filterMatchIds}
                     />
@@ -483,6 +485,7 @@ function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded
                           serviceSortMode={serviceSortMode}
                           serviceOrder={serviceOrder}
                           onServiceReorder={onServiceReorder}
+                          onEmployeeReorder={onEmployeeReorder}
                           filterMatchIds={filterMatchIds}
                         />
                       </div>
@@ -575,6 +578,7 @@ function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded
                               serviceSortMode={serviceSortMode}
                               serviceOrder={serviceOrder}
                               onServiceReorder={onServiceReorder}
+                              onEmployeeReorder={onEmployeeReorder}
                               visibleIds={visibleIds}
                               filterMatchIds={filterMatchIds}
                             />
@@ -607,6 +611,7 @@ function OrgTreeNode({ employee, childrenMap, onSelect, onFocus, defaultExpanded
                                 serviceSortMode={serviceSortMode}
                                 serviceOrder={serviceOrder}
                                 onServiceReorder={onServiceReorder}
+                                onEmployeeReorder={onEmployeeReorder}
                                 filterMatchIds={filterMatchIds}
                               />
                             </div>

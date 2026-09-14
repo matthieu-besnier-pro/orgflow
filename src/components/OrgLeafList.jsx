@@ -13,7 +13,7 @@ const STATUS_DOT = {
   'Départ': 'bg-red-400',
 };
 
-function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies, opacityClass = 'opacity-100' }) {
+function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighted, anomalies, opacityClass = 'opacity-100', dragHandleProps }) {
   const [over, setOver] = useState(false);
   const [isFileDrag, setIsFileDrag] = useState(false);
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
@@ -40,6 +40,11 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
           <AlertTriangle className="w-2.5 h-2.5 text-amber-900" />
         </span>
       )}
+      {dragHandleProps && (
+        <div {...dragHandleProps} draggable={false} className="absolute left-0 top-0 bottom-0 w-4 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-secondary/40 rounded-l-xl touch-none">
+          <GripVertical className="w-3 h-3 text-muted-foreground/40" />
+        </div>
+      )}
       <div className="relative flex-shrink-0">
         {employee.photo_url ? (
           <img loading="lazy" decoding="async" src={employee.photo_url} alt={initials} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow pointer-events-auto cursor-pointer relative transition-transform duration-200 hover:scale-[2.2] hover:z-50" />
@@ -60,40 +65,82 @@ function LeafCard({ employee, color, onSelect, onDragStart, onDrop, isHighlighte
   );
 }
 
-function ServiceGroup({ s, groups, parentService, onSelect, onDragStart, onDrop, isMatch, getAnomalies, depth, draggable = false, getOpacityClass }) {
+function ServiceGroupContent({ s, groups, parentService, onSelect, onDragStart, onDrop, isMatch, getAnomalies, depth, draggable = false, getOpacityClass, onEmployeeReorder }) {
   const svc = getServiceColor(s);
+  const canReorder = !!onEmployeeReorder && groups[s].length > 1 && !draggable;
+  const droppableId = `emp-${s}`;
+
+  const label = s !== parentService && (
+    <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-max flex items-center justify-center gap-1"
+      style={{ backgroundColor: svc.bg }}>
+      {draggable && <GripVertical className="w-2.5 h-2.5 opacity-60" />}
+      {s}
+    </div>
+  );
+
+  if (!canReorder) {
+    return (
+      <div className="flex flex-col gap-2 w-max items-stretch">
+        {label}
+        {groups[s].map(e => (
+          <LeafCard
+            key={e.id}
+            employee={e}
+            onSelect={onSelect}
+            onDragStart={onDragStart}
+            onDrop={onDrop}
+            isHighlighted={isMatch(e)}
+            anomalies={getAnomalies ? getAnomalies(e, depth) : []}
+            opacityClass={getOpacityClass ? getOpacityClass(e) : 'opacity-100'}
+          />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-2 w-max items-stretch">
-      {s !== parentService && (
-        <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-full flex items-center justify-center gap-1"
-          style={{ backgroundColor: svc.bg }}>
-          {draggable && <GripVertical className="w-2.5 h-2.5 opacity-60" />}
-          {s}
+    <Droppable droppableId={droppableId} direction="vertical" type="employee">
+      {(provided) => (
+        <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-2 w-max items-stretch">
+          {label}
+          {groups[s].map((e, index) => (
+            <Draggable key={e.id} draggableId={e.id} index={index}>
+              {(prov) => (
+                <div ref={prov.innerRef} {...prov.draggableProps} style={prov.draggableProps.style}>
+                  <LeafCard
+                    employee={e}
+                    onSelect={onSelect}
+                    onDragStart={onDragStart}
+                    onDrop={onDrop}
+                    isHighlighted={isMatch(e)}
+                    anomalies={getAnomalies ? getAnomalies(e, depth) : []}
+                    opacityClass={getOpacityClass ? getOpacityClass(e) : 'opacity-100'}
+                    dragHandleProps={prov.dragHandleProps}
+                  />
+                </div>
+              )}
+            </Draggable>
+          ))}
+          {provided.placeholder}
         </div>
       )}
-      {groups[s].map(e => (
-        <LeafCard
-          key={e.id}
-          employee={e}
-          onSelect={onSelect}
-          onDragStart={onDragStart}
-          onDrop={onDrop}
-          isHighlighted={isMatch(e)}
-          anomalies={getAnomalies ? getAnomalies(e, depth) : []}
-          opacityClass={getOpacityClass ? getOpacityClass(e) : 'opacity-100'}
-        />
-      ))}
-    </div>
+    </Droppable>
   );
 }
 
-export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color, serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, visibleIds = null, filterMatchIds = null }) {
+export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, searchTerm, getAnomalies, depth, parentService = null, color, serviceSortMode = 'count', serviceOrder = [], onServiceReorder = null, onEmployeeReorder = null, visibleIds = null, filterMatchIds = null }) {
   const lineColor = color?.border || '#94A3B8';
+
   // Grouper par service
   const groups = {};
   employees.forEach(e => {
     const key = e.service || 'Sans service';
     (groups[key] ||= []).push(e);
+  });
+
+  // Trier dans chaque service par sort_order (puis par ordre d'origine)
+  Object.keys(groups).forEach(k => {
+    groups[k].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
   });
 
   // Tri des services selon l'ordre global calculé dans OrgChart
@@ -103,8 +150,6 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
     return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
   });
 
-  // Services de plusieurs personnes → colonne dédiée avec en-tête
-  // Services d'une seule personne → empilés dans une colonne unique, étiquette conservée
   const multiServices = services.filter(s => groups[s].length >= 2);
   const singleServices = services.filter(s => groups[s].length === 1);
 
@@ -118,22 +163,33 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
   const isDraggable = serviceSortMode === 'custom' && onServiceReorder && multiServices.length > 1;
 
   const handleDragEnd = (result) => {
-    if (!result.destination || result.destination.index === result.source.index) return;
-    const newOrder = [...multiServices];
-    const [moved] = newOrder.splice(result.source.index, 1);
-    newOrder.splice(result.destination.index, 0, moved);
-    onServiceReorder([...newOrder, ...singleServices]);
+    if (!result.destination) return;
+    if (result.type === 'service') {
+      if (result.destination.index === result.source.index) return;
+      const newOrder = [...multiServices];
+      const [moved] = newOrder.splice(result.source.index, 1);
+      newOrder.splice(result.destination.index, 0, moved);
+      onServiceReorder([...newOrder, ...singleServices]);
+    } else if (result.type === 'employee' && onEmployeeReorder) {
+      if (result.source.droppableId === result.destination.droppableId && result.source.index === result.destination.index) return;
+      const serviceName = result.destination.droppableId.replace('emp-', '');
+      const groupEmps = groups[serviceName] || [];
+      const newOrder = [...groupEmps];
+      const [moved] = newOrder.splice(result.source.index, 1);
+      newOrder.splice(result.destination.index, 0, moved);
+      onEmployeeReorder(newOrder.map(e => e.id));
+    }
   };
 
   return (
-    <div className="flex items-start gap-4">
-      {isDraggable ? (
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="services" direction="horizontal">
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="flex items-start gap-4">
+        {isDraggable ? (
+          <Droppable droppableId="services" direction="horizontal" type="service">
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps} className="flex items-start gap-4">
                 {multiServices.map((s, index) => (
-                  <Draggable key={s} draggableId={s} index={index}>
+                  <Draggable key={s} draggableId={`svc-${s}`} index={index}>
                     {(prov, snapshot) => (
                       <div
                         ref={prov.innerRef}
@@ -142,7 +198,9 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
                         style={prov.draggableProps.style}
                         className={`flex flex-col gap-2 w-max items-stretch ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary opacity-90' : ''}`}
                       >
-                        <ServiceGroup s={s} groups={groups} parentService={parentService} onSelect={onSelect} onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies} depth={depth} draggable getOpacityClass={getOpacityClass} />
+                        <ServiceGroupContent s={s} groups={groups} parentService={parentService} onSelect={onSelect}
+                          onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies}
+                          depth={depth} draggable getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
                       </div>
                     )}
                   </Draggable>
@@ -151,47 +209,31 @@ export default function OrgLeafList({ employees, onSelect, onDragStart, onDrop, 
               </div>
             )}
           </Droppable>
-        </DragDropContext>
-      ) : (
-        multiServices.map(s => (
-          <ServiceGroup key={s} s={s} groups={groups} parentService={parentService} onSelect={onSelect} onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies} depth={depth} getOpacityClass={getOpacityClass} />
-        ))
-      )}
-      {singleServices.length > 0 && (
-        <div className="relative flex flex-col w-max">
-          {/* Tronc vertical continu reliant les services à la direction */}
-          <div className="absolute left-0 top-0 bottom-0 w-px" style={{ backgroundColor: lineColor }} />
-          {singleServices.map((s, idx) => {
-            const svc = getServiceColor(s);
-            return (
+        ) : (
+          multiServices.length > 0 && (
+            <div className="flex items-start gap-4">
+              {multiServices.map(s => (
+                <ServiceGroupContent key={s} s={s} groups={groups} parentService={parentService} onSelect={onSelect}
+                  onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies}
+                  depth={depth} getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
+              ))}
+            </div>
+          )
+        )}
+        {singleServices.length > 0 && (
+          <div className="relative flex flex-col w-max">
+            <div className="absolute left-0 top-0 bottom-0 w-px" style={{ backgroundColor: lineColor }} />
+            {singleServices.map((s, idx) => (
               <div key={s} className={`relative pl-7 ${idx > 0 ? 'mt-10' : ''}`}>
-                {/* Branche horizontale depuis le tronc vers le service */}
                 <div className="absolute left-0 top-3 w-7 h-px" style={{ backgroundColor: lineColor }} />
-                <div className="flex flex-col gap-1.5 w-max items-stretch">
-                  {s !== parentService && (
-                    <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-white whitespace-nowrap w-max"
-                      style={{ backgroundColor: svc.bg }}>
-                      {s}
-                    </div>
-                  )}
-                  {groups[s].map(e => (
-                    <LeafCard
-                      key={e.id}
-                      employee={e}
-                      onSelect={onSelect}
-                      onDragStart={onDragStart}
-                      onDrop={onDrop}
-                      isHighlighted={isMatch(e)}
-                      anomalies={getAnomalies ? getAnomalies(e, depth) : []}
-                      opacityClass={getOpacityClass(e)}
-                    />
-                  ))}
-                </div>
+                <ServiceGroupContent s={s} groups={groups} parentService={parentService} onSelect={onSelect}
+                  onDragStart={onDragStart} onDrop={onDrop} isMatch={isMatch} getAnomalies={getAnomalies}
+                  depth={depth} getOpacityClass={getOpacityClass} onEmployeeReorder={onEmployeeReorder} />
               </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </DragDropContext>
   );
 }

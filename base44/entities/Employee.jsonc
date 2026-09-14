@@ -83,6 +83,11 @@
       "type": "boolean",
       "title": "Co-manager",
       "default": false
+    },
+    "sort_order": {
+      "type": "number",
+      "title": "Ordre de tri vertical",
+      "default": 0
     }
   },
   "required": [

@@ -501,6 +501,20 @@ export default function OrgChart() {
     }
   }, [selectedCompanyId, toast]);
 
+  const handleEmployeeReorder = useCallback(async (orderedIds) => {
+    try {
+      await Promise.all(orderedIds.map((id, index) =>
+        base44.entities.Employee.update(id, { sort_order: index })
+      ));
+      setEmployees(prev => prev.map(e => {
+        const idx = orderedIds.indexOf(e.id);
+        return idx !== -1 ? { ...e, sort_order: idx } : e;
+      }));
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de sauvegarder l'ordre des collaborateurs.", variant: 'destructive' });
+    }
+  }, [toast]);
+
   const handleSave = useCallback((updated) => {
     const old = employees.find(e => e.id === updated.id);
     if (old) {
@@ -983,7 +997,8 @@ export default function OrgChart() {
                     )}
                   </div>
                 ) : rootsWithChildren.length === 1 ? (
-                  <div className="flex justify-center">
+                  <div className="flex justify-center gap-12 items-start">
+                    <div className="flex justify-center">
                     <OrgTreeNode
                       key={`${rootsWithChildren[0].id}-${expandAll}`}
                       employee={rootsWithChildren[0]}
@@ -1002,10 +1017,39 @@ export default function OrgChart() {
                       serviceSortMode={serviceSortMode}
                       serviceOrder={serviceOrder}
                       onServiceReorder={handleServiceReorder}
-                      sideCards={orphanLeaves}
+                      onEmployeeReorder={handleEmployeeReorder}
+                      sideCards={[]}
                       visibleIds={searchMatchIds}
                       filterMatchIds={directMatchIds}
                     />
+                    </div>
+                    {orphanLeaves.length > 0 && (
+                      <div className="flex flex-col gap-3 items-start flex-shrink-0">
+                        <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-muted-foreground bg-secondary whitespace-nowrap">
+                          Non rattachés
+                        </div>
+                        {orphanLeaves.map(e => (
+                          <OrgTreeNode
+                            key={`${e.id}-${expandAll}`}
+                            employee={e}
+                            childrenMap={{}}
+                            onSelect={setSelectedEmployee}
+                            defaultExpanded={expandAll}
+                            depth={0}
+                            onDragStart={handleDragStart}
+                            onDrop={handleDrop}
+                            template={template}
+                            searchTerm={searchTerm}
+                            onFocus={handleFocus}
+                            colorMode={colorMode}
+                            showAnomalies={showAnomalies}
+                            depthColors={depthColors}
+                            visibleIds={searchMatchIds}
+                            filterMatchIds={directMatchIds}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : rootsWithChildren.length > 1 ? (
                   <div className="flex gap-12 items-start justify-center flex-wrap">
@@ -1028,11 +1072,39 @@ export default function OrgChart() {
                         serviceSortMode={serviceSortMode}
                         serviceOrder={serviceOrder}
                         onServiceReorder={handleServiceReorder}
-                        sideCards={i === 0 ? orphanLeaves : []}
+                        onEmployeeReorder={handleEmployeeReorder}
+                        sideCards={[]}
                         visibleIds={searchMatchIds}
                         filterMatchIds={directMatchIds}
                       />
                     ))}
+                    {orphanLeaves.length > 0 && (
+                      <div className="flex flex-col gap-3 items-start flex-shrink-0">
+                        <div className="rounded-full px-3 py-1 text-center text-[10px] font-bold text-muted-foreground bg-secondary whitespace-nowrap">
+                          Non rattachés
+                        </div>
+                        {orphanLeaves.map(e => (
+                          <OrgTreeNode
+                            key={`${e.id}-${expandAll}`}
+                            employee={e}
+                            childrenMap={{}}
+                            onSelect={setSelectedEmployee}
+                            defaultExpanded={expandAll}
+                            depth={0}
+                            onDragStart={handleDragStart}
+                            onDrop={handleDrop}
+                            template={template}
+                            searchTerm={searchTerm}
+                            onFocus={handleFocus}
+                            colorMode={colorMode}
+                            showAnomalies={showAnomalies}
+                            depthColors={depthColors}
+                            visibleIds={searchMatchIds}
+                            filterMatchIds={directMatchIds}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex gap-4 items-start justify-center flex-wrap">
