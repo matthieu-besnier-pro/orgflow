@@ -938,14 +938,16 @@ export default function OrgChart() {
           </div>
         )}
 
-        {/* Share button */}
-        <button
-          onClick={() => setShareOpen(true)}
-          title="Partager la vue hiérarchique (lecture seule)"
-          className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Share2 className="w-4 h-4" />
-        </button>
+        {/* Share button (réservé admin/RH : gestion des liens de partage) */}
+        {isHR && (
+          <button
+            onClick={() => setShareOpen(true)}
+            title="Partager la vue hiérarchique"
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Export HD button */}
         {viewMode === 'hierarchical' && (

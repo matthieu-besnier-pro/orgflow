@@ -19,6 +19,7 @@ export default async function (req) {
       company: company ? { name: company.name, logo_url: company.logo_url, brand_color: company.brand_color, services: company.services || [], zones: company.zones || [], anciennes_entites: company.anciennes_entites || [] } : null,
       service_sort_mode: share.service_sort_mode || 'alpha',
       view_mode: share.view_mode || 'standard',
+      can_edit: share.can_edit === true,
       agencies: agencies.map((a) => ({ id: a.id, name: a.name, zone: a.zone, city: a.city })),
       employees: employees.map((e) => ({
         id: e.id,
@@ -30,6 +31,7 @@ export default async function (req) {
         photo_url: e.photo_url,
         status: e.status,
         manager_id: e.manager_id,
+        sort_order: e.sort_order,
         email: e.email,
         phone: e.phone,
         zone: e.zone,

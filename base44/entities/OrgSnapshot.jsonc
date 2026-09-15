@@ -1,49 +1,46 @@
 {
-  "name": "ChartShare",
+  "name": "OrgSnapshot",
   "type": "object",
   "properties": {
     "company_id": {
       "type": "string",
       "title": "Société"
     },
-    "token": {
+    "label": {
       "type": "string",
-      "title": "Jeton de partage"
+      "title": "Libellé de l'archive"
     },
-    "is_active": {
-      "type": "boolean",
-      "title": "Actif",
-      "default": true
-    },
-    "can_edit": {
-      "type": "boolean",
-      "title": "Autoriser la modification (lien direction)",
-      "description": "Si activé, ce lien permet de modifier l'organigramme réel sans compte. À réserver à la direction.",
-      "default": false
-    },
-    "service_sort_mode": {
+    "source": {
       "type": "string",
-      "title": "Tri des services",
+      "title": "Origine",
       "enum": [
-        "count",
-        "alpha",
-        "custom"
+        "pre_edit",
+        "manual",
+        "pre_restore"
       ],
-      "default": "alpha"
+      "description": "pre_edit = créée automatiquement avant une modification via le lien direction ; manual = créée à la demande par la RH ; pre_restore = créée automatiquement juste avant une restauration.",
+      "default": "manual"
     },
-    "view_mode": {
+    "created_via": {
       "type": "string",
-      "title": "Mode d'affichage",
-      "enum": [
-        "standard",
-        "constructeur"
-      ],
-      "default": "standard"
+      "title": "Créée par",
+      "description": "Origine humaine : 'lien-direction' ou 'rh'.",
+      "default": "rh"
+    },
+    "employee_count": {
+      "type": "number",
+      "title": "Nombre de collaborateurs",
+      "default": 0
+    },
+    "data": {
+      "type": "string",
+      "title": "Données de l'archive (JSON)",
+      "description": "Instantané JSON de l'organigramme : rattachements, services, libellés, ordre de tri et positions des blocs."
     }
   },
   "required": [
     "company_id",
-    "token"
+    "data"
   ],
   "rls": {
     "read": {
@@ -75,18 +72,9 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "rh"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
       "$or": [

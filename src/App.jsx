@@ -18,6 +18,7 @@ import Chatbot from '@/pages/Chatbot';
 import DataQuality from '@/pages/DataQuality';
 import Users from '@/pages/Users';
 import AuditLog from '@/pages/AuditLog';
+import Archives from '@/pages/Archives';
 import Credits from '@/pages/Credits';
 import { CompanyProvider } from '@/lib/CompanyContext';
 import PublicChart from '@/pages/PublicChart';
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
             <Route path="/qualite-donnees" element={<DataQuality />} />
             <Route path="/utilisateurs" element={<Users />} />
             <Route path="/journal" element={<AuditLog />} />
+            <Route path="/archives" element={<Archives />} />
             <Route path="/credits" element={<Credits />} />
           </Route>
         </Route>

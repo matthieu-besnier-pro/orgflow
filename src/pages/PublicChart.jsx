@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ZoomIn, ZoomOut, Maximize, Search, X, ChevronUp, ChevronDown, Printer } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Search, X, ChevronUp, ChevronDown, Printer, Pencil, Eye, Archive, Loader2, Check as CheckIcon } from 'lucide-react';
 import OrgTreeNode from '@/components/OrgTreeNode';
 import PublicEmployeeModal from '@/components/PublicEmployeeModal';
+import PublicEditModal from '@/components/PublicEditModal';
 import usePanDrag from '@/hooks/usePanDrag';
 import { buildAgencyEntiteMap, buildEntiteToZone } from '@/lib/ancienneEntite';
 import { isActiveEmployee } from '@/lib/employeeStats';
@@ -31,12 +32,16 @@ export default function PublicChart() {
   const [serviceSortMode, setServiceSortMode] = useState('alpha');
   const [matchIndex, setMatchIndex] = useState(0);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved | error
   const [size, setSize] = useState(null);
   const contentRef = useRef(null);
+  const draggedId = useRef(null);
+  const [token] = useState(() => new URLSearchParams(window.location.search).get('token'));
   const pan = usePanDrag();
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get('token');
     base44.functions.invoke('publicChart', { token })
       .then(res => {
         setData(res.data);
@@ -45,7 +50,92 @@ export default function PublicChart() {
         if (name) document.title = `Organigramme ${name} — consultation publique`;
       })
       .catch(() => setError('Ce lien de partage est invalide ou désactivé.'));
-  }, []);
+  }, [token]);
+
+  const canEdit = data?.can_edit === true;
+
+  // Applique localement une liste d'opérations {type:'employee', id, fields}
+  const applyLocal = (ops) => {
+    setData(prev => {
+      if (!prev) return prev;
+      const patch = {};
+      ops.forEach(op => { if (op.type === 'employee') patch[op.id] = { ...(patch[op.id] || {}), ...op.fields }; });
+      return { ...prev, employees: prev.employees.map(e => patch[e.id] ? { ...e, ...patch[e.id] } : e) };
+    });
+  };
+
+  // Envoie les modifications au backend (écriture réelle, scellée par le jeton)
+  const applyEdits = async (ops) => {
+    if (!ops.length) return;
+    applyLocal(ops); // optimiste
+    setSaveState('saving');
+    try {
+      const res = await base44.functions.invoke('publicChartEdit', { token, ops });
+      if (res?.data?.ok) {
+        setSaveState('saved');
+        setTimeout(() => setSaveState(s => (s === 'saved' ? 'idle' : s)), 2500);
+      } else {
+        throw new Error(res?.data?.error || 'Échec');
+      }
+    } catch {
+      setSaveState('error');
+      // Recharge l'état serveur en cas d'échec pour éviter une divergence
+      base44.functions.invoke('publicChart', { token }).then(r => r?.data && setData(r.data)).catch(() => {});
+    }
+  };
+
+  const createArchive = async () => {
+    // Force une archive en envoyant une opération neutre : on réutilise le
+    // mécanisme d'archive automatique côté serveur en réattachant à l'identique.
+    const anyEmp = data?.employees?.[0];
+    if (!anyEmp) return;
+    setSaveState('saving');
+    try {
+      await base44.functions.invoke('publicChartEdit', {
+        token,
+        ops: [{ type: 'employee', id: anyEmp.id, fields: { manager_id: anyEmp.manager_id ?? null } }],
+      });
+      setSaveState('saved');
+      setTimeout(() => setSaveState(s => (s === 'saved' ? 'idle' : s)), 2500);
+    } catch {
+      setSaveState('error');
+    }
+  };
+
+  // Réattachement par glisser-déposer (change le manager direct)
+  const handleDragStart = (e, employee) => {
+    if (!editMode) return;
+    draggedId.current = employee.id;
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const handleDrop = (e, target) => {
+    if (!editMode) return;
+    const sourceId = draggedId.current;
+    draggedId.current = null;
+    if (!sourceId || !target || sourceId === target.id) return;
+    // Garde anti-cycle : la cible ne doit pas être un descendant de la source
+    const childrenByMgr = {};
+    data.employees.forEach(emp => { if (emp.manager_id) (childrenByMgr[emp.manager_id] ||= []).push(emp.id); });
+    const descendants = new Set();
+    const stack = [sourceId];
+    while (stack.length) {
+      const cur = stack.pop();
+      (childrenByMgr[cur] || []).forEach(cid => { if (!descendants.has(cid)) { descendants.add(cid); stack.push(cid); } });
+    }
+    if (descendants.has(target.id)) return;
+    const source = data.employees.find(emp => emp.id === sourceId);
+    if (!source || source.manager_id === target.id) return;
+    applyEdits([{ type: 'employee', id: sourceId, fields: { manager_id: target.id } }]);
+  };
+
+  const dragProps = editMode
+    ? { onDragStart: handleDragStart, onDrop: handleDrop }
+    : { onDragStart: noop, onDrop: noop };
+
+  const handleCardSelect = (employee) => {
+    if (editMode) setEditingEmployee(employee);
+    else setSelectedEmployee(employee);
+  };
 
   const fitToScreen = () => {
     const el = contentRef.current;
@@ -241,7 +331,36 @@ export default function PublicChart() {
       <div className="no-print flex items-center gap-3 px-4 py-3 border-b border-border flex-wrap">
         {data.company?.logo_url && <img src={data.company.logo_url} alt="" className="h-7 object-contain" />}
         <h1 className="font-heading font-semibold text-foreground text-base">{data.company?.name} — Organigramme</h1>
-        <span className="text-xs text-muted-foreground hidden sm:inline">Consultation seule</span>
+        {!canEdit && <span className="text-xs text-muted-foreground hidden sm:inline">Consultation seule</span>}
+
+        {canEdit && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditMode(v => !v)}
+              className={`h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${editMode ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-secondary text-foreground hover:bg-secondary/70'}`}
+              title={editMode ? "Repasser en consultation" : "Activer l'édition de l'organigramme"}
+            >
+              {editMode ? <Eye className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+              {editMode ? 'Édition activée' : 'Modifier'}
+            </button>
+            {editMode && (
+              <>
+                <button
+                  onClick={createArchive}
+                  className="h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-secondary text-foreground hover:bg-secondary/70"
+                  title="Créer une archive de l'état actuel"
+                >
+                  <Archive className="w-3.5 h-3.5" /> Archiver
+                </button>
+                <span className="text-xs flex items-center gap-1 min-w-[70px]">
+                  {saveState === 'saving' && <><Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" /> <span className="text-muted-foreground">Enregistrement…</span></>}
+                  {saveState === 'saved' && <><CheckIcon className="w-3.5 h-3.5 text-emerald-500" /> <span className="text-emerald-600">Enregistré</span></>}
+                  {saveState === 'error' && <span className="text-red-500">Échec — réessayez</span>}
+                </span>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="relative flex-1 max-w-xs ml-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -312,6 +431,13 @@ export default function PublicChart() {
         </div>
       </div>
 
+      {canEdit && editMode && (
+        <div className="no-print flex items-center gap-2 px-4 py-1.5 bg-amber-50 border-b border-amber-200 text-[11px] text-amber-800">
+          <Pencil className="w-3.5 h-3.5 shrink-0" />
+          <span>Mode direction : <strong>glissez</strong> une carte sur une autre pour changer son rattachement, ou <strong>cliquez</strong> une carte pour modifier son poste / service. Les modifications sont écrites en direct — une archive restaurable est créée automatiquement.</span>
+        </div>
+      )}
+
       {/* Barre de filtres */}
       <div className="no-print flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/30 flex-wrap">
         <select
@@ -375,11 +501,10 @@ export default function PublicChart() {
                   key={rootsWithChildren[0].id}
                   employee={rootsWithChildren[0]}
                   childrenMap={childrenMap}
-                  onSelect={setSelectedEmployee}
+                  onSelect={handleCardSelect}
                   defaultExpanded
                   depth={0}
-                  onDragStart={noop}
-                  onDrop={noop}
+                  {...dragProps}
                   template="classique"
                   searchTerm={searchTerm}
                   serviceOrder={serviceOrder}
@@ -395,11 +520,10 @@ export default function PublicChart() {
                     key={root.id}
                     employee={root}
                     childrenMap={childrenMap}
-                    onSelect={setSelectedEmployee}
+                    onSelect={handleCardSelect}
                     defaultExpanded
                     depth={0}
-                    onDragStart={noop}
-                    onDrop={noop}
+                    {...dragProps}
                     template="classique"
                     searchTerm={searchTerm}
                     serviceOrder={serviceOrder}
@@ -416,11 +540,10 @@ export default function PublicChart() {
                     key={e.id}
                     employee={e}
                     childrenMap={{}}
-                    onSelect={setSelectedEmployee}
+                    onSelect={handleCardSelect}
                     defaultExpanded
                     depth={0}
-                    onDragStart={noop}
-                    onDrop={noop}
+                    {...dragProps}
                     template="classique"
                     searchTerm={searchTerm}
                     visibleIds={visibleIds}
@@ -440,6 +563,16 @@ export default function PublicChart() {
           employees={data.employees}
           agencies={data.agencies || []}
           onClose={() => setSelectedEmployee(null)}
+        />
+      )}
+
+      {editingEmployee && (
+        <PublicEditModal
+          employee={editingEmployee}
+          employees={data.employees}
+          services={availableServices}
+          onClose={() => setEditingEmployee(null)}
+          onSave={(fields) => applyEdits([{ type: 'employee', id: editingEmployee.id, fields }])}
         />
       )}
     </div>

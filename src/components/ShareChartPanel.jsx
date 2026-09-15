@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { X, Copy, Check, Link2, Power, Building2, Users } from 'lucide-react';
+import { X, Copy, Check, Link2, Power, Building2, Users, Pencil, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const MODES = [
@@ -13,6 +13,7 @@ function ShareSection({ companyId, mode, onShareChange }) {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [sortMode, setSortMode] = useState('alpha');
+  const [savingEdit, setSavingEdit] = useState(false);
   const cfg = MODES.find(m => m.key === mode);
   const Icon = cfg.icon;
 
@@ -25,6 +26,15 @@ function ShareSection({ companyId, mode, onShareChange }) {
       onShareChange(mode, s);
     });
   }, [companyId, mode]);
+
+  const toggleCanEdit = async () => {
+    if (!share) return;
+    setSavingEdit(true);
+    const updated = await base44.entities.ChartShare.update(share.id, { can_edit: !(share.can_edit === true) });
+    setShare(updated);
+    onShareChange(mode, updated);
+    setSavingEdit(false);
+  };
 
   const url = share ? `${window.location.origin}/partage?token=${share.token}` : '';
 
@@ -100,6 +110,36 @@ function ShareSection({ companyId, mode, onShareChange }) {
                 <SelectItem value="custom">Ordre libre (personnalisé)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Lien direction : modification de l'organigramme réel sans compte */}
+          <div className={`rounded-lg border p-3 ${share.can_edit === true ? 'border-amber-300 bg-amber-50/60' : 'border-border'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2">
+                <Pencil className={`w-4 h-4 mt-0.5 ${share.can_edit === true ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                <div>
+                  <p className="text-xs font-semibold text-foreground">Mode direction (modification)</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    Permet de réorganiser l'organigramme, changer les rattachements et corriger les libellés — sans compte.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleCanEdit}
+                disabled={savingEdit}
+                role="switch"
+                aria-checked={share.can_edit === true}
+                className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${share.can_edit === true ? 'bg-amber-500' : 'bg-muted-foreground/30'} disabled:opacity-50`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${share.can_edit === true ? 'translate-x-4' : ''}`} />
+              </button>
+            </div>
+            {share.can_edit === true && (
+              <p className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-700">
+                <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0" />
+                <span>Toute personne disposant de ce lien peut modifier les vraies données. Une archive est créée automatiquement avant chaque session de modification — restaurable depuis « Archives ». Désactivez ce mode dès que la direction a terminé.</span>
+              </p>
+            )}
           </div>
         </div>
       )}
